@@ -1,56 +1,57 @@
 # 선사명 : SITC
 # 선사링크 : https://ebusiness.sitcline.com/#/home
-
-from selenium import webdriver
+# SITC에서 뽑아올 선박 리스트
+"""
+["SITC DECHENG", "SITC BATANGAS" , "SITC SHENGMING" , "SITC QIMING",
+                       "SITC XIN", "SITC YUNCHENG", "SITC MAKASSAR", "SITC CHANGDE", 
+                       "SITC HANSHIN", "SITC XINGDE"]
+"""
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait # 명시적 대기용
+from selenium.webdriver.support import expected_conditions as EC
 ########### 아래는 자식클래스 (선사) 들 import 목록 ############
 from .base import ParentsClass
 
 class SITC_Crawling(ParentsClass):
-    def run(self):
+    def run(self): # 사이트 방문 들어가주고
         self.Visit_Link("https://ebusiness.sitcline.com/#/home")
+        driver = self.driver
+        wait = self.wait # 10초 대기
+
+        # 여기는 Vessel tab 클릭
+        vessel_movement_tab = wait.until(EC.element_to_be_clickable( (
+            By.XPATH, "//div[contains(@class, 'border-card') and contains(text(), 'Vessel Movement')]"
+        )))
+        vessel_movement_tab.click()
+
+        # 여기는 해당 탭의 입력창
+        vessel_input = wait.until(EC.element_to_be_clickable( (
+            By.XPATH, "//input[contains(@class, 'el-input') and contains(@class, 'el-input--mini') and contains(@class, 'el-input--suffix')]"
+        )))
+
+        # 선박명은 풀네임으로 받아오자. 선박코드는 ICC - Vessel information에서 매핑작업 치면 된다.
+        vessel_list = ["SITC DECHENG"]
+        
+        for vessel_name in vessel_list:
+            vessel_input.clear()
+            vessel_input.send_keys(vessel_name)
+
+            # dropdown 리스트 뜨는거
+            dropdown_item_list = wait.until(EC.element_to_be_clickable((
+                By.XPATH, f"//div[contains(@class, 'gl-associate-tbody')]//span[contains(@class, 'gl-associate-td') and text()='{vessel_name}']"
+            )))
+            dropdown_item_list.click()
+
+            # Search 버튼 클릭
+            search_button = wait.until(EC.element_to_be_clickable((
+                By.XPATH, "//button[contains(@class, 'el-button--primary') and text()='Search']"
+            )))
+            search_button.click()
+
+        self.Close()
 
 
 """
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-
-class SITC_crawling:
-    def __init__(self):
-        self.driver = webdriver.Chrome()
-        self.wait = WebDriverWait(self.driver, 10)
-
-    def go_to_site(self):
-        url = "https://ebusiness.sitcline.com/#/home"
-        self.driver.get(url)
-
-    def input_pol_pod(self, pol, pod):
-        # 1. POL 입력창 찾기 (id, name, xpath 등 실제 요소에 맞게 수정)
-        pol_input = self.wait.until(EC.presence_of_element_located((By.XPATH, 'POL_INPUT_XPATH')))
-        pol_input.clear()
-        pol_input.send_keys(pol)
-
-        # 2. POD 입력창 찾기
-        pod_input = self.wait.until(EC.presence_of_element_located((By.XPATH, 'POD_INPUT_XPATH')))
-        pod_input.clear()
-        pod_input.send_keys(pod)
-
-        # 3. 조회 버튼 클릭 (버튼의 id, xpath 등 실제 값으로 수정)
-        search_btn = self.wait.until(EC.element_to_be_clickable((By.XPATH, 'SEARCH_BUTTON_XPATH')))
-        search_btn.click()
-
-    def close(self):
-        self.driver.quit()
-
-    def run(self, pol, pod):
-        try:
-            self.go_to_site()
-            self.input_pol_pod(pol, pod)
-            # 이후 결과 테이블 추출 코드 작성
-        finally:
-            self.close()
 
 """
