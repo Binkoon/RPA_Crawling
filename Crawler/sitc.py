@@ -1,17 +1,22 @@
 # 선사명 : SITC
 # 선사링크 : https://ebusiness.sitcline.com/#/home
-# SITC에서 뽑아올 선박 리스트
+# SITC에서 뽑아올 선박 리스트 /html/body/div[2]/div[1]/div[1]/div/div[2]/div[2]/div/span[2]
 """
 ["SITC DECHENG", "SITC BATANGAS" , "SITC SHENGMING" , "SITC QIMING",
                        "SITC XIN", "SITC YUNCHENG", "SITC MAKASSAR", "SITC CHANGDE", 
                        "SITC HANSHIN", "SITC XINGDE"]
 """
+############ 셀레니움 ###############
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from .base import ParentsClass
 import time
+##############부모 클래스 ##############
+from .base import ParentsClass
+############# Schedule_Data쪽에 넘겨야함 ###########
+import os
+import pandas as pd
 
 class SITC_Crawling(ParentsClass):
     def run(self):  # 사이트 방문 들어가주고
@@ -42,19 +47,60 @@ class SITC_Crawling(ParentsClass):
         for vessel_name in vessel_list:
             vessel_input.clear()
             vessel_input.send_keys(vessel_name)
-            print(f"입력: {vessel_name}")  # 디버깅 로그
-            time.sleep(1)  # 드롭다운 열릴 시간 대기
+            print(f"입력: {vessel_name}")
+            time.sleep(1)  # 드롭다운 뜨는 시간
+
+            # 드롭다운 항목 클릭
+            dropdown_xpath = "/html/body/div[2]/div[1]/div[1]/div/div[2]/div[2]/div/span[2]"
+            dropdown_item = wait.until(EC.element_to_be_clickable((By.XPATH, dropdown_xpath)))
+            dropdown_item.click()
+            print("드롭다운 항목 클릭")
 
             # Search 버튼 클릭
             search_button = wait.until(EC.element_to_be_clickable((
-                By.XPATH, "//div[contains(@class, 'vesselsSearch')]//button[contains(@class, 'el-button--primary') and contains(text(), 'Search')]"
+                By.XPATH, '//*[@id="app"]/div[1]/div[1]/div[4]/div[3]/button'
             )))
             search_button.click()
             print("Search 버튼 클릭")
 
-            # 검색 후 대기
             wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-            time.sleep(2)  # 결과 로드 대기
+            time.sleep(2)
             print("검색 완료 대기")
+
+            # 스케줄 정보 영역 찾기
+            schedule_area = wait.until(EC.presence_of_element_located((
+                By.XPATH, '//*[@id="app"]/div[1]/div/section/div/div[2]/div[2]'
+            )))
+
+            # 테이블 행들 찾기 (예: tbody/tr)
+            rows = schedule_area.find_elements(By.XPATH, ".//tr")
+
+            table_data = []
+            for row in rows:
+                # 각 행의 셀(td) 텍스트 추출
+                cols = row.find_elements(By.TAG_NAME, "td")
+                row_data = [col.text.strip() for col in cols]
+                if row_data:  # 빈 행은 제외
+                    table_data.append(row_data)
+
+            # (선택) 헤더 추출
+            header = []
+            header_row = schedule_area.find_elements(By.XPATH, ".//thead/tr/th")
+            if header_row:
+                header = [th.text.strip() for th in header_row]
+
+            # pandas DataFrame으로 변환
+            if header:
+                df = pd.DataFrame(table_data, columns=header)
+            else:
+                df = pd.DataFrame(table_data)
+
+            # 엑셀 저장 경로 지정
+            save_dir = os.path.join(os.path.dirname(__file__), "Schedule_Data")
+            os.makedirs(save_dir, exist_ok=True)
+            excel_path = os.path.join(save_dir, "schedule.xlsx")
+
+            df.to_excel(excel_path, index=False)
+            print(f"엑셀 저장 완료: {excel_path}")
 
         self.Close()
