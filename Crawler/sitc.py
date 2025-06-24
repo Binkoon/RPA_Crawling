@@ -28,7 +28,7 @@ class SITC_Crawling(ParentsClass):
 
         # 입력창 (vesselSearch 내 el-input__inner 타겟팅, readonly 처리)
         vessel_input = wait.until(EC.presence_of_element_located((
-            By.XPATH, "//div[contains(@class, 'vesselsSearch')]//input[@type='text' and contains(@class, 'el-input__inner')]"
+            By.XPATH, '//*[@id="app"]/div[1]/div[1]/div[4]/div[3]/div/div[3]/div/input'
         )))
 
         # readonly 속성 해제 및 활성화 시도
@@ -44,21 +44,6 @@ class SITC_Crawling(ParentsClass):
             vessel_input.send_keys(vessel_name)
             print(f"입력: {vessel_name}")  # 디버깅 로그
             time.sleep(1)  # 드롭다운 열릴 시간 대기
-
-            # 드롭다운 목록 선택 (contains로 유연화)
-            try:
-                # 드롭다운 컨테이너 대기
-                wait.until(EC.visibility_of_element_located((By.XPATH, "//div[contains(@class, 'el-select-dropdown')]")))
-                dropdown_item = wait.until(EC.element_to_be_clickable((
-                    By.XPATH, f"//div[contains(@class, 'el-select-dropdown')]//span[contains(text(), '{vessel_name}')]"
-                )))
-                dropdown_item.click()
-                print(f"드롭다운 선택 성공: {vessel_name}")
-            except Exception as e:
-                print(f"드롭다운에서 '{vessel_name}'을 찾을 수 없습니다. 오류: {str(e)}. 키보드 입력으로 시도합니다.")
-                vessel_input.send_keys(Keys.DOWN)
-                vessel_input.send_keys(Keys.ENTER)
-                print("키보드 입력으로 대체 시도")
 
             # Search 버튼 클릭
             search_button = wait.until(EC.element_to_be_clickable((

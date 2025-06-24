@@ -7,6 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.action_chains import ActionChains
 from .base import ParentsClass
 import time
@@ -26,7 +27,7 @@ class Cosco_Crawling(ParentsClass):
             driver = self.driver
             wait = self.wait  # 20초 대기
             print("TARGET 페이지로 직접 접속 완료")
-            time.sleep(5)  # 페이지 안정화 대기 강화
+            time.sleep(3)  # 페이지 안정화 대기
 
             # 팝업 처리 (alert 확인)
             try:
@@ -50,18 +51,15 @@ class Cosco_Crawling(ParentsClass):
             except:
                 print("일반 팝업 없음")
 
-            # 부모 div (ivu-select) 클릭으로 드롭다운 펼치기
+            # 부모 div (ivu-select) 클릭 시도
             select_container = wait.until(EC.element_to_be_clickable((
                 By.CSS_SELECTOR, "div.ivu-select"
             )))
             select_container.click()
-            print("ivu-select 컨테이너 클릭, 드롭다운 펼침")
-            # 드롭다운이 visible 상태로 변경될 때까지 대기
-            wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, "div.ivu-select-dropdown")))
-            print("드롭다운 활성화 완료")
-            time.sleep(2)  # 드롭다운 안정화 대기
+            print("ivu-select 컨테이너 클릭")
+            time.sleep(2)  # 드롭다운 활성화 대기
 
-            # INPUT 요소 타겟팅 및 값 입력
+            # INPUT 요소 (CSS Selector로 타겟팅) 초점 설정 및 입력
             vessel_input = wait.until(EC.element_to_be_clickable((
                 By.CSS_SELECTOR, "input[placeholder='sailing_schedule_vessel_search_vessel_name'].ivu-select-input"
             )))
@@ -69,7 +67,7 @@ class Cosco_Crawling(ParentsClass):
             vessel_input.click()
             vessel_input.send_keys("XIN NAN SHA")
             print("선박명 'XIN NAN SHA' 입력")
-            time.sleep(2)  # 입력 후 대기
+            time.sleep(2)  # 드롭다운 로드 대기
 
             # Search 버튼 클릭
             search_button = wait.until(EC.element_to_be_clickable((
@@ -89,6 +87,6 @@ class Cosco_Crawling(ParentsClass):
             inputs = driver.find_elements(By.CSS_SELECTOR, "input[placeholder='sailing_schedule_vessel_search_vessel_name'].ivu-select-input")
             print(f"CSS Selector 매칭 요소 개수: {len(inputs)}")
             if inputs:
-                print(f"첫 번째 요소 속성: {inputs[0].get_attribute('disabled')}, {inputs[0].get_attribute('readonly')}")
+                print(f"첫 번째 요소 속성: {inputs[0].get_attribute('disabled')}")
 
         self.Close()
