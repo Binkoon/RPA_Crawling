@@ -19,12 +19,13 @@ import os
 import pandas as pd
 
 class SITC_Crawling(ParentsClass):
-    def run(self):  # 사이트 방문 들어가주고
+    def run(self):  
+        # 0. 사이트 방문 들어가주고
         self.Visit_Link("https://ebusiness.sitcline.com/#/home")
         driver = self.driver
         wait = self.wait  # 20초 대기
 
-        # Vessel Movement 탭 클릭 (요청에 따라 유지)
+        # 1. Vessel Movement 탭 클릭
         vessel_movement_tab = wait.until(EC.element_to_be_clickable((
             By.XPATH, "//div[contains(@class, 'border-card') and contains(text(), 'Vessel Movement')]"
         )))

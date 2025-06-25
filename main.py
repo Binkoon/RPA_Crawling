@@ -3,6 +3,7 @@ from Crawler import base
 from Crawler import sitc
 from Crawler import evergreen
 from Crawler import cosco
+from Crawler import wanhai
 
 
 if __name__ == "__main__":
@@ -14,5 +15,8 @@ if __name__ == "__main__":
     # evergreen_data = evergreen.EVERGREEN_Crawling()
     # evergreen_data.run()
 
-    cosco_data = cosco.Cosco_Crawling()
-    cosco_data.run()
+    # cosco_data = cosco.Cosco_Crawling()
+    # cosco_data.run()
+
+    wanhai_data = wanhai.WANHAI_Crawling()
+    wanhai_data.run()

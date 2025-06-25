@@ -16,13 +16,10 @@ from .base import ParentsClass
 ######### 데이터 저장
 import os
 
-
 class Cosco_Crawling(ParentsClass):
     def __init__(self):
         super().__init__()
         chrome_options = Options()
-        chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
 
         # 다운로드 경로 지정
         base_dir = os.path.dirname(os.path.abspath(__file__))
