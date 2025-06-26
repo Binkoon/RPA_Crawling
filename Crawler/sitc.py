@@ -64,44 +64,22 @@ class SITC_Crawling(ParentsClass):
             search_button.click()
             print("Search 버튼 클릭")
 
-            wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-            time.sleep(2)
-            print("검색 완료 대기")
+            # 스케줄 정보 헤더영역 찾기
+            header_xpath = '//*[@id="app"]/div[1]/div/section/div/div[2]/div[2]/div[2]/table/thead/tr/th'
+            headers = [th.text.strip() for th in driver.find_elements(By.XPATH, header_xpath)]
 
-            # 스케줄 정보 영역 찾기
-            schedule_area = wait.until(EC.presence_of_element_located((
-                By.XPATH, '//*[@id="app"]/div[1]/div/section/div/div[2]/div[2]'
-            )))
+            # 스케줄 정보 row 추출
+            row_xpath = '//*[@id="app"]/div[1]/div/section/div/div[2]/div[2]/div[2]/table/tbody/tr'
+            rows = driver.find_elements(By.XPATH, row_xpath)
+            data = []
+            for tr in rows:
+                cells = tr.find_elements(By.XPATH, './td')
+                data.append([td.text.strip() for td in cells])
 
-            # 테이블 행들 찾기 (예: tbody/tr)
-            rows = schedule_area.find_elements(By.XPATH, ".//tr")
-
-            table_data = []
-            for row in rows:
-                # 각 행의 셀(td) 텍스트 추출
-                cols = row.find_elements(By.TAG_NAME, "td")
-                row_data = [col.text.strip() for col in cols]
-                if row_data:  # 빈 행은 제외
-                    table_data.append(row_data)
-
-            # (선택) 헤더 추출
-            header = []
-            header_row = schedule_area.find_elements(By.XPATH, ".//thead/tr/th")
-            if header_row:
-                header = [th.text.strip() for th in header_row]
-
-            # pandas DataFrame으로 변환
-            if header:
-                df = pd.DataFrame(table_data, columns=header)
-            else:
-                df = pd.DataFrame(table_data)
-
-            # 엑셀 저장 경로 지정
-            save_dir = os.path.join(os.path.dirname(__file__), "Schedule_Data")
-            os.makedirs(save_dir, exist_ok=True)
-            excel_path = os.path.join(save_dir, "schedule.xlsx")
-
-            df.to_excel(excel_path, index=False)
-            print(f"엑셀 저장 완료: {excel_path}")
+            # 엑셀로 저장
+            df = pd.DataFrame(data, columns=headers)
+            df.to_excel("sitc_sample_data.xlsx", index=False)
 
         self.Close()
+
+        #//*[@id="app"]/div[1]/div/section/div/div[2]/div[2]/div[3]/table/tbody

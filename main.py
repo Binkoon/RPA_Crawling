@@ -4,13 +4,13 @@ from Crawler import sitc
 from Crawler import evergreen
 from Crawler import cosco
 from Crawler import wanhai
+from Crawler import oocl
 
 
 if __name__ == "__main__":
     print("Entry Point is Here")
-    # sitc_data = sitc.SITC_Crawling()
-    # sitc_data.run()
-
+    sitc_data = sitc.SITC_Crawling()
+    sitc_data.run()
 
     # evergreen_data = evergreen.EVERGREEN_Crawling()
     # evergreen_data.run()
@@ -18,5 +18,9 @@ if __name__ == "__main__":
     # cosco_data = cosco.Cosco_Crawling()
     # cosco_data.run()
 
-    wanhai_data = wanhai.WANHAI_Crawling()
-    wanhai_data.run()
+    # wanhai_data = wanhai.WANHAI_Crawling()
+    # wanhai_data.run()
+
+    #### oocl은 user-agent써도 CAPTCHA가 있어서 크롤링 보류 #### 
+    # oocl_data = oocl.OOCL_Crawling()
+    # oocl_data.run()

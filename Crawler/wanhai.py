@@ -19,11 +19,7 @@ from .base import ParentsClass
 import os
 import pandas as pd
 
-class WANHAI_Crawling(ParentsClass):
-    def __init__(self):
-        super().__init__()
-        
-
+class WANHAI_Crawling(ParentsClass):       
     def run(self):
         # 0. 선사 링크 접속
         self.Visit_Link("https://www.wanhai.com/views/Main.xhtml")
