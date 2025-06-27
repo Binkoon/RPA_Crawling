@@ -19,6 +19,9 @@ import os
 import pandas as pd
 
 class SITC_Crawling(ParentsClass):
+    def __init__(self):
+        super().__init__()
+        
     def run(self):  
         # 0. 사이트 방문 들어가주고
         self.Visit_Link("https://ebusiness.sitcline.com/#/home")

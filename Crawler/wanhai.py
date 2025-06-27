@@ -18,8 +18,17 @@ from .base import ParentsClass
 ############# Schedule_Data쪽에 넘겨야함 ###########
 import os
 import pandas as pd
+from datetime import datetime
 
-class WANHAI_Crawling(ParentsClass):       
+class WANHAI_Crawling(ParentsClass):
+    def __init__(self):
+        super().__init__()
+        self.subfolder_name = self.__class__.__name__.replace("_crawling", "").lower()
+        self.download_dir = os.path.join(self.base_download_dir, self.subfolder_name)
+        if not os.path.exists(self.download_dir):
+            os.makedirs(self.download_dir)
+
+
     def run(self):
         # 0. 선사 링크 접속
         self.Visit_Link("https://www.wanhai.com/views/Main.xhtml")
@@ -31,7 +40,6 @@ class WANHAI_Crawling(ParentsClass):
             By.XPATH , '//*[@id="tabs"]/ul/li[4]'
         )))
         vessel_tracking_tab.click()
-        time.sleep(1)
 
         # 2. Vessel name 드랍다운 선택 ㄱㄱ
         vessel_dropdown = wait.until(EC.element_to_be_clickable ((
@@ -48,7 +56,6 @@ class WANHAI_Crawling(ParentsClass):
         vessel_name_list = ['WAN HAI 502']
         for vessel_name in vessel_name_list:
             select.select_by_visible_text(vessel_name)
-            time.sleep(0.5)
 
             submit_button = wait.until(EC.element_to_be_clickable ((
                 By.XPATH , '//*[@id="quick_skd_vsl_query"]'
@@ -56,8 +63,38 @@ class WANHAI_Crawling(ParentsClass):
 
             submit_button.click()
 
-        # 4. ETA칼럼있는 쪽 본다음, 오늘 날짜 기준으로 아래꺼 뽑아주기
-        # 절대경로 : //*[@id="popuppane"]/table[3] 이 테이블에서  //*[@id="popuppane"]/table[3]/tbody/tr[1]/th[3]  (ETA칼럼) 을 선택했을 때, 오늘 날짜인 애를 시작으로
-        #    아래꺼 쫙 뽑아줘야함. 
+            # 4. 스케줄 테이블 딱 봐주고
+            result_table = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.XPATH, '//*[@id="popuppane"]/table[3]'))
+            )
+            # 특정 tbody의 절대경로 (예: 제공한 HTML 기준으로 가정)
+            target_tbody = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="popuppane"]/table[3]/tbody')))
+            trs = target_tbody.find_elements(By.TAG_NAME, "tr")
+
+            # 헤더 추출 (첫 번째 tr의 th)
+            header_tr = trs[0]
+            columns = [th.get_attribute("innerText").strip() for th in header_tr.find_elements(By.TAG_NAME, "th")]
+
+            # 데이터 추출 (오늘 날짜 기준)
+            today = datetime.now().date()
+            table_data = []
+            for tr in trs[1:]:  # 헤더 제외
+                tds = tr.find_elements(By.TAG_NAME, "td")
+                if len(tds) > 2:
+                    eta_str = tds[2].get_attribute("innerText").strip()  # ETA는 3번째 칼럼 가정
+                    try:
+                        eta_date = datetime.strptime(eta_str, "%Y/%m/%d").date()
+                        if eta_date >= today:
+                            row_data = [td.get_attribute("innerText").strip() for td in tds]
+                            table_data.append(row_data)
+                    except ValueError:
+                        continue
+
+            df = pd.DataFrame(table_data, columns=columns)
+            today_str = datetime.now().strftime("%Y%m%d")
+            vessel_filename = vessel_name.replace(" ", "_")
+            excel_path = os.path.join(self.download_dir, f"{today_str}{vessel_filename}.xlsx")
+            df.to_excel(excel_path, index=False)
+            print(f"엑셀 저장 완료: {excel_path}")
 
         self.Close()

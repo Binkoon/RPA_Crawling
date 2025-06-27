@@ -11,6 +11,9 @@ from selenium.webdriver.common.keys import Keys
 from .base import ParentsClass
 
 class OOCL_Crawling(ParentsClass):
+    def __init__(self):
+        super().__init__()
+        
     def run(self):
         # 0. 선사 링크 접속
         self.Visit_Link('https://www.oocl.com/eng/ourservices/eservices/trackandtrace/Pages/default.aspx')

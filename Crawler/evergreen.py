@@ -9,6 +9,9 @@ from .base import ParentsClass
 import time
 
 class EVERGREEN_Crawling(ParentsClass):
+    def __init__(self):
+        super().__init__()
+        
     def run(self):
         # 0. 사이트 방문
         self.Visit_Link("https://ss.shipmentlink.com/tvs2/jsp/TVS2_VesselSchedule.jsp")

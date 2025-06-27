@@ -3,17 +3,23 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.options import Options
 
+import os
+
 class ParentsClass:
     def __init__(self):
         chrome_options = Options()
-        chrome_options.add_argument("--window-size=1920,1080")
-        # 항상 user-agent 적용
-        self.set_user_agent(chrome_options)
-        # 봇 탐지 우회 옵션도 같이 적용
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+        chrome_options.add_argument("--window-size=1920,1080") # 해상도는 이거로 고정
 
+        self.set_user_agent(chrome_options)  # 얘네 없으면 일부 선사는 차단함
+        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+        
+        # ScheduleData 상위 폴더만 생성
+        self.base_download_dir = os.path.join(os.getcwd(), "scheduleData")
+        if not os.path.exists(self.base_download_dir):
+            os.makedirs(self.base_download_dir)
         self.driver = webdriver.Chrome(options=chrome_options)
         self.wait = WebDriverWait(self.driver, 20)
+
 
     def Visit_Link(self, url):
         self.driver.get(url)
