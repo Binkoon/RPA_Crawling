@@ -38,7 +38,7 @@ class WANHAI_Crawling(ParentsClass):
         # 1. Vessel Tracking 탭 클릭
         vessel_tracking_tab = wait.until(EC.element_to_be_clickable ((
             By.XPATH , '//*[@id="tabs"]/ul/li[4]'
-        )))
+        )))  
         vessel_tracking_tab.click()
 
         # 2. Vessel name 드랍다운 선택 ㄱㄱ

@@ -2,7 +2,7 @@
 # 선사링크 : https://ebusiness.sitcline.com/#/home
 # SITC에서 뽑아올 선박 리스트 /html/body/div[2]/div[1]/div[1]/div/div[2]/div[2]/div/span[2]
 """
-["SITC DECHENG", "SITC BATANGAS" , "SITC SHENGMING" , "SITC QIMING",
+선박 리스트 : ["SITC DECHENG", "SITC BATANGAS" , "SITC SHENGMING" , "SITC QIMING",
                        "SITC XIN", "SITC YUNCHENG", "SITC MAKASSAR", "SITC CHANGDE", 
                        "SITC HANSHIN", "SITC XINGDE"]
 """

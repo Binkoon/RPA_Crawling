@@ -5,6 +5,7 @@ from crawler import evergreen
 from crawler import cosco
 from crawler import wanhai
 from crawler import oocl
+from crawler import one
 
 
 if __name__ == "__main__":
@@ -18,9 +19,12 @@ if __name__ == "__main__":
     # cosco_data = cosco.Cosco_Crawling()  # 작업 끝
     # cosco_data.run()
 
-    wanhai_data = wanhai.WANHAI_Crawling()
-    wanhai_data.run()
+    # wanhai_data = wanhai.WANHAI_Crawling()
+    # wanhai_data.run()
 
     #### oocl은 user-agent써도 CAPTCHA가 있어서 크롤링 보류 #### 
     # oocl_data = oocl.OOCL_Crawling()
     # oocl_data.run()
+
+    one_data = one.ONE_Crawling()
+    one_data.run()
