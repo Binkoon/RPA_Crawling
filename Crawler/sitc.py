@@ -1,3 +1,5 @@
+# Developer : 디지털전략팀 / 강현빈 사원
+# Date : 2025/06/27
 # 선사명 : SITC
 # 선사링크 : https://ebusiness.sitcline.com/#/home
 # SITC에서 뽑아올 선박 리스트 /html/body/div[2]/div[1]/div[1]/div/div[2]/div[2]/div/span[2]

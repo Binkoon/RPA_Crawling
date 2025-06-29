@@ -27,8 +27,8 @@ if __name__ == "__main__":
     # oocl_data = oocl.OOCL_Crawling()
     # oocl_data.run()
 
-    # one_data = one.ONE_Crawling()
-    # one_data.run()
+    one_data = one.ONE_Crawling()
+    one_data.run()
 
-    ckline_data = ckline.CKLINE_Crawling()
-    ckline_data.run()
+    # ckline_data = ckline.CKLINE_Crawling()
+    # ckline_data.run()
