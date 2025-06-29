@@ -1,5 +1,5 @@
 # Developer : 디지털전략팀/강현빈 사원
-# Date : 2025/06/27
+# Date : 2025/06/27 (완성)
 # 선사링크 : "https://elines.coscoshipping.com/ebusiness/sailingSchedule/searchByVesselName"  -> 한국 홈페이지는 조회 X.  본사랑 다름
 # 공동운항 선박 리스트 : "XIN NAN SHA", "XIN RI ZHAO", "XIN WU HAN", "XIN FANG CHENG"
 # 추가 정보 : Cosco는 일반 크롤링 접근 막아놨음.  user-agent 필수. __init__ 코드 확인.

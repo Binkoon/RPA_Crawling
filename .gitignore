@@ -4,3 +4,6 @@
 
 # PDF 파일 무시
 *.pdf
+
+*.pyc
+*.pyo

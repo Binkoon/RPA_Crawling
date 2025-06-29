@@ -2,7 +2,6 @@
 # Date : 2025/06/28
 # 선사 링크 : https://www.one-line.com/en
 # 선박 리스트 : ["ONE REASSURANCE (RSCT)" , "SAN FRANCISCO BRIDGE"]
-# 추가 정보 : ONE는 xpath 절대 경로쓰면 금방 깨짐. css-selector로 접근 권장
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -23,33 +22,34 @@ class ONE_Crawling(ParentsClass):
         driver = self.driver
         wait = self.wait
 
-        # 1. vessel name_tab 클릭
+        # Vessel 탭 클릭
         vessel_name_tab = wait.until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, 'div[data-cy="new-schedule-vessel-tab"]'))
+            EC.element_to_be_clickable((By.XPATH, '//*[@id="__next"]/div/div/div/div[3]'))
         )
         vessel_name_tab.click()
         
+        # self.Close()
         vessel_name_input = wait.until(EC.presence_of_element_located((
             By.XPATH , '//*[@id="vessel-input"]'
         )))
 
-        # # 2. vessel name 입력
-        # vessel_name_list = ["ONE REASSURANCE (RSCT)"]
-        # for vessel_name in vessel_name_list:
-        #     vessel_name_input.clear()
-        #     vessel_name_input.click()
-        #     vessel_name_input.send_keys(vessel_name)
+        # 2. vessel name 입력
+        vessel_name_list = ["ONE REASSURANCE (RSCT)"]
+        for vessel_name in vessel_name_list:
+            vessel_name_input.clear()
+            vessel_name_input.click()
+            vessel_name_input.send_keys(vessel_name)
 
-        #     dropdown_item = wait.until(EC.element_to_be_clickable((
-        #         By.XPATH , '//*[@id="vessel-menu"]'
-        #     )))
-        #     dropdown_item.click()
+            dropdown_item = wait.until(EC.element_to_be_clickable((
+                By.XPATH , '//*[@id="vessel-menu"]'
+            )))
+            dropdown_item.click()
 
-        #     # Search 버튼 클릭
-        #     search_button = wait.until(EC.element_to_be_clickable((
-        #         By.XPATH , '//*[@id="schedule-box-search-btn-id"]'
-        #     )))
-        #     search_button.click()
+            # Search 버튼 클릭
+            search_button = wait.until(EC.element_to_be_clickable((
+                By.XPATH , '//*[@id="schedule-box-search-btn-id"]'
+            )))
+            search_button.click()
 
 
         self.Close()

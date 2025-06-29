@@ -6,6 +6,7 @@ from crawler import cosco
 from crawler import wanhai
 from crawler import oocl
 from crawler import one
+from crawler import ckline
 
 
 if __name__ == "__main__":
@@ -26,5 +27,8 @@ if __name__ == "__main__":
     # oocl_data = oocl.OOCL_Crawling()
     # oocl_data.run()
 
-    one_data = one.ONE_Crawling()
-    one_data.run()
+    # one_data = one.ONE_Crawling()
+    # one_data.run()
+
+    ckline_data = ckline.CKLINE_Crawling()
+    ckline_data.run()
