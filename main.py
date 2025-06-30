@@ -36,11 +36,11 @@ if __name__ == "__main__":
     # ckline_data = ckline.CKLINE_Crawling()
     # ckline_data.run()
 
-    # panocean_data = panocean.PANOCEAN_Crawling()
-    # panocean_data.run()
+    panocean_data = panocean.PANOCEAN_Crawling()
+    panocean_data.run()
 
     # snl_data = snl.SNL_Crawling()
     # snl_data.run()
 
-    smline_data = smline.SMLINE_Crawling()
-    smline_data.run()
+    # smline_data = smline.SMLINE_Crawling()
+    # smline_data.run()

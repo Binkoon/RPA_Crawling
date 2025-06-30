@@ -26,23 +26,15 @@ class PANOCEAN_Crawling(ParentsClass):
         driver = self.driver
         wait = self.wait
 
-        # 1. 로딩 화면 대기
-        #wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'wrap-loading')))
-
-        # try:
-        #     iframe = wait.until(EC.presence_of_element_located((By.TAG_NAME, "iframe")))
-        #     driver.switch_to.frame(iframe)
-        #     print("iframe으로 전환되었습니다.")
-        # except Exception as e:
-        #     print(f"iframe 찾기 실패, 메인 콘텐츠로 진행: {e}")
         time.sleep(4)
-        # 2. 스케줄 탭 클릭
+        # 1. 스케줄 탭 클릭
         schedule_tab = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="mf_btn_11000"]')))
         schedule_tab.click()
-        driver.execute_script("arguments[0].click();", schedule_tab)
+        time.sleep(1)
 
-        # 4. 선박명 클릭 (iframe 내에서)
+        # 2. 선박명 클릭 (iframe 내에서)
         vessel_tab = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="mf_btn_11002"]')))
-        driver.execute_script("arguments[0].click();", vessel_tab)
+        vessel_tab.click()
+        time.sleep(1)
 
         self.Close()
