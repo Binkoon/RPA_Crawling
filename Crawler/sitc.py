@@ -68,19 +68,20 @@ class SITC_Crawling(ParentsClass):
             )))
             search_button.click()
             print("Search 버튼 클릭")
-
+            time.sleep(4)
             # 스케줄 정보 헤더영역 찾기
             header_xpath = '//*[@id="app"]/div[1]/div/section/div/div[2]/div[2]/div[2]/table/thead/tr/th'
             headers = [th.text.strip() for th in driver.find_elements(By.XPATH, header_xpath)]
 
             # 스케줄 정보 row 추출
-            row_xpath = '//*[@id="app"]/div[1]/div/section/div/div[2]/div[2]/div[2]/table/tbody/tr'
+            row_xpath = '//*[@id="app"]/div[1]/div/section/div/div[2]/div[2]/div[2]/table/tbody/tr[0]'
             rows = driver.find_elements(By.XPATH, row_xpath)
+
             data = []
             for tr in rows:
                 cells = tr.find_elements(By.XPATH, './td')
                 data.append([td.text.strip() for td in cells])
-
+            print(data)
             # 엑셀로 저장
             df = pd.DataFrame(data, columns=headers)
             df.to_excel("sitc_sample_data.xlsx", index=False)
