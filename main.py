@@ -24,8 +24,8 @@ if __name__ == "__main__":
     # cosco_data = cosco.Cosco_Crawling()  # 작업 끝
     # cosco_data.run()
 
-    # wanhai_data = wanhai.WANHAI_Crawling()
-    # wanhai_data.run()
+    wanhai_data = wanhai.WANHAI_Crawling()
+    wanhai_data.run()
 
     #### oocl은 user-agent써도 CAPTCHA가 있어서 크롤링 보류 #### 
     # oocl_data = oocl.OOCL_Crawling()
@@ -46,5 +46,5 @@ if __name__ == "__main__":
     # smline_data = smline.SMLINE_Crawling()
     # smline_data.run()
 
-    hmm_data = hmm.HMM_Crawling()
-    hmm_data.run()
+    # hmm_data = hmm.HMM_Crawling()
+    # hmm_data.run()
