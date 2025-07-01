@@ -1,7 +1,7 @@
 # Developer : 디지털전략팀/강현빈 사원
 # Date : 2025/07/01 (완성)
 # 선사링크 : https://www.wanhai.com/views/Main.xhtml
-# 선박 대상 : ["WAN HAI 502","WAN HAI 521","WAN HAI 522"]
+# 선박 대상 : ["WAN HAI 502","WAN HAI 521","WAN HAI 522","WAN HAI 351","WAN HAI 377","WAN HAI 322"]
 # 추가 정보 : wanhai는 크롤링으로 의심되면 CAPTCHA 씀. 처음부터 막는게 아니라, 감시하다 막음. 따라서 잦은 호출은 금지.
 
 ############ 셀레니움 ###############
@@ -50,7 +50,7 @@ class WANHAI_Crawling(ParentsClass):
         time.sleep(0.5)
         
         # 1. 선박명 루핑 시킴  //*[@id="skdByVslBean"]/select   //*[@id="skdByVslBean"]/select
-        vessel_name_list = ["WAN HAI 502","WAN HAI 521","WAN HAI 522"]
+        vessel_name_list = ["WAN HAI 502","WAN HAI 521","WAN HAI 522","WAN HAI 351","WAN HAI 377","WAN HAI 322"]
         for vessel_name in vessel_name_list:
             # 1. select 박스 찾기 (By.xpath 사용 ㄱㄱ)
             select_elem = wait.until(lambda d: d.find_element(By.XPATH, '//*[@id="skdByVslBean"]/select'))
