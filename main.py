@@ -10,6 +10,7 @@ from crawler import ckline
 from crawler import panocean
 from crawler import snl
 from crawler import smline
+from crawler import hmm
 
 
 if __name__ == "__main__":
@@ -36,11 +37,14 @@ if __name__ == "__main__":
     # ckline_data = ckline.CKLINE_Crawling()
     # ckline_data.run()
 
-    panocean_data = panocean.PANOCEAN_Crawling()
-    panocean_data.run()
+    # panocean_data = panocean.PANOCEAN_Crawling()
+    # panocean_data.run()
 
     # snl_data = snl.SNL_Crawling()
     # snl_data.run()
 
     # smline_data = smline.SMLINE_Crawling()
     # smline_data.run()
+
+    hmm_data = hmm.HMM_Crawling()
+    hmm_data.run()
