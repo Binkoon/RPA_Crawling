@@ -11,6 +11,7 @@ from crawler import panocean
 from crawler import snl
 from crawler import smline
 from crawler import hmm
+# from crawler import fdt
 
 
 if __name__ == "__main__":
@@ -18,8 +19,8 @@ if __name__ == "__main__":
     # sitc_data = sitc.SITC_Crawling()   # 현재 스케줄 테이블 엑셀로 추출하는 작업 중
     # sitc_data.run()
 
-    evergreen_data = evergreen.EVERGREEN_Crawling()
-    evergreen_data.run()
+    # evergreen_data = evergreen.EVERGREEN_Crawling()
+    # evergreen_data.run()
 
     # cosco_data = cosco.Cosco_Crawling()  # 작업 끝
     # cosco_data.run()
@@ -48,3 +49,6 @@ if __name__ == "__main__":
 
     # hmm_data = hmm.HMM_Crawling()
     # hmm_data.run()
+
+    fdt_data = fdt.FDT_Crawling()
+    fdt_data.run()

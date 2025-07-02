@@ -28,15 +28,19 @@ class FDT_Crawling(ParentsClass):
             By.XPATH , '//*[@id="searchByVesselTabHeader"]'
         )))
         vessel_tab.click()
-        
-        # 2. dropdown 클릭
-        vessel_select = wait.until(EC.element_to_be_clickable((
-            By.XPATH ,'//*[@id="_menuPanel__tabControl_ctlf5c508ef_3f10_4e66_89b5_40d433ffe831__hostedControl__searchByVesselAutoCompleter__textBoxArrowDown"]'
-        )))
-        vessel_select.click()
+        time.sleep(1)
         
         vessel_name_list = ["NAVIOS BAHAMAS"]
         for vessel_name in vessel_name_list:
-            pass
+            # 1. input 박스 요소 찾기 (주석처리한 XPATH 사용)
+            input_box = wait.until(EC.element_to_be_clickable((
+                By.XPATH, '//*[@id="_menuPanel__tabControl_ctlcdbd31e2_e7f1_47a7_b992_d94ed6fcc0a1__hostedControl__searchByVesselAutoCompleter__textBox_hidden"]'
+            )))
+            # input_box.click()
+            input_box.clear()
+            input_box.click()
+            input_box.send_keys(vessel_name)
+            print(f"입력: {vessel_name}")
+            time.sleep(2)  # 자동완성 리스트 뜨는 시간 대기
 
-        self.Close()
+        self.Close() # 
