@@ -11,7 +11,8 @@ from crawler import panocean
 from crawler import snl
 from crawler import smline
 from crawler import hmm
-# from crawler import fdt
+from crawler import fdt
+from crawler import ial
 
 
 if __name__ == "__main__":
@@ -50,5 +51,8 @@ if __name__ == "__main__":
     # hmm_data = hmm.HMM_Crawling()
     # hmm_data.run()
 
-    fdt_data = fdt.FDT_Crawling()
-    fdt_data.run()
+    # fdt_data = fdt.FDT_Crawling()
+    # fdt_data.run()
+
+    ial_data = ial.IAL_Crawling()
+    ial_data.run()
