@@ -13,6 +13,7 @@ from crawler import smline
 from crawler import hmm
 from crawler import fdt
 from crawler import ial
+from crawler import dyline
 
 
 if __name__ == "__main__":
@@ -54,5 +55,8 @@ if __name__ == "__main__":
     # fdt_data = fdt.FDT_Crawling()
     # fdt_data.run()
 
-    ial_data = ial.IAL_Crawling()
-    ial_data.run()
+    # ial_data = ial.IAL_Crawling()
+    # ial_data.run()
+
+    dyline_data = dyline.DYLINE_Crawling()
+    dyline_data.run()
