@@ -2,6 +2,7 @@
 # Date : 2025/07/07 (완성)
 # 선사 링크 : https://ebiz.pcsline.co.kr/
 # 선박 리스트 : ["PEGASUS PETA","PEGASUS TERA","PEGASUS GLORY"]
+# 추가 정보 : 스케줄 테이블 조회 시, 스크롤 액션 로직 넣어야함. EX) 실제 행은 10개있는데, <div class='table~~' ~~ > 이 clientHeight 값이 10개를 다 담지 못하고 있어서 눈에 보이는 row까지만 추출하고 멈춤.
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -89,6 +90,7 @@ class DYLINE_Crawling(ParentsClass):
                     time.sleep(0.5)
 
                     # 항차 tr 클릭  //*[@id="mf_tac_layout_contents_00010004_body_ibx_voy_itemTable_main"]/tbody/tr[1]
+                    # 주의사항 : 스크롤액션 안하면 아래꺼 못봄. scrollTop , scrollHeight , clientHeight 연산해가지고 아래 tr까지 다 보던가, 스크롤내리는 액션 좀 해야할거 같은디?
                     tr_xpath = f'//*[@id="mf_tac_layout_contents_00010004_body_ibx_voy_itemTable_main"]/tbody/tr[{index}]'
                     voyage_tr = wait.until(EC.element_to_be_clickable((By.XPATH, tr_xpath)))
                     # driver.execute_script("arguments[0].click();", voyage_tr)
