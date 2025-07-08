@@ -83,15 +83,16 @@ class DYLINE_Crawling(ParentsClass):
             index = 1
             while True:
                 try:
-                    # 드롭다운 버튼 클릭 (조회 후마다 다시 열기)
+                    # 드롭다운 버튼 클릭 (조회 후마다 다시 열기)  //*[@id="mf_tac_layout_contents_00010004_body_ibx_voy_button"]
                     voy_dropdown_btn = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="mf_tac_layout_contents_00010004_body_ibx_voy_button"]')))
                     driver.execute_script("arguments[0].click();", voy_dropdown_btn)
                     time.sleep(0.5)
 
-                    # 항차 tr 클릭
+                    # 항차 tr 클릭  //*[@id="mf_tac_layout_contents_00010004_body_ibx_voy_itemTable_main"]/tbody/tr[1]
                     tr_xpath = f'//*[@id="mf_tac_layout_contents_00010004_body_ibx_voy_itemTable_main"]/tbody/tr[{index}]'
                     voyage_tr = wait.until(EC.element_to_be_clickable((By.XPATH, tr_xpath)))
-                    driver.execute_script("arguments[0].click();", voyage_tr)
+                    # driver.execute_script("arguments[0].click();", voyage_tr)
+                    voyage_tr.click()
                     time.sleep(0.5)
 
                     # 조회 버튼 클릭
@@ -103,6 +104,7 @@ class DYLINE_Crawling(ParentsClass):
                     tbody_xpath = '//*[@id="mf_tac_layout_contents_00010004_body_grd_cur_body_tbody"]'
                     tbody = wait.until(EC.presence_of_element_located((By.XPATH, tbody_xpath)))
                     tr_list = tbody.find_elements(By.XPATH, './tr')
+                    time.sleep(0.5)
 
                     for tr in tr_list:
                         td_list = tr.find_elements(By.TAG_NAME, 'td')
@@ -111,6 +113,8 @@ class DYLINE_Crawling(ParentsClass):
                         row_data.insert(0, vessel_name)
                         row_data.append(str(index))
                         all_rows.append(row_data)
+                    
+                    time.sleep(1)
 
                     index += 1
                 except Exception:
