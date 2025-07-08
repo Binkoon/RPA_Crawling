@@ -18,6 +18,23 @@ from .base import ParentsClass
 class DYLINE_Crawling(ParentsClass):
     def __init__(self):
         super().__init__()
+        # 하위폴더명 = py파일명(소문자)
+        self.subfolder_name = self.__class__.__name__.replace("_crawling", "").lower()
+        self.download_dir = os.path.join(self.base_download_dir, self.subfolder_name)
+        if not os.path.exists(self.download_dir):
+            os.makedirs(self.download_dir)
+
+        # 크롬 옵션에 하위폴더 지정 (드라이버 새로 생성 필요)
+        chrome_options = Options()
+        chrome_options.add_argument("--window-size=1920,1080")
+        self.set_user_agent(chrome_options)
+        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+        prefs = {"download.default_directory": self.download_dir}
+        chrome_options.add_experimental_option("prefs", prefs)
+        # 기존 드라이버 종료 및 새 드라이버로 교체
+        self.driver.quit()
+        self.driver = webdriver.Chrome(options=chrome_options)
+        self.wait = WebDriverWait(self.driver, 20)
 
     def run(self):
         # 0. 선사 접속 링크
@@ -41,7 +58,9 @@ class DYLINE_Crawling(ParentsClass):
 
         # 3. 선박명 INPUT 클릭 //*[@id="mf_tac_layout_contents_00010004_body_ibx_vsl_input"]
         vessel_name_list = ["PEGASUS PETA"]
+        
         for vessel_name in vessel_name_list:
+            all_rows = []
             vessel_input = wait.until(EC.presence_of_element_located((
                 By.XPATH, '//*[@id="mf_tac_layout_contents_00010004_body_ibx_vsl_input"]'
             )))
@@ -60,11 +79,49 @@ class DYLINE_Crawling(ParentsClass):
             driver.execute_script("arguments[0].click();", autocomplete_item)
             time.sleep(1)
 
-            # 조회 버튼
-            search_btn = wait.until(EC.element_to_be_clickable((
-                By.XPATH , '//*[@id="mf_tac_layout_contents_00010004_body_btn_inq"]'
-            )))
-            search_btn.click()
-            time.sleep(1)
+            # 항차번호 드롭다운 반복
+            index = 1
+            while True:
+                try:
+                    # 드롭다운 버튼 클릭 (조회 후마다 다시 열기)
+                    voy_dropdown_btn = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="mf_tac_layout_contents_00010004_body_ibx_voy_button"]')))
+                    driver.execute_script("arguments[0].click();", voy_dropdown_btn)
+                    time.sleep(0.5)
+
+                    # 항차 tr 클릭
+                    tr_xpath = f'//*[@id="mf_tac_layout_contents_00010004_body_ibx_voy_itemTable_main"]/tbody/tr[{index}]'
+                    voyage_tr = wait.until(EC.element_to_be_clickable((By.XPATH, tr_xpath)))
+                    driver.execute_script("arguments[0].click();", voyage_tr)
+                    time.sleep(0.5)
+
+                    # 조회 버튼 클릭
+                    search_btn = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="mf_tac_layout_contents_00010004_body_btn_inq"]')))
+                    search_btn.click()
+                    time.sleep(1)
+
+                    # 테이블 데이터 추출
+                    tbody_xpath = '//*[@id="mf_tac_layout_contents_00010004_body_grd_cur_body_tbody"]'
+                    tbody = wait.until(EC.presence_of_element_located((By.XPATH, tbody_xpath)))
+                    tr_list = tbody.find_elements(By.XPATH, './tr')
+
+                    for tr in tr_list:
+                        td_list = tr.find_elements(By.TAG_NAME, 'td')
+                        row_data = [td.text.strip() for td in td_list]
+                        # 선박명, 항차 인덱스 함께 저장
+                        row_data.insert(0, vessel_name)
+                        row_data.append(str(index))
+                        all_rows.append(row_data)
+
+                    index += 1
+                except Exception:
+                    # 더 이상 항차 tr이 없으면 break
+                    break
+
+        # 컬럼명 예시 (실제 테이블 구조에 맞게 수정)
+        columns = ['Vessel', 'No','Port','Skip','Terminal','ETA-Day','ETA-Date','ETA-Time','ETD-Day','ETD-Date','ETD-Time','Remark','VoyageIndex']
+        df = pd.DataFrame(all_rows, columns=columns[:len(all_rows[0])])
+        save_path = os.path.join(self.download_dir, 'result.xlsx')
+        df.to_excel(save_path, index=False)
+        print(f"엑셀 저장 완료: {save_path}")
 
         self.Close()

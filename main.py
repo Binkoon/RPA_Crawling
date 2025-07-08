@@ -14,6 +14,7 @@ from crawler import hmm
 from crawler import fdt
 from crawler import ial
 from crawler import dyline
+from crawler import yml
 
 
 if __name__ == "__main__":
@@ -58,5 +59,8 @@ if __name__ == "__main__":
     # ial_data = ial.IAL_Crawling()
     # ial_data.run()
 
-    dyline_data = dyline.DYLINE_Crawling()
-    dyline_data.run()
+    # dyline_data = dyline.DYLINE_Crawling()
+    # dyline_data.run()
+
+    yml_data = yml.YML_Crawling()
+    yml_data.run()
