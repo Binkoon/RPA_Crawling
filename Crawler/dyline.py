@@ -79,7 +79,7 @@ class DYLINE_Crawling(ParentsClass):
             )))
             driver.execute_script("arguments[0].click();", autocomplete_item)
             time.sleep(1)
-
+            # //*[@id="mf_tac_layout_contents_00010004_body_grd_cur_body_tbody"]
             # 항차번호 드롭다운 반복
             index = 1
             while True:

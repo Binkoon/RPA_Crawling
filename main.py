@@ -23,8 +23,8 @@ if __name__ == "__main__":
     # sitc_data = sitc.SITC_Crawling()   # 현재 스케줄 테이블 엑셀로 추출하는 작업 중
     # sitc_data.run()
 
-    # evergreen_data = evergreen.EVERGREEN_Crawling()
-    # evergreen_data.run()
+    evergreen_data = evergreen.EVERGREEN_Crawling()
+    evergreen_data.run()
 
     # cosco_data = cosco.Cosco_Crawling()  # 작업 끝
     # cosco_data.run()
@@ -60,8 +60,8 @@ if __name__ == "__main__":
     # ial_data = ial.IAL_Crawling()
     # ial_data.run()
 
-    dyline_data = dyline.DYLINE_Crawling()
-    dyline_data.run()
+    # dyline_data = dyline.DYLINE_Crawling()
+    # dyline_data.run()
 
     # yml_data = yml.YML_Crawling()
     # yml_data.run()

@@ -63,6 +63,8 @@ class SITC_Crawling(ParentsClass):
                        "SITC XIN", "SITC YUNCHENG", "SITC MAKASSAR", "SITC CHANGDE", 
                        "SITC HANSHIN", "SITC XINGDE","AMOUREUX"]
         
+        columns = ["vessel name","voy","port","Terminal","ETA","ETB","ETD","Rate","Remark","Update Date"]
+
         for vessel_name in vessel_list:
             vessel_input.clear()
             vessel_input.send_keys(vessel_name)
