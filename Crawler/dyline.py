@@ -11,7 +11,8 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support import expected_conditions as EC
 
-import os,time
+import os
+import time
 import pandas as pd
 
 from .base import ParentsClass
@@ -43,21 +44,21 @@ class DYLINE_Crawling(ParentsClass):
         driver = self.driver
         wait = self.wait
 
-        # 1. 스케줄 클릭 //*[@id="mf_wfm_header_gen_firstGenerator_0_btn_menu1_Label"]
+        # 1. 스케줄 클릭
         scheduel_tab = wait.until(EC.element_to_be_clickable((
             By.XPATH , '//*[@id="mf_wfm_header_gen_firstGenerator_0_btn_menu1_Label"]'
         )))
-        scheduel_tab.click() # 만약 못알아먹으면 JS로 바꿔서 ㄱ
+        scheduel_tab.click()
         time.sleep(0.5)
 
-        # 2. 선박별 클릭  //*[@id="mf_wfm_header_grp_ul"]/li[1]/dl/dd[2]/a
+        # 2. 선박별 클릭
         vessel_tab = wait.until(EC.element_to_be_clickable((
             By.XPATH , '//*[@id="mf_wfm_header_grp_ul"]/li[1]/dl/dd[2]/a'
         )))
         vessel_tab.click()
         time.sleep(0.5)
 
-        # 3. 선박명 INPUT 클릭 //*[@id="mf_tac_layout_contents_00010004_body_ibx_vsl_input"]
+        # 3. 선박명 INPUT 클릭 및 처리
         vessel_name_list = ["PEGASUS PETA"]
         
         for vessel_name in vessel_name_list:
@@ -65,7 +66,6 @@ class DYLINE_Crawling(ParentsClass):
             vessel_input = wait.until(EC.presence_of_element_located((
                 By.XPATH, '//*[@id="mf_tac_layout_contents_00010004_body_ibx_vsl_input"]'
             )))
-            # 얘 그냥 셀레니움 click, send_keys로는 안됌. 이런 경우는 js로 ㄱㄱ
             driver.execute_script("arguments[0].click();", vessel_input)
             driver.execute_script("arguments[0].value = '';", vessel_input)
             driver.execute_script(f"arguments[0].value = '{vessel_name}';", vessel_input)
@@ -79,21 +79,19 @@ class DYLINE_Crawling(ParentsClass):
             )))
             driver.execute_script("arguments[0].click();", autocomplete_item)
             time.sleep(1)
-            # //*[@id="mf_tac_layout_contents_00010004_body_grd_cur_body_tbody"]
+
             # 항차번호 드롭다운 반복
             index = 1
             while True:
                 try:
-                    # 드롭다운 버튼 클릭 (조회 후마다 다시 열기)  //*[@id="mf_tac_layout_contents_00010004_body_ibx_voy_button"]
+                    # 드롭다운 버튼 클릭
                     voy_dropdown_btn = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="mf_tac_layout_contents_00010004_body_ibx_voy_button"]')))
                     driver.execute_script("arguments[0].click();", voy_dropdown_btn)
                     time.sleep(0.5)
 
-                    # 항차 tr 클릭  //*[@id="mf_tac_layout_contents_00010004_body_ibx_voy_itemTable_main"]/tbody/tr[1]
-                    # 주의사항 : 스크롤액션 안하면 아래꺼 못봄. scrollTop , scrollHeight , clientHeight 연산해가지고 아래 tr까지 다 보던가, 스크롤내리는 액션 좀 해야할거 같은디?
+                    # 항차 tr 클릭
                     tr_xpath = f'//*[@id="mf_tac_layout_contents_00010004_body_ibx_voy_itemTable_main"]/tbody/tr[{index}]'
                     voyage_tr = wait.until(EC.element_to_be_clickable((By.XPATH, tr_xpath)))
-                    # driver.execute_script("arguments[0].click();", voyage_tr)
                     voyage_tr.click()
                     time.sleep(0.5)
 
@@ -102,12 +100,38 @@ class DYLINE_Crawling(ParentsClass):
                     search_btn.click()
                     time.sleep(1)
 
-                    # 테이블 데이터 추출
+                    # 테이블 tbody 포커스 및 스크롤 다운
                     tbody_xpath = '//*[@id="mf_tac_layout_contents_00010004_body_grd_cur_body_tbody"]'
                     tbody = wait.until(EC.presence_of_element_located((By.XPATH, tbody_xpath)))
-                    tr_list = tbody.find_elements(By.XPATH, './tr')
-                    time.sleep(0.5)
+                    driver.execute_script("arguments[0].click();", tbody)
+                    time.sleep(0.2)
 
+                    extracted_tr_indexes = set()
+                    last_row_found = False
+
+                    # 스크롤 액션: 모든 row가 로드될 때까지 반복
+                    last_row_count = 0
+                    while not last_row_found:
+                        tr_list = tbody.find_elements(By.TAG_NAME, 'tr')
+                        for idx,tr in enumerate(tr_list):
+                            if idx in extracted_tr_indexes:
+                                continue
+                        # 스크롤 내리기
+                        class_attr = tr.get_attribute('class')
+                        driver.execute_script("arguments[0].scollY", tbody)
+                        if 'w2grid_lastRow' in class_attr:
+                            last_row_found = True
+                        
+                        row_data = [td.text.strip() for td in tr.find_elements(By.TAG_NAME, 'td')]
+                        extracted_tr_indexes.add(idx)
+                    
+                    if last_row_found:
+                        break
+                    driver.execute_script("arguments[0].scrollBy(0,100)", tbody)
+                    time.sleep(0.3)
+
+                    # 모든 row 추출
+                    tr_list = tbody.find_elements(By.TAG_NAME, 'tr')
                     for tr in tr_list:
                         td_list = tr.find_elements(By.TAG_NAME, 'td')
                         row_data = [td.text.strip() for td in td_list]
@@ -117,17 +141,17 @@ class DYLINE_Crawling(ParentsClass):
                         all_rows.append(row_data)
                     
                     time.sleep(1)
-
                     index += 1
                 except Exception:
                     # 더 이상 항차 tr이 없으면 break
                     break
 
-        # 컬럼명 예시 (실제 테이블 구조에 맞게 수정)
-        columns = ['Vessel', 'No','Port','Skip','Terminal','ETA-Day','ETA-Date','ETA-Time','ETD-Day','ETD-Date','ETD-Time','Remark','VoyageIndex']
-        df = pd.DataFrame(all_rows, columns=columns[:len(all_rows[0])])
-        save_path = os.path.join(self.download_dir, 'result.xlsx')
-        df.to_excel(save_path, index=False)
-        print(f"엑셀 저장 완료: {save_path}")
+            # 컬럼명 예시 (실제 테이블 구조에 맞게 수정)
+            if all_rows:
+                columns = ['Vessel', 'No','Port','Skip','Terminal','ETA-Day','ETA-Date','ETA-Time','ETD-Day','ETD-Date','ETD-Time','Remark','VoyageIndex']
+                df = pd.DataFrame(all_rows, columns=columns[:len(all_rows[0])])
+                save_path = os.path.join(self.download_dir, f'result_{vessel_name}.xlsx')
+                df.to_excel(save_path, index=False)
+                print(f"엑셀 저장 완료: {save_path}")
 
         self.Close()

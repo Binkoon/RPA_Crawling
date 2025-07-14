@@ -17,23 +17,7 @@ import os
 class ONE_Crawling(ParentsClass):
     def __init__(self):
         super().__init__()
-        # 하위폴더명 = py파일명(소문자)
-        self.subfolder_name = self.__class__.__name__.replace("_crawling", "").lower()
-        self.download_dir = os.path.join(self.base_download_dir, self.subfolder_name)
-        if not os.path.exists(self.download_dir):
-            os.makedirs(self.download_dir)
-
-        # 크롬 옵션에 하위폴더 지정 (드라이버 새로 생성 필요)
-        chrome_options = Options()
-        chrome_options.add_argument("--window-size=1920,1080")
-        self.set_user_agent(chrome_options)
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-        prefs = {"download.default_directory": self.download_dir}
-        chrome_options.add_experimental_option("prefs", prefs)
-        # 기존 드라이버 종료 및 새 드라이버로 교체
-        self.driver.quit()
-        self.driver = webdriver.Chrome(options=chrome_options)
-        self.wait = WebDriverWait(self.driver, 20)
+        self.carrier_name = "ONE"
 
     # 선박별 파라미터 매핑 (URL에 맞게 조정)
     vessel_params = {
@@ -43,6 +27,18 @@ class ONE_Crawling(ParentsClass):
         "MARIA C": {"vslCdParam": "RCMT", "vslEngNmParam": "MARIA+C+%28RCMT%29"},
         "NYK DANIELLA": {"vslCdParam": "NDLT", "vslEngNmParam": "NYK+DANIELLA+%28NDLT%29"}
     }
+
+    def change_filename(self, vessel_name):
+        # 다운로드 폴더에서 가장 최근 xlsx 파일 찾기
+        files = [f for f in os.listdir(self.today_download_dir) if f.lower().endswith('.xlsx')]
+        if not files:
+            print("다운로드된 엑셀 파일이 없습니다.")
+            return
+        # 최신 파일(다운로드 순서대로 저장된 경우)
+        latest_file = max([os.path.join(self.today_download_dir, f) for f in files], key=os.path.getctime)
+        new_path = os.path.join(self.today_download_dir, f"ONE_{vessel_name}.xlsx")
+        os.rename(latest_file, new_path)
+        print(f"파일명 변경 완료: {os.path.basename(new_path)}")
 
     def run(self, vessel_name):
         # 0. 선사 접속 (동적 URL 생성)
@@ -82,6 +78,7 @@ class ONE_Crawling(ParentsClass):
         for vessel in vessels:
             print(f"크롤링 시작: {vessel}")
             self.run(vessel)
+            self.change_filename(vessel)
             print(f"크롤링 완료: {vessel}, 10초 대기...")
             time.sleep(10)  # 429 에러 방지 및 경고 팝업 대응
         

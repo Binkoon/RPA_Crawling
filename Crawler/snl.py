@@ -5,35 +5,49 @@
 # 추가 정보 : AVIOS는 지금 안쓰는 선박인거 같음. Phase Out 되었는지 운항팀 확인 필요
 
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 
+# 얘는 크롬 안써요  엣지 씁니다 ######
+from selenium.webdriver.edge.options import Options as EdgeOptions
+from selenium.webdriver.edge.service import Service as EdgeService
+
 from .base import ParentsClass
-import os
+import os,re
 import time
+
+import pandas as pd
 
 class SNL_Crawling(ParentsClass):
     def __init__(self):
         super().__init__()
-        # 하위폴더명 = py파일명(소문자)
-        self.subfolder_name = self.__class__.__name__.replace("_crawling", "").lower()
-        self.download_dir = os.path.join(self.base_download_dir, self.subfolder_name)
-        if not os.path.exists(self.download_dir):
-            os.makedirs(self.download_dir)
+        self.carrier_name = "SNL"
 
-        # 크롬 옵션에 하위폴더 지정 (드라이버 새로 생성 필요)
-        chrome_options = Options()
-        chrome_options.add_argument("--window-size=1920,1080")
-        self.set_user_agent(chrome_options)
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-        prefs = {"download.default_directory": self.download_dir}
-        chrome_options.add_experimental_option("prefs", prefs)
-        # 기존 드라이버 종료 및 새 드라이버로 교체
+        # 기존 드라이버 종료
         self.driver.quit()
-        self.driver = webdriver.Chrome(options=chrome_options)
+
+        # SNL만 해당함!!!!!!!!!!!!! base.py 에다가 등록하면 대참사임
+        # 기존 크롬 드라이버 종료
+        self.driver.quit()
+        # Edge 옵션 설정
+        edge_options = EdgeOptions()
+        edge_options.add_argument("--window-size=1920,1080")
+        self.set_user_agent(edge_options)  # base.py에 이 함수가 크롬/엣지 모두에 적용 가능해야 함
+        edge_options.add_argument("--disable-blink-features=AutomationControlled")
+        edge_options.use_chromium = True
+        edge_options.add_experimental_option("prefs", {
+            "download.default_directory": self.today_download_dir,
+            "download.prompt_for_download": False,
+            "download.directory_upgrade": True,
+            "safebrowsing.enabled": True,
+            "profile.default_content_setting_values.automatic_downloads": 1
+        })
+
+        # Edge 드라이버로 교체
+        from selenium.webdriver import Edge
+        self.driver = Edge(options=edge_options)
         self.wait = WebDriverWait(self.driver, 20)
 
     def run(self):
@@ -72,6 +86,14 @@ class SNL_Crawling(ParentsClass):
             )))
             print("다운로드 합니다.")
             download_btn.click()
+            time.sleep(3)
 
         self.Close()
-            
+        
+        old_path = os.path.join(self.today_download_dir, "sinotrans_schedule02.xls")
+        new_path = os.path.join(self.today_download_dir, f"SNL_{vessel_name}.xlsx")
+        if os.path.exists(old_path):
+            os.rename(old_path, new_path)
+            print(f"파일명 변경 완료: {new_path}")
+        else:
+            print("다운로드 파일이 없습니다.")

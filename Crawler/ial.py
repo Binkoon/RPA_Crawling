@@ -22,23 +22,7 @@ import pandas as pd
 class IAL_Crawling(ParentsClass):
     def __init__(self):
         super().__init__()
-        # 하위폴더명 = py파일명(소문자)
-        self.subfolder_name = self.__class__.__name__.replace("_crawling", "").lower()
-        self.download_dir = os.path.join(self.base_download_dir, self.subfolder_name)
-        if not os.path.exists(self.download_dir):
-            os.makedirs(self.download_dir)
-
-        # 크롬 옵션에 하위폴더 지정 (드라이버 새로 생성 필요)
-        chrome_options = Options()
-        chrome_options.add_argument("--window-size=1920,1080")
-        self.set_user_agent(chrome_options)
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-        prefs = {"download.default_directory": self.download_dir}
-        chrome_options.add_experimental_option("prefs", prefs)
-        # 기존 드라이버 종료 및 새 드라이버로 교체
-        self.driver.quit()
-        self.driver = webdriver.Chrome(options=chrome_options)
-        self.wait = WebDriverWait(self.driver, 20)
+        self.carrier_name = "IAL"
 
     def run(self):
         # 0. 선사 홈페이지 접속
@@ -56,6 +40,18 @@ class IAL_Crawling(ParentsClass):
             thead_xpath = '//*[@id="wrapper"]/main/section[2]/div/div[2]/div[2]/table/thead'
             thead = driver.find_element(By.XPATH, thead_xpath)
             headers = [th.text.strip() for th in thead.find_elements(By.TAG_NAME, "th")]
+
+            header_map = {
+                "Arrival":"ETA",
+                "Berth":"ETB",
+                "Departure":"ETD"
+            }
+
+            new_headers = []
+            for h in headers:
+                new_headers.append(header_map.get(h,h))
+            
+            new_headers = ["Vessel Name"] + new_headers
 
             # 2) 테이블 바디에서 모든 행 가져오기
             tbody_xpath = '//*[@id="wrapper"]/main/section[2]/div/div[2]/div[2]/table/tbody'
@@ -76,13 +72,14 @@ class IAL_Crawling(ParentsClass):
                 except Exception as e:
                     # 더 이상 행이 없으면 종료
                     break
+            
+            row_data_with_vessel = [[vessel_name] + row for row in rows_data]
 
             # 3) pandas DataFrame 생성
-            df = pd.DataFrame(rows_data, columns=headers)
-
+            df = pd.DataFrame(row_data_with_vessel, columns=new_headers)
             # 4) 엑셀 저장 (파일명에 선박명과 날짜 포함)
-            filename = f"{self.download_dir}/{vessel_name.replace(' ', '_')}_{today}.xlsx"
-            df.to_excel(filename, index=False)
+            filename = self.get_save_path(self.carrier_name, vessel_name)
+            df.to_excel(filename, index=False, header=True)
             print(f"엑셀 저장 완료: {filename}")
 
         self.Close()

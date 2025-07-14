@@ -21,26 +21,27 @@ from .base import ParentsClass
 
 import os
 
+# 다운로드 버튼이 제공되서 파일명이 정해져서 나오는 선사는 이거 쓰셈
+def get_latest_file(folder, ext=".xlsx"):
+    files = [os.path.join(folder, f) for f in os.listdir(folder) if f.endswith(ext)]
+    if not files:
+        return None
+    return max(files, key=os.path.getctime)
+
+# 파일을 덮어씌우고 있음. 동일한 파일명이라 그런듯. 이 로직도 쓰셈
+def get_unique_filename(folder, filename):
+    base, ext = os.path.splitext(filename)
+    candidate = filename
+    i = 1
+    while os.path.exists(os.path.join(folder, candidate)):
+        candidate = f"{base}_{i}{ext}"
+        i += 1
+    return candidate
+
 class PANOCEAN_Crawling(ParentsClass):
     def __init__(self):
         super().__init__()
-        # 하위폴더명 = py파일명(소문자)
-        self.subfolder_name = self.__class__.__name__.replace("_crawling", "").lower()
-        self.download_dir = os.path.join(self.base_download_dir, self.subfolder_name)
-        if not os.path.exists(self.download_dir):
-            os.makedirs(self.download_dir)
-
-        # 크롬 옵션에 하위폴더 지정 (드라이버 새로 생성 필요)
-        chrome_options = Options()
-        chrome_options.add_argument("--window-size=1920,1080")
-        self.set_user_agent(chrome_options)
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-        prefs = {"download.default_directory": self.download_dir}
-        chrome_options.add_experimental_option("prefs", prefs)
-        # 기존 드라이버 종료 및 새 드라이버로 교체
-        self.driver.quit()
-        self.driver = webdriver.Chrome(options=chrome_options)
-        self.wait = WebDriverWait(self.driver, 20)
+        self.carrier_name = "POS"
 
     def run(self):
         # 0. 선사 홈페이지 접속
@@ -60,8 +61,12 @@ class PANOCEAN_Crawling(ParentsClass):
         time.sleep(3) # 얘 좀 더 잡아주자.
 
         # 3. 선박명 입력 및 자동완성 리스트 수집
-        vessel_name_list = ["POS SINGAPORE" , "POS YOKOHAMA" , "POS QINGDAO" , "POS GUANGZHOU",
+        vessel_name_list = ["POS SINGAPORE"
+                            , "POS YOKOHAMA" , "POS QINGDAO" , "POS GUANGZHOU",
                             "POS HOCHIMINH", "POS LAEMCHABANG"]
+
+        all_vessel_names = [] # 모든 자동완성 선박 담는 리스트
+
         for vessel_name in vessel_name_list:
             # 1. 라벨 클릭해서 input 활성화
             label = driver.find_element(By.ID, 'mf_tac_layout_contents_11002_body_acb_vslInfo_label')
@@ -99,6 +104,8 @@ class PANOCEAN_Crawling(ParentsClass):
                     break
 
             print(f"자동완성 리스트: {matched_vessels}")
+
+            all_vessel_names.extend(matched_vessels)
 
             for vessel_full_name in matched_vessels:
                 # 1. label(라벨) 클릭해서 input 활성화
@@ -148,5 +155,18 @@ class PANOCEAN_Crawling(ParentsClass):
                 download_btn.click()
                 print(f"{vessel_full_name} 다운로드 완료")
                 time.sleep(1.5)  # 다운로드 대기
+
+        # === 다운로드 완료 후 파일명 일괄 변경 ===
+        # 다운로드 폴더에서 ScheduleByVessel_2025_07_14*.xlsx 파일만 추출
+        files = [f for f in os.listdir(self.today_download_dir) if f.startswith("ScheduleByVessel_") and f.endswith(".xlsx")]
+        files.sort()  # 이름순 정렬: (1), (2), ... 순서대로
+
+        for i, vessel_full_name in enumerate(all_vessel_names):
+            if i < len(files):
+                old_path = os.path.join(self.today_download_dir, files[i])
+                new_filename = f"{self.carrier_name}_{vessel_full_name}.xlsx"
+                new_path = os.path.join(self.today_download_dir, new_filename)
+                os.rename(old_path, new_path)
+                print(f"파일명 변경 완료: {new_path}")        
 
         self.Close()

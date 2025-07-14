@@ -24,22 +24,9 @@ from datetime import datetime
 class WANHAI_Crawling(ParentsClass):
     def __init__(self):
         super().__init__()
-        self.subfolder_name = self.__class__.__name__.replace("_crawling", "").lower()
-        self.download_dir = os.path.join(self.base_download_dir, self.subfolder_name)
-        if not os.path.exists(self.download_dir):
-            os.makedirs(self.download_dir)
-
-        # 크롬 옵션에 하위폴더 지정 (드라이버 새로 생성 필요)
-        chrome_options = Options()
-        chrome_options.add_argument("--window-size=1920,1080")
-        self.set_user_agent(chrome_options)
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-        prefs = {"download.default_directory": self.download_dir}
-        chrome_options.add_experimental_option("prefs", prefs)
-        # 기존 드라이버 종료 및 새 드라이버로 교체
-        self.driver.quit()
-        self.driver = webdriver.Chrome(options=chrome_options)
-        self.wait = WebDriverWait(self.driver, 20)
+        self.carrier_name = "WHL"
+        self.columns = ["Port", "A-Voy" , "ETA" , "ETA-Time" , 
+                        "ETB", "ETB-Time" , "D-Voy", "ETD", "ETD-Time","Status"]
 
     def run(self):
         # 0. 선사 링크 접속
@@ -102,9 +89,9 @@ class WANHAI_Crawling(ParentsClass):
                 # header = data_rows[0]
                 # df = pd.DataFrame(data_rows[1:], columns=header)
                 # 첫 번째 row가 데이터라면,
-                df = pd.DataFrame(data_rows)
-                save_path = os.path.join(self.download_dir, f"{vessel_name}_schedule.xlsx")
-                df.to_excel(save_path, index=False, header=False)
+                df = pd.DataFrame(data_rows,columns=self.columns)
+                save_path = self.get_save_path(self.carrier_name, vessel_name)
+                df.to_excel(save_path, index=False, header=True)
                 print(f"{vessel_name} 엑셀 저장 완료: {save_path}")
             else:
                 print(f"{vessel_name} 데이터 없음")

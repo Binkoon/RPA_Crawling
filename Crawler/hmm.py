@@ -13,27 +13,12 @@ from selenium.webdriver.support.select import Select
 from .base import ParentsClass
 import os
 import time
+import pandas as pd
 
 class HMM_Crawling(ParentsClass):
     def __init__(self):
         super().__init__()
-        # 하위폴더명 = py파일명(소문자)
-        self.subfolder_name = self.__class__.__name__.replace("_crawling", "").lower()
-        self.download_dir = os.path.join(self.base_download_dir, self.subfolder_name)
-        if not os.path.exists(self.download_dir):
-            os.makedirs(self.download_dir)
-
-        # 크롬 옵션에 하위폴더 지정 (드라이버 새로 생성 필요)
-        chrome_options = Options()
-        chrome_options.add_argument("--window-size=1920,1080")
-        self.set_user_agent(chrome_options)
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-        prefs = {"download.default_directory": self.download_dir}
-        chrome_options.add_experimental_option("prefs", prefs)
-        # 기존 드라이버 종료 및 새 드라이버로 교체
-        self.driver.quit()
-        self.driver = webdriver.Chrome(options=chrome_options)
-        self.wait = WebDriverWait(self.driver, 20)
+        self.carrier_name = "HMM"
 
     def run(self):
         # 0. 선사 홈페이지 접속
@@ -87,4 +72,25 @@ class HMM_Crawling(ParentsClass):
         
         self.Close()
 
+
+        vessel_name = "HMM BANGKOK"
+        old_path = os.path.join(self.today_download_dir, "byVesselName.xls")
+        new_path = os.path.join(self.today_download_dir, f"HMM_{vessel_name}.xls")
+        if os.path.exists(old_path):
+            os.rename(old_path, new_path)
+            print(f"파일명 변경 완료: {new_path}")
+        else:
+            print("다운로드 파일이 없습니다.")
+
+        if os.path.exists(new_path):
+            df = pd.read_excel(new_path)
+            col_map = {
+                'Vessel Voyage No.': 'Vessel Code',
+                'Arrival': 'ETA',
+                'Berthing': 'ETB',
+                'Departure': 'ETD'
+            }
+            df.rename(columns=col_map, inplace=True)
+            df.to_excel(new_path, index=False)
+            print(f"칼럼명 변경 및 저장 완료: {os.path.basename(new_path)}")
 

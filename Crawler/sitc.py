@@ -1,5 +1,5 @@
 # Developer : 디지털전략팀 / 강현빈 사원
-# Date : 2025/06/27
+# Date : 2025/06/27 (완료)
 # 선사명 : SITC
 # 선사링크 : https://ebusiness.sitcline.com/#/topMenu/vesselMovementSearch
 # SITC에서 뽑아올 선박 리스트
@@ -24,25 +24,23 @@ import pandas as pd
 class SITC_Crawling(ParentsClass):
     def __init__(self):
         super().__init__()
-        # 하위폴더명 = py파일명(소문자)
-        self.subfolder_name = self.__class__.__name__.replace("_crawling", "").lower()
-        self.download_dir = os.path.join(self.base_download_dir, self.subfolder_name)
-        if not os.path.exists(self.download_dir):
-            os.makedirs(self.download_dir)
+        self.carrier_name = "SITC"
+        self.columns = [
+            "vessel name", "voy", "port", "terminal", "ETA", "ETB", "ETD", "Rate", "Remark", "Update Date"
+        ]
 
-        # 크롬 옵션에 하위폴더 지정 (드라이버 새로 생성 필요)
-        chrome_options = Options()
-        chrome_options.add_argument("--window-size=1920,1080")
-        self.set_user_agent(chrome_options)
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-        prefs = {"download.default_directory": self.download_dir}
-        chrome_options.add_experimental_option("prefs", prefs)
-        # 기존 드라이버 종료 및 새 드라이버로 교체
-        self.driver.quit()
-        self.driver = webdriver.Chrome(options=chrome_options)
-        self.wait = WebDriverWait(self.driver, 20)
-        
-    def run(self):  
+     # !!!! 이 로직은 병합셀이 있는 선사의 경우에만 적용함.
+    def extract_time_after_weekday(self, cell_text):
+        weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        lines = cell_text.split('\n')
+        result = []
+        for i, line in enumerate(lines):
+            if any(day in line for day in weekdays):
+                if i + 1 < len(lines):
+                    result.append(lines[i + 1].strip())
+        return result
+
+    def run(self):
         # 0. 사이트 방문 들어가주고
         self.Visit_Link("https://ebusiness.sitcline.com/#/topMenu/vesselMovementSearch")
         driver = self.driver
@@ -59,11 +57,9 @@ class SITC_Crawling(ParentsClass):
         time.sleep(0.5)  # 활성화 대기
 
         # 1. 선박명 리스트 (테스트용으로 SITC DECHENG만)
-        vessel_list = ["SITC DECHENG", "SITC BATANGAS" , "SITC SHENGMING" , "SITC QIMING",
+        vessel_list = ["SITC DECHENG","SITC BATANGAS" , "SITC SHENGMING" , "SITC QIMING",
                        "SITC XIN", "SITC YUNCHENG", "SITC MAKASSAR", "SITC CHANGDE", 
                        "SITC HANSHIN", "SITC XINGDE","AMOUREUX"]
-        
-        columns = ["vessel name","voy","port","Terminal","ETA","ETB","ETD","Rate","Remark","Update Date"]
 
         for vessel_name in vessel_list:
             vessel_input.clear()
@@ -105,14 +101,17 @@ class SITC_Crawling(ParentsClass):
 
             # DataFrame으로 저장 및 엑셀로 내보내기
             if data_rows:
-                df = pd.DataFrame(data_rows)
-                save_path = os.path.join(self.download_dir, f"{vessel_name}_schedule.xlsx")
-                df.to_excel(save_path, index=False, header=False)
+                df = pd.DataFrame(data_rows,columns=self.columns)
+                for col in ['ETA','ETB', 'ETD']:
+                    if col in df.columns:
+                        df[col] = df[col].apply(lambda x : '\n'.join(self.extract_time_after_weekday(str(x))))
+                save_path = self.get_save_path(self.carrier_name, vessel_name)
+                df.to_excel(save_path, index=False, header=True)
                 print(f"{vessel_name} 엑셀 저장 완료: {save_path}")
             else:
                 print(f"{vessel_name} 데이터 없음")
 
-        self.Close()
+            driver.refresh() # 새로고침 한번 한다.
+            time.sleep(1)
 
-        # //*[@id="app"]/div[1]/div/section/div/div[2]/div[2]/div[3]/table/tbody
-        # //*[@id="app"]/div[1]/div/section/div/div[2]/div[2]/div[3]/table/tbody/tr[1]
+        self.Close()

@@ -42,6 +42,15 @@ class EVERGREEN_Crawling(ParentsClass):
         driver = self.driver
         wait = self.wait
 
+        # 쿠키 뜨는 경우 //*[@id="btn_cookie_accept_all"]
+        try:
+            cookie_btn = wait.until(EC.element_to_be_clickable((
+                By.XPATH , '//*[@id="btn_cookie_accept_all"]'
+            )))
+            cookie_btn.click()
+        except:
+            pass
+
         vessel_name_list = ["EVER LUCID"]
         all_tables = []
 

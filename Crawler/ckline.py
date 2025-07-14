@@ -18,27 +18,14 @@ from selenium.webdriver.support.wait import WebDriverWait
 from .base import ParentsClass
 import time,os
 from datetime import datetime
+import re
+import pandas as pd
 
 class CKLINE_Crawling(ParentsClass):
     def __init__(self):
         super().__init__()
-        # 하위폴더명 = py파일명(소문자)
-        self.subfolder_name = self.__class__.__name__.replace("_crawling", "").lower()
-        self.download_dir = os.path.join(self.base_download_dir, self.subfolder_name)
-        if not os.path.exists(self.download_dir):
-            os.makedirs(self.download_dir)
+        self.carrier_name = "CKL"
 
-        # 크롬 옵션에 하위폴더 지정 (드라이버 새로 생성 필요)
-        chrome_options = Options()
-        chrome_options.add_argument("--window-size=1920,1080")
-        self.set_user_agent(chrome_options)
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-        prefs = {"download.default_directory": self.download_dir}
-        chrome_options.add_experimental_option("prefs", prefs)
-        # 기존 드라이버 종료 및 새 드라이버로 교체
-        self.driver.quit()
-        self.driver = webdriver.Chrome(options=chrome_options)
-        self.wait = WebDriverWait(self.driver, 20)
 
     def run(self):
         # 0. 웹사이트 방문
@@ -65,7 +52,7 @@ class CKLINE_Crawling(ParentsClass):
         time.sleep(1)  # 페이지 로드 대기 시간 증가
 
         # 5. 선박별 드롭다운 처리
-        vessel_name_list = ["SKY MOON" , "SKY FLOWER" , "SKY JADE" , "SKY TIARA" , "SUNWIN" , "SKY VICTORIA" , "VICTORY STAR", 
+        vessel_name_list = ["SKY MOON", "SKY FLOWER" , "SKY JADE" , "SKY TIARA" , "SUNWIN" , "SKY VICTORIA" , "VICTORY STAR", 
                             "SKY IRIS" , "SKY SUNSHINE" , "SKY RAINBOW" , "BAL BOAN" , "SKY CHALLENGE" ,"BEI HAI" ,"XIN TAI PING" , "SKY ORION"]
         for vessel_name in vessel_name_list:
             # 1. 드롭다운(입력창) 클릭해서 리스트 활성화
@@ -112,7 +99,7 @@ class CKLINE_Crawling(ParentsClass):
             download_wait_time = 30  # 최대 30초 대기
             start_time = time.time()
             while True:
-                files = os.listdir(self.download_dir)
+                files = os.listdir(self.today_download_dir)
                 downloading = [f for f in files if f.endswith('.crdownload') or f.endswith('.tmp')]
                 if not downloading:
                     break
@@ -121,20 +108,58 @@ class CKLINE_Crawling(ParentsClass):
                     break
                 time.sleep(1)
 
-            # 오늘 날짜
-            today = datetime.today().strftime("%Y%m%d")
+        # 오늘 날짜
+        today = datetime.today().strftime("%Y%m%d")
 
-            # 다운로드 폴더에서 가장 최근 파일 찾기
-            files = [os.path.join(self.download_dir, f) for f in os.listdir(self.download_dir)]
-            files = [f for f in files if os.path.isfile(f)]
-            if files:
-                latest_file = max(files, key=os.path.getctime)
-                ext = os.path.splitext(latest_file)[1]
-                new_filename = f"{vessel_name}_{today}{ext}"
-                new_filepath = os.path.join(self.download_dir, new_filename)
-                os.rename(latest_file, new_filepath)
-                print(f"파일명 변경 완료: {new_filename}")
-            else:
-                print("다운로드된 파일이 없습니다.")       
-        
         self.Close()
+
+        # === [다운로드 완료 후 후처리] ===
+
+        # 1. 다운로드된 Vessel*.xlsx 파일 리스트 정렬
+        files = [f for f in os.listdir(self.today_download_dir)
+                 if f.startswith("Vessel") and f.lower().endswith('.xlsx')]
+        files.sort()  # Vessel.xlsx, Vessel (1).xlsx, Vessel (2).xlsx ... 순서대로
+
+        # 2. vessel_name_list와 1:1로 파일명 변경
+        for i, vessel_name in enumerate(vessel_name_list):
+            if i < len(files):
+                old_path = os.path.join(self.today_download_dir, files[i])
+                new_filename = f"{self.carrier_name}_{vessel_name}.xlsx"
+                new_path = os.path.join(self.today_download_dir, new_filename)
+                os.rename(old_path, new_path)
+                print(f"파일명 변경: {files[i]} → {new_filename}")
+
+        # 3. 파일명 변경 후 전처리
+        for vessel_name in vessel_name_list:
+            fpath = os.path.join(self.today_download_dir, f"{self.carrier_name}_{vessel_name}.xlsx")
+            if os.path.exists(fpath):
+                try:
+                    df = pd.read_excel(fpath)
+                    # 1. 'undefined' 컬럼명을 'Vessel Name'으로 변경
+                    if 'undefined' in df.columns:
+                        df.rename(columns={'undefined': 'Vessel Name'}, inplace=True)
+                    # 2. 선박명/항차번호 분리 (첫 컬럼)
+                    if 'Vessel Name' in df.columns:
+                        split_df = df['Vessel Name'].str.extract(r'(?P<Vessel_Name>[A-Z\s]+)\s+(?P<D_Voy>[A-Z0-9.\-]+)')
+                        df['Vessel Name'] = split_df['Vessel_Name']
+                        df.insert(1, 'D-Voy', split_df['D_Voy'])
+
+                    # 3. 컬럼명 한글 → 영문 변경
+                    col_map = {
+                        '지역': 'Port',
+                        '입항일': 'ETA',
+                        '출항일': 'ETD'
+                    }
+                    df.rename(columns=col_map, inplace=True)
+
+                    # 4. 컬럼 순서 재정렬
+                    desired_cols = ['Vessel Name', 'D-Voy', 'Port', 'ETA', 'ETD']
+                    rest_cols = [col for col in df.columns if col not in desired_cols]
+                    final_cols = desired_cols + rest_cols
+                    df = df[final_cols]
+
+                    # 5. 전처리된 파일로 덮어쓰기
+                    df.to_excel(fpath, index=False)
+                    print(f"전처리 및 컬럼명 변경 완료: {os.path.basename(fpath)}")
+                except Exception as e:
+                    print(f"전처리 중 오류({vessel_name}): {e}")

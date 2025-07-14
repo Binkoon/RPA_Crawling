@@ -31,20 +31,16 @@ import os
 class SMLINE_Crawling(ParentsClass):
     def __init__(self):
         super().__init__()
-        # 하위폴더명 = py파일명(소문자)
-        self.subfolder_name = self.__class__.__name__.replace("_crawling", "").lower()
-        self.download_dir = os.path.join(self.base_download_dir, self.subfolder_name)
-        if not os.path.exists(self.download_dir):
-            os.makedirs(self.download_dir)
+        self.carrier_name = "SM LINE"
 
-        # 크롬 옵션에 하위폴더 지정 (드라이버 새로 생성 필요)
+        # SMLINE은 저장할때, "다름이름으로 저장이 떠가지고 얘만 따로"
         chrome_options = Options()
         chrome_options.add_argument("--window-size=1920,1080")
         self.set_user_agent(chrome_options)
         chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-        prefs = {"download.default_directory": self.download_dir}
+        
+        prefs = {"download.default_directory": self.today_download_dir}
         chrome_options.add_experimental_option("prefs", prefs)
-        # 기존 드라이버 종료 및 새 드라이버로 교체
         self.driver.quit()
         self.driver = webdriver.Chrome(options=chrome_options)
         self.wait = WebDriverWait(self.driver, 20)
@@ -85,5 +81,15 @@ class SMLINE_Crawling(ParentsClass):
             )))
             download_btn.click()
             time.sleep(1)
+
+            for f in os.listdir(self.today_download_dir):
+                if vessel_name.replace(" ", "") in f.replace(" ", ""):
+                    # 예:"SM LINE_SM JAKARTA.xlsx"
+                    old_path = os.path.join(self.today_download_dir, f)
+                    new_name = f"{self.carrier_name}_{vessel_name}.xlsx"
+                    new_path = os.path.join(self.today_download_dir, new_name)
+                    os.rename(old_path, new_path)
+                    print(f"파일명 변경 완료: {new_path}")
+                    break
         
         self.Close()
