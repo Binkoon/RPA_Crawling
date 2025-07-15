@@ -15,26 +15,12 @@ from .base import ParentsClass
 import pandas as pd
 import time,os
 
+import openpyxl
+
 class EVERGREEN_Crawling(ParentsClass):
     def __init__(self):
         super().__init__()
-        # 하위폴더명 = py파일명(소문자)
-        self.subfolder_name = self.__class__.__name__.replace("_crawling", "").lower()
-        self.download_dir = os.path.join(self.base_download_dir, self.subfolder_name)
-        if not os.path.exists(self.download_dir):
-            os.makedirs(self.download_dir)
-
-        # 크롬 옵션에 하위폴더 지정 (드라이버 새로 생성 필요)
-        chrome_options = Options()
-        chrome_options.add_argument("--window-size=1920,1080")
-        self.set_user_agent(chrome_options)
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-        prefs = {"download.default_directory": self.download_dir}
-        chrome_options.add_experimental_option("prefs", prefs)
-        # 기존 드라이버 종료 및 새 드라이버로 교체
-        self.driver.quit()
-        self.driver = webdriver.Chrome(options=chrome_options)
-        self.wait = WebDriverWait(self.driver, 20)
+        self.carrier_name = "EMC"
 
     def run(self):
         # 0. 선사 홈페이지 접속
@@ -51,7 +37,7 @@ class EVERGREEN_Crawling(ParentsClass):
         except:
             pass
 
-        vessel_name_list = ["EVER LUCID"]
+        vessel_name_list = ["EVER LUCID","EVER ELITE","EVER LASTING","EVER VIM"]
         all_tables = []
 
         for vessel_name in vessel_name_list:
@@ -103,46 +89,65 @@ class EVERGREEN_Crawling(ParentsClass):
                     # 더 이상 table이 없으면 break
                     break
 
-        # ====== 데이터 저장 ======
-        # 테이블별로 DataFrame 변환 후 concat
-        df_list = []
-        for table in all_tables:
-            if len(table) == 2:
-                df = pd.DataFrame([table[1]], columns=table[0])
-                df_list.append(df)
-        if df_list:
-            result_df = pd.concat(df_list, ignore_index=True)
-            # 파일명에 선박명 포함
-            filename = f"{vessel_name_list[0]}_schedule.xlsx"
-            filepath = os.path.join(self.download_dir, filename)
-            result_df.to_excel(filepath, index=False)
-            print(f"엑셀 저장 완료: {filepath}")
+            # ====== 데이터 저장 ======
+            # 테이블별로 DataFrame 변환 후 concat
+            if all_tables:
+                df_list = []
+                for table in all_tables:
+                    if len(table) == 2:
+                        df = pd.DataFrame([table[1]], columns=table[0])
+                        df_list.append(df)
+                if df_list:
+                    result_df = pd.concat(df_list, ignore_index=True)
+                    # 파일명에 선박명 포함
+                    save_path = self.get_save_path(self.carrier_name, vessel_name)
+                    result_df.to_excel(save_path, index=False)
+                    print(f"엑셀 저장 완료: {save_path}")
 
-            # =========================
-            # 1. ARRDEP 전처리 추가
-            # =========================
-            processed_rows = []
-            for idx, row in result_df.iterrows():
-                for col in result_df.columns:
-                    cell = row[col]
-                    # ARRDEP 형식인지 체크
-                    if isinstance(cell, str) and len(cell) == 9 and cell.count('/') == 2:
-                        arr = cell[:5]
-                        dep = cell[5:]
-                        processed_rows.append({'Port': col, 'Type': 'ARR', 'Date': arr})
-                        processed_rows.append({'Port': col, 'Type': 'DEP', 'Date': dep})
-                    else:
-                        # 형식이 다르면 원본값 그대로 저장(필요시 주석 해제)
-                        # processed_rows.append({'Port': col, 'Type': None, 'Date': cell})
-                        pass
+                    # openpyxl로 wrapText 활성화 (헤더는 제외)
+                    wb = openpyxl.load_workbook(save_path)
+                    ws = wb.active
+                    for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=ws.max_column):
+                        for cell in row:
+                            cell.alignment = openpyxl.styles.Alignment(wrap_text=True)
+                    wb.save(save_path)
+                    print("텍스트 줄바꿈(wrapText) 활성화 완료")
 
-            # 데이터프레임 변환 및 저장
-            if processed_rows:
-                processed_df = pd.DataFrame(processed_rows)
-                processed_filename = f"{vessel_name_list[0]}_schedule_processed.xlsx"
-                processed_filepath = os.path.join(self.download_dir, processed_filename)
-                processed_df.to_excel(processed_filepath, index=False)
-                print(f"ARR/DEP 전처리 엑셀 저장 완료: {processed_filepath}")
+                    # =========================
+                    # 1. ARRDEP 전처리 추가
+                    # =========================
+                    processed_rows = []
+                    for idx, row in result_df.iterrows():
+                        for col in result_df.columns:
+                            cell = row[col]
+                            # ARRDEP 형식인지 체크
+                            if isinstance(cell, str) and len(cell) == 9 and cell.count('/') == 2:
+                                arr = cell[:5]
+                                dep = cell[5:]
+                                processed_rows.append({'Port': col, 'Type': 'ARR', 'Date': arr})
+                                processed_rows.append({'Port': col, 'Type': 'DEP', 'Date': dep})
+                            else:
+                                # 형식이 다르면 원본값 그대로 저장(필요시 주석 해제)
+                                # processed_rows.append({'Port': col, 'Type': None, 'Date': cell})
+                                pass
+
+                    # 데이터프레임 변환 및 저장
+                    if processed_rows:
+                        processed_df = pd.DataFrame(processed_rows)
+                        processed_path = self.get_save_path(self.carrier_name, vessel_name_list[0], ext="processed.xlsx")
+                        processed_df.to_excel(processed_path, index=False)
+                        print(f"ARR/DEP 전처리 엑셀 저장 완료: {processed_path}")
+
+                        # wrapText 활성화 (헤더 제외)
+                        wb2 = openpyxl.load_workbook(processed_path)
+                        ws2 = wb2.active
+                        for row in ws2.iter_rows(min_row=2, max_row=ws2.max_row, min_col=1, max_col=ws2.max_column):
+                            for cell in row:
+                                cell.alignment = openpyxl.styles.Alignment(wrap_text=True)
+                        wb2.save(processed_path)
+                        print("ARR/DEP 전처리 파일에도 wrapText 적용 완료")
+
+                    
 
         self.Close()
 

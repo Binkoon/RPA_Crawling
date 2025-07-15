@@ -16,23 +16,7 @@ import datetime # 캘린더 있음.
 class PIL_Crawling(ParentsClass):
     def __init__(self):
         super().__init__()
-        # 하위폴더명 = py파일명(소문자)
-        self.subfolder_name = self.__class__.__name__.replace("_crawling", "").lower()
-        self.download_dir = os.path.join(self.base_download_dir, self.subfolder_name)
-        if not os.path.exists(self.download_dir):
-            os.makedirs(self.download_dir)
-
-        # 크롬 옵션에 하위폴더 지정 (드라이버 새로 생성 필요)
-        chrome_options = Options()
-        chrome_options.add_argument("start-maximized")
-        self.set_user_agent(chrome_options)
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-        prefs = {"download.default_directory": self.download_dir}
-        chrome_options.add_experimental_option("prefs", prefs)
-        # 기존 드라이버 종료 및 새 드라이버로 교체
-        self.driver.quit()
-        self.driver = webdriver.Chrome(options=chrome_options)
-        self.wait = WebDriverWait(self.driver, 20)
+        self.carrier_name = "PIL"
 
     def run(self):
         # 0. 선사 접속
@@ -98,64 +82,121 @@ class PIL_Crawling(ParentsClass):
             data_from = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="schedulesByVessel"]/div[2]/div/div[1]')))
             driver.execute_script("arguments[0].click();", data_from)
             time.sleep(0.5)
-            # 8. 캘린더에서 오늘 기준 3일 전 클릭(JS)  //*[@id="detailByVesselDatePicker"]/div/div[1]/table/tbody  //*[@id="detailByVesselDatePicker"]/div/div[1]/table/tbody
-            # 오늘 날짜는  class명이 <td class="today day" ~~~ 임
-            # css 셀렉터로는 : #detailByVesselDatePicker > div > div.datepicker-days > table > tbody > tr:nth-child(2) > td.today.day
-            # //*[@id="detailByVesselDatePicker"]/div/div[1]/table/tbody/tr[2]/td[5]   예를 들어 오늘날짜가 여기있다하면  tr[2]/td[5]를 기준으로 3일전꺼를 봐야함.
-            # 단, 7월 1일이라고 가정했을때, 3일 뒤면  6월28일이다. 그럴떄는 현재 보고 있는 캘린더에서 //*[@id="detailByVesselDatePicker"]/div/div[1]/table/thead/tr[2]/th[1] 를 클릭 후 봐야함.
-            # //*[@id="detailByVesselDatePicker"]/div/div[1]/table/tbody/tr[5]/td[7]  그떄의 6월 28일은 이런 xpath값을 가짐. 따라서, 이건 datetime 모듈을 써야할거 같음.
-            today = datetime.date.today()
-            three_days_ago = today - datetime.timedelta(days=3)
-            target_day = three_days_ago.day
-            target_month = three_days_ago.month
-            target_year = three_days_ago.year
 
-            # 캘린더의 월/년 정보 읽기
-            # 2. 캘린더에서 월/년 정보 읽기
+            # === 오늘 날짜(현재 선택된 날짜) 정보 파싱 ===
+            today_td = wait.until(EC.presence_of_element_located(
+                (By.CSS_SELECTOR, "td.today.day")
+            )) 
+            today_num = int(today_td.text.strip())
+
+            # 달력의 년/월 추출
             calendar_title_xpath = '//*[@id="detailByVesselDatePicker"]/div/div[1]/table/thead/tr[1]/th[2]'
             calendar_title_elem = wait.until(EC.visibility_of_element_located((By.XPATH, calendar_title_xpath)))
-            calendar_title_text = calendar_title_elem.text.strip()  # 예: "July 2025"
+            calendar_title_text = calendar_title_elem.text.strip()  # e.g. "July 2025"
             calendar_month = datetime.datetime.strptime(calendar_title_text, "%B %Y").month
             calendar_year = datetime.datetime.strptime(calendar_title_text, "%B %Y").year
 
-            # 3. 필요시 이전달 버튼 클릭 (월/년이 다르면)
-            if calendar_month != target_month or calendar_year != target_year:
+            # 오늘의 전체 날짜객체 계산
+            today_date = datetime.date(calendar_year, calendar_month, today_num)
+            three_days_ago = today_date - datetime.timedelta(days=3)
+
+            # 지금 보는 캘린더가 "three_days_ago"와 같은 월/년인지 체크
+            if (three_days_ago.year != calendar_year) or (three_days_ago.month != calendar_month):
+                # 월 달라졌으면 '이전달' 버튼 클릭해서 넘어가야 함
                 prev_btn_xpath = '//*[@id="detailByVesselDatePicker"]/div/div[1]/table/thead/tr[2]/th[1]'
-                prev_btn = wait.until(EC.element_to_be_clickable((By.XPATH, prev_btn_xpath)))
-                driver.execute_script("arguments[0].click();", prev_btn)
-                time.sleep(1)  # 이전달 버튼 클릭 후 캘린더 갱신 대기
+                while True:
+                    prev_btn = wait.until(EC.element_to_be_clickable((By.XPATH, prev_btn_xpath)))
+                    driver.execute_script("arguments[0].click();", prev_btn)
+                    time.sleep(0.5)
+                    calendar_title_elem = wait.until(EC.visibility_of_element_located((By.XPATH, calendar_title_xpath)))
+                    calendar_title_text = calendar_title_elem.text.strip()
+                    cal_month = datetime.datetime.strptime(calendar_title_text, "%B %Y").month
+                    cal_year = datetime.datetime.strptime(calendar_title_text, "%B %Y").year
+                    if cal_year == three_days_ago.year and cal_month == three_days_ago.month:
+                        break
 
-                # 다시 월/년 정보 읽기 (반복문으로 만들 수도 있음)
-                calendar_title_elem = wait.until(EC.visibility_of_element_located((By.XPATH, calendar_title_xpath)))
-                calendar_title_text = calendar_title_elem.text.strip()
-                calendar_month = datetime.datetime.strptime(calendar_title_text, "%B %Y").month
-                calendar_year = datetime.datetime.strptime(calendar_title_text, "%B %Y").year
+            # "3일 전" 날짜가 old day 클래스(저번달)면 old day로, 같은 달이면 그냥 day로 찾는다
+            target_day = three_days_ago.day
+            sel_target = None
 
-                # 만약 여러 달을 넘어야 한다면 반복문으로 prev_btn 클릭을 감싸야 함
+            for class_selector in [f"td.old.day", f"td.day"]:
+                tds = driver.find_elements(By.CSS_SELECTOR, class_selector)
+                for td in tds:
+                    try:
+                        # 일치하는 날짜 찾기
+                        if td.text.strip() == str(target_day):
+                            sel_target = td
+                            break
+                    except Exception:
+                        continue
+                if sel_target:
+                    break
 
+            if sel_target:
+                # JS로 클릭 (날짜선택)
+                driver.execute_script("arguments[0].click();", sel_target)
+                print(f"{three_days_ago.strftime('%Y-%m-%d')} 날짜 선택 완료")
+                time.sleep(0.5)
+            else:
+                print(f"3일 전 날짜 {three_days_ago}를 달력에서 찾지 못했습니다.")
+
+
+            # 8. Date to 선택
+            date_to_btn = wait.until(EC.element_to_be_clickable(
+                (By.XPATH, '//*[@id="schedulesByVessel"]/div[2]/div/div[2]')
+            ))
+            driver.execute_script("arguments[0].click();", date_to_btn)
             time.sleep(0.5)
 
-            # 4. tbody에서 target_day 클릭(JS)
-            js_code = """
-            let calendarBody = document.querySelector('#detailByVesselDatePicker > div > div.datepicker-days > table > tbody');
-            let targetDay = arguments[0];
-            let found = false;
-            for (let i = 0; i < calendarBody.children.length; i++) {
-                let tr = calendarBody.children[i];
-                for (let j = 0; j < tr.children.length; j++) {
-                    let td = tr.children[j];
-                    if (td.innerText.trim() == targetDay.toString() && td.classList.contains('day')) {
-                        td.click();
-                        found = true;
-                        break;
-                    }
-                }
-                if (found) break;
-            }
-            return found;
-            """
-            driver.execute_script(js_code, target_day)
-            time.sleep(0.5)
+            # === 현재 Date To 달력의 월/년 정보 추출 ===
+            calendar_title_xpath = '//*[@id="detailByVesselDatePicker"]/div/div[1]/table/thead/tr[1]/th[2]'
+            calendar_title_elem = wait.until(EC.visibility_of_element_located((By.XPATH, calendar_title_xpath)))
+            calendar_title_text = calendar_title_elem.text.strip()  # e.g., "July 2025"
+            calendar_month = datetime.datetime.strptime(calendar_title_text, "%B %Y").month
+            calendar_year = datetime.datetime.strptime(calendar_title_text, "%B %Y").year
 
+            # === 오늘 날짜 기준으로 28일 후 날짜 계산 ===
+            today = datetime.date.today()
+            target_date = today + datetime.timedelta(days=28)
+            target_day = target_date.day
+            target_month = target_date.month
+            target_year = target_date.year
 
+            # === 달이 다르면 다음달로 넘어가야 함 ===
+            if calendar_year < target_year or (calendar_year == target_year and calendar_month < target_month):
+                next_btn_xpath = '//*[@id="detailByVesselDatePicker"]/div/div[1]/table/thead/tr[2]/th[3]'
+                while True:
+                    next_btn = wait.until(EC.element_to_be_clickable((By.XPATH, next_btn_xpath)))
+                    driver.execute_script("arguments[0].click();", next_btn)
+                    time.sleep(0.5)
+                    calendar_title_elem = wait.until(EC.visibility_of_element_located((By.XPATH, calendar_title_xpath)))
+                    calendar_title_text = calendar_title_elem.text.strip()
+                    calendar_month = datetime.datetime.strptime(calendar_title_text, "%B %Y").month
+                    calendar_year = datetime.datetime.strptime(calendar_title_text, "%B %Y").year
+                    if calendar_year == target_year and calendar_month == target_month:
+                        break
+
+            # === Date To 날짜 선택 (td with day OR new day class) ===
+            target_day_element = None
+            # 1. 시도: td.new.day (다음달)
+            for td in driver.find_elements(By.CSS_SELECTOR, "td.new.day"):
+                if td.text.strip() == str(target_day):
+                    target_day_element = td
+                    break
+
+            # 2. 시도 실패 시: td.day (같은 달)
+            if not target_day_element:
+                for td in driver.find_elements(By.CSS_SELECTOR, "td.day"):
+                    if td.text.strip() == str(target_day):
+                        target_day_element = td
+                        break
+
+            # 3. 클릭
+            if target_day_element:
+                driver.execute_script("arguments[0].click();", target_day_element)
+                print(f"[Date To] {target_date.strftime('%Y-%m-%d')} 선택 완료")
+                time.sleep(0.5)
+            else:
+                print(f"28일 후 날짜 {target_date.strftime('%Y-%m-%d')}를 찾지 못했습니다")
+        
         self.Close()

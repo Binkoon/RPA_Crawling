@@ -15,6 +15,7 @@ from crawler import ial # 완료
 from crawler import dyline
 from crawler import yml  # 완료
 from crawler import pil
+from crawler import nss
 
 
 if __name__ == "__main__":
@@ -31,8 +32,8 @@ if __name__ == "__main__":
     # wanhai_data = wanhai.WANHAI_Crawling()
     # wanhai_data.run()
 
-    one_data = one.ONE_Crawling()
-    one_data.start_crawling()
+    # one_data = one.ONE_Crawling()
+    # one_data.start_crawling()
 
     # ckline_data = ckline.CKLINE_Crawling()
     # ckline_data.run()
@@ -61,5 +62,8 @@ if __name__ == "__main__":
     # yml_data = yml.YML_Crawling()
     # yml_data.run()
 
-    # pil_data = pil.PIL_Crawling()
-    # pil_data.run()
+    pil_data = pil.PIL_Crawling()
+    pil_data.run()
+
+    # nss_data = nss.NSS_Crawling()
+    # nss_data.run()

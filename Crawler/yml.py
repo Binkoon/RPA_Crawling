@@ -1,5 +1,5 @@
 # Developer : 디지털전략팀 / 강현빈 사원
-# Date : 2025/06/30 (완성) - 2025/07/14 (2차 점검 완료)
+# Date : 2025/06/30 (완성) - 2025/07/14 (디버깅 완료)
 # 선사 링크 : https://e-solution.yangming.com/e-service/Vessel_Tracking/SearchByVessel.aspx
 # 선박 리스트 : ["YM CREDENTIAL" , "YM COOPERATION" ,"YM INITIATIVE"]
 
@@ -18,7 +18,7 @@ import os,time
 from datetime import datetime
 
 import pandas as pd
-
+# 쿠키 agree : /html/body/div/div/a
 class YML_Crawling(ParentsClass):
     def __init__(self):
         super().__init__()
@@ -31,7 +31,7 @@ class YML_Crawling(ParentsClass):
         driver = self.driver
         wait = self.wait
 
-        columns = ["Port", "Terminal", "ETA-Date", "ETA-Status", "ETB-Date", "ETB-Status", "ETD-Date", "ETD-Status"]
+        columns = ["Port", "Terminal", "ETA", "ETA-Status", "ETB", "ETB-Status", "ETD", "ETD-Status"]
 
         for vessel_name in vessel_name_list:
             vessel_name_param = vessel_name.replace(" ", "%20")
@@ -44,26 +44,65 @@ class YML_Crawling(ParentsClass):
             self.Visit_Link(url)
             time.sleep(2)
 
-            data = []
+            # 쿠키 팝업 있으면 클릭
+            try:
+                cookie_button = wait.until(EC.element_to_be_clickable((By.XPATH, '/html/body/div/div/a')))
+                cookie_button.click()
+                print("쿠키 팝업 클릭 완료")
+            except Exception:
+                pass
+
+            # 스크롤 Y 100px 내리기
+            driver.execute_script("window.scrollBy(0, 100);")
+            time.sleep(0.5)
+
+            all_rows = []
             row_idx = 1
             while True:
                 xpath = f'//*[@id="ContentPlaceHolder1_gvLast"]/tbody/tr[{row_idx}]'
                 try:
                     tr = driver.find_element(By.XPATH, xpath)
                     tds = tr.find_elements(By.TAG_NAME, "td")
-                    if len(tds) < len(columns):
-                        break
-                    row = [td.text.strip() for td in tds[:len(columns)]]
-                    data.append(row)
+                    row = [td.text.strip() for td in tds]  # TD 개수 제한 없이 전체 긁어오기
+                    all_rows.append(row)
                     row_idx += 1
                 except Exception:
                     break
 
-            df = pd.DataFrame(data, columns=columns)
-            # === 오늘 날짜 폴더에 저장 ===
+            # 스크롤 Y 100px 올리기
+            driver.execute_script("window.scrollBy(0, -100);")
+            time.sleep(0.5)
+
+            # 다음 버튼 클릭
+            try:
+                next_btn = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="ContentPlaceHolder1_btnNext"]')))
+                next_btn.click()
+                time.sleep(1.5)
+            except Exception:
+                print("다음 페이지 버튼 없음 또는 클릭 실패")
+
+
+            # 두 번째 페이지 데이터도 추가로 긁어서 같은 리스트에 저장
+            row_idx = 1
+            while True:
+                xpath = f'//*[@id="ContentPlaceHolder1_gvLast"]/tbody/tr[{row_idx}]'
+                try:
+                    tr = driver.find_element(By.XPATH, xpath)
+                    tds = tr.find_elements(By.TAG_NAME, "td")
+                    row = [td.text.strip() for td in tds]
+                    all_rows.append(row)
+                    row_idx += 1
+                except Exception:
+                    break
+
+            # DataFrame으로 저장 (columns 없이 저장)
+            df = pd.DataFrame(all_rows)
+            df.drop(columns=[0,2], inplace=True)
+            df.columns = columns
+            
             save_path = self.get_save_path(self.carrier_name, vessel_name)
             df.to_excel(save_path, index=False, header=True)
-            print(f"[{vessel_name}] 엑셀 저장 완료: {save_path}")
+            print(f"[{vessel_name}] 테이블 원본 저장 완료: {save_path}")
             time.sleep(1)
 
         self.Close()
