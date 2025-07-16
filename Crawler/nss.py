@@ -86,60 +86,7 @@ class NSS_Crawling(ParentsClass):
                     search_btn.click()
                     time.sleep(1)
 
-                    # 테이블 tbody 포커스 및 스크롤 다운
-                    tbody_xpath = '//*[@id="mf_tac_layout_contents_00010004_body_grd_cur_body_tbody"]'
-                    tbody = wait.until(EC.presence_of_element_located((By.XPATH, tbody_xpath)))
-                    driver.execute_script("arguments[0].click();", tbody)
-                    time.sleep(0.2) # //*[@id="mf_tac_layout_contents_00010004_body_wq_uuid_1451"]
-
-                    extracted_tr_indexes = set()
-                    last_row_found = False
-
-                    # 스크롤 액션: 모든 row가 로드될 때까지 반복
-                    last_row_count = 0
-                    while not last_row_found:
-                        tr_list = tbody.find_elements(By.TAG_NAME, 'tr')
-                        for idx,tr in enumerate(tr_list):
-                            if idx in extracted_tr_indexes:
-                                continue
-                        # 스크롤 내리기
-                        class_attr = tr.get_attribute('class')
-                        driver.execute_script("arguments[0].scollY", tbody)
-                        if 'w2grid_lastRow' in class_attr:
-                            last_row_found = True
-                        
-                        row_data = [td.text.strip() for td in tr.find_elements(By.TAG_NAME, 'td')]
-                        extracted_tr_indexes.add(idx)
-                    
-                    if last_row_found:
-                        break
-                    driver.execute_script("arguments[0].scrollBy(0,100)", tbody)
-                    time.sleep(0.3)
-
-                    # 모든 row 추출
-                    tr_list = tbody.find_elements(By.TAG_NAME, 'tr')
-                    for tr in tr_list:
-                        td_list = tr.find_elements(By.TAG_NAME, 'td')
-                        row_data = [td.text.strip() for td in td_list]
-                        # 선박명, 항차 인덱스 함께 저장
-                        row_data.insert(0, vessel_name)
-                        row_data.append(str(index))
-                        all_rows.append(row_data)
-                    
-                    time.sleep(1)
-                    index += 1
                 except Exception:
-                    # 더 이상 항차 tr이 없으면 break
-                    break
-
-            # 컬럼명 예시 (실제 테이블 구조에 맞게 수정)
-            if all_rows:
-                columns = ['Vessel', 'No','Port','Skip','Terminal','ETA-Day','ETA-Date','ETA-Time','ETD-Day','ETD-Date','ETD-Time','Remark','VoyageIndex']
-                df = pd.DataFrame(all_rows, columns=columns[:len(all_rows[0])])
-                
-                # 저장 경로 및 파일명 변경
-                save_path = self.get_save_path(self.carrier_name, vessel_name)
-                df.to_excel(save_path, index=False)
-                print(f"엑셀 저장 완료: {save_path}")
+                    print("oh shit")
 
         self.Close()

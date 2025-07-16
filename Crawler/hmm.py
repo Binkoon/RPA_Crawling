@@ -93,4 +93,3 @@ class HMM_Crawling(ParentsClass):
             df.rename(columns=col_map, inplace=True)
             df.to_excel(new_path, index=False)
             print(f"칼럼명 변경 및 저장 완료: {os.path.basename(new_path)}")
-

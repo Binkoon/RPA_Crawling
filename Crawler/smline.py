@@ -31,7 +31,7 @@ import os
 class SMLINE_Crawling(ParentsClass):
     def __init__(self):
         super().__init__()
-        self.carrier_name = "SM LINE"
+        self.carrier_name = "SML"
 
         # SMLINE은 저장할때, "다름이름으로 저장이 떠가지고 얘만 따로"
         chrome_options = Options()
@@ -82,14 +82,17 @@ class SMLINE_Crawling(ParentsClass):
             download_btn.click()
             time.sleep(1)
 
-            for f in os.listdir(self.today_download_dir):
-                if vessel_name.replace(" ", "") in f.replace(" ", ""):
-                    # 예:"SM LINE_SM JAKARTA.xlsx"
-                    old_path = os.path.join(self.today_download_dir, f)
-                    new_name = f"{self.carrier_name}_{vessel_name}.xlsx"
-                    new_path = os.path.join(self.today_download_dir, new_name)
-                    os.rename(old_path, new_path)
-                    print(f"파일명 변경 완료: {new_path}")
-                    break
+            vessel_name = "SM JAKARTA"
+            old_path = os.path.join(self.today_download_dir, "Vessel Schedule.xls")
+            new_name = f"{self.carrier_name}_{vessel_name}.xls"
+            new_path = os.path.join(self.today_download_dir, new_name)
+
+            if os.path.exists(old_path):
+                os.rename(old_path, new_path)
+                print(f"파일명 변경 완료: {new_path}")
+            else:
+                print("다운로드 파일이 없습니다.")
         
         self.Close()
+
+        # //*[@id="vvd"]  

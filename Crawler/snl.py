@@ -91,7 +91,7 @@ class SNL_Crawling(ParentsClass):
         self.Close()
         
         old_path = os.path.join(self.today_download_dir, "sinotrans_schedule02.xls")
-        new_path = os.path.join(self.today_download_dir, f"SNL_{vessel_name}.xlsx")
+        new_path = os.path.join(self.today_download_dir, f"SNL_{vessel_name}.xls")
         if os.path.exists(old_path):
             os.rename(old_path, new_path)
             print(f"파일명 변경 완료: {new_path}")

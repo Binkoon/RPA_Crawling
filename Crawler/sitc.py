@@ -46,23 +46,25 @@ class SITC_Crawling(ParentsClass):
         driver = self.driver
         wait = self.wait  # 20초 대기
 
-        # 입력창 (vesselSearch 내 el-input__inner 타겟팅, readonly 처리)
-        vessel_input = wait.until(EC.presence_of_element_located((
-            By.XPATH, '//*[@id="app"]/div[1]/div/section/div/div/div/form/div/div[1]/div/div/div/div/input'
-        )))
-
-        # readonly 속성 해제 및 활성화 시도
-        driver.execute_script("arguments[0].removeAttribute('readonly');", vessel_input)
-        vessel_input.click()  # focus 설정
         time.sleep(0.5)  # 활성화 대기
 
         # 1. 선박명 리스트 (테스트용으로 SITC DECHENG만)
-        vessel_list = ["SITC DECHENG","SITC BATANGAS" , "SITC SHENGMING" , "SITC QIMING",
-                       "SITC XIN", "SITC YUNCHENG", "SITC MAKASSAR", "SITC CHANGDE", 
-                       "SITC HANSHIN", "SITC XINGDE","AMOUREUX"]
-
+        vessel_list =  ["SITC DECHENG","SITC BATANGAS"
+                        , "SITC SHENGMING" , "SITC QIMING",
+                      "SITC XIN", "SITC YUNCHENG", "SITC MAKASSAR", "SITC CHANGDE", 
+                      "SITC HANSHIN", "SITC XINGDE","AMOUREUX"]
         for vessel_name in vessel_list:
-            vessel_input.clear()
+            # 입력창 (vesselSearch 내 el-input__inner 타겟팅, readonly 처리)
+            vessel_input = wait.until(EC.presence_of_element_located((
+                By.XPATH, '//*[@id="app"]/div[1]/div/section/div/div/div/form/div/div[1]/div/div/div/div/input'
+            )))
+
+            # readonly 속성 해제 및 활성화 시도
+            driver.execute_script("arguments[0].removeAttribute('readonly');", vessel_input)
+            # vessel_input.clear()
+            # 필드 완전 초기화 (JS)
+            driver.execute_script("arguments[0].value = '';", vessel_input)
+            driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", vessel_input)
             vessel_input.send_keys(vessel_name)
             print(f"입력: {vessel_name}")
             time.sleep(1)  # 드롭다운 뜨는 시간
@@ -111,7 +113,6 @@ class SITC_Crawling(ParentsClass):
             else:
                 print(f"{vessel_name} 데이터 없음")
 
-            driver.refresh() # 새로고침 한번 한다.
             time.sleep(1)
 
         self.Close()

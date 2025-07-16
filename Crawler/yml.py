@@ -3,10 +3,6 @@
 # 선사 링크 : https://e-solution.yangming.com/e-service/Vessel_Tracking/SearchByVessel.aspx
 # 선박 리스트 : ["YM CREDENTIAL" , "YM COOPERATION" ,"YM INITIATIVE"]
 
-# https://e-solution.yangming.com/e-service/Vessel_Tracking/vessel_tracking_detail.aspx?vessel=YM%20CREDENTIAL|YCDL&&func=current&&LocalSite=
-# https://e-solution.yangming.com/e-service/Vessel_Tracking/vessel_tracking_detail.aspx?vessel=YM%20COOPERATION|YCPR&&func=current&&LocalSite=
-# https://e-solution.yangming.com/e-service/Vessel_Tracking/vessel_tracking_detail.aspx?vessel=YM%20INITIATIVE|YINT&&func=current&&LocalSite=
-
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -18,6 +14,7 @@ import os,time
 from datetime import datetime
 
 import pandas as pd
+
 # 쿠키 agree : /html/body/div/div/a
 class YML_Crawling(ParentsClass):
     def __init__(self):
@@ -31,7 +28,7 @@ class YML_Crawling(ParentsClass):
         driver = self.driver
         wait = self.wait
 
-        columns = ["Port", "Terminal", "ETA", "ETA-Status", "ETB", "ETB-Status", "ETD", "ETD-Status"]
+        columns = ["Port", "Terminal", "ETA", "ETA-Status", "ETB", "ETB-Status", "ETD", "ETD-Status", "Voy"]
 
         for vessel_name in vessel_name_list:
             vessel_name_param = vessel_name.replace(" ", "%20")
@@ -51,6 +48,16 @@ class YML_Crawling(ParentsClass):
                 print("쿠키 팝업 클릭 완료")
             except Exception:
                 pass
+
+            # 항차번호 추출 //*[@id="ContentPlaceHolder1_lblComn"]
+            try:
+                voyage_no_elem = wait.until(
+                    EC.presence_of_element_located((By.XPATH, '//*[@id="ContentPlaceHolder1_lblComn"]'))
+                )
+                voyage_no = voyage_no_elem.text.strip()
+            except Exception:
+                voyage_no = ""
+                print("항차번호 추출 실패")
 
             # 스크롤 Y 100px 내리기
             driver.execute_script("window.scrollBy(0, 100);")
@@ -81,7 +88,6 @@ class YML_Crawling(ParentsClass):
             except Exception:
                 print("다음 페이지 버튼 없음 또는 클릭 실패")
 
-
             # 두 번째 페이지 데이터도 추가로 긁어서 같은 리스트에 저장
             row_idx = 1
             while True:
@@ -97,9 +103,15 @@ class YML_Crawling(ParentsClass):
 
             # DataFrame으로 저장 (columns 없이 저장)
             df = pd.DataFrame(all_rows)
-            df.drop(columns=[0,2], inplace=True)
-            df.columns = columns
-            
+
+            # Port/Terminal/ETA/ETA-Status/ETB/ETB-Status/ETD/ETD-Status 열만 남기고, Voy 칼럼 오른쪽에 추가
+            try:
+                df.drop(columns=[0, 2], inplace=True)
+            except Exception:
+                print("DataFrame drop 실패 - 인덱스를 확인하세요.")
+            df.columns = columns[:-1]
+            df["Voy"] = voyage_no  # 맨 오른쪽 Voy 칼럼
+
             save_path = self.get_save_path(self.carrier_name, vessel_name)
             df.to_excel(save_path, index=False, header=True)
             print(f"[{vessel_name}] 테이블 원본 저장 완료: {save_path}")

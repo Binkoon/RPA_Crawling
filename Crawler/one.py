@@ -28,43 +28,41 @@ class ONE_Crawling(ParentsClass):
         "NYK DANIELLA": {"vslCdParam": "NDLT", "vslEngNmParam": "NYK+DANIELLA+%28NDLT%29"}
     }
 
-    def change_filename(self, vessel_name):
-        # 다운로드 폴더에서 가장 최근 xlsx 파일 찾기
-        files = [f for f in os.listdir(self.today_download_dir) if f.lower().endswith('.xlsx')]
-        if not files:
-            print("다운로드된 엑셀 파일이 없습니다.")
-            return
-        # 최신 파일(다운로드 순서대로 저장된 경우)
-        latest_file = max([os.path.join(self.today_download_dir, f) for f in files], key=os.path.getctime)
-        new_path = os.path.join(self.today_download_dir, f"ONE_{vessel_name}.xlsx")
-        os.rename(latest_file, new_path)
-        print(f"파일명 변경 완료: {os.path.basename(new_path)}")
-
     def run(self, vessel_name):
         # 0. 선사 접속 (동적 URL 생성)
         params = self.vessel_params[vessel_name]
         url = f"https://ecomm.one-line.com/one-ecom/schedule/vessel-schedule?vslCdParam={params['vslCdParam']}&vslEngNmParam={params['vslEngNmParam']}&f_cmd="
         self.Visit_Link(url)
         driver = self.driver
-        wait = self.wait        
+        wait = self.wait
         time.sleep(3)  # 초기 로딩 대기
 
         # 1. Download 버튼 클릭 (초기 버튼)
         download_btn_xpath = wait.until(EC.element_to_be_clickable((
             By.XPATH, '//*[@id="__next"]/main/div[2]/div[2]/div[7]/div[1]/div[3]/div/div[2]/button'
-        )))
+        )))  # 
         driver.execute_script("arguments[0].click();", download_btn_xpath)  # JS로 클릭
         time.sleep(2)  # 모달 로딩 대기
 
         # 2. 모달 팝업 대기 및 Download 버튼 클릭
         try:
             # 모달이 나타날 때까지 대기
-            modal = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="headlessui-dialog-:ra:"]')))
-            download_excel = wait.until(EC.element_to_be_clickable((
+            # modal = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="headlessui-dialog-:ra:"]')))
+
+            # PDF 라디오 버튼 클릭 (XPath는 상황에 따라 변수 처리 가능)
+            pdf_radio = wait.until(EC.element_to_be_clickable((
+                By.XPATH, '//*[@id="headlessui-dialog-:ra:"]/div[2]/div[2]/div[2]/label/input'
+            ))) # //*[@id="headlessui-dialog-:r3o:"]/div[2]/div[2]/div[2]/label/input
+            # driver.execute_script("arguments[0].click();", pdf_radio)
+            pdf_radio.click()
+            print("PDF 다운로드 옵션 선택 완료")
+            time.sleep(0.5)
+
+            download_pdf = wait.until(EC.element_to_be_clickable((
                 By.XPATH, '//*[@id="headlessui-dialog-:ra:"]/div[2]/div[3]/button[3]'
             )))
-            driver.execute_script("arguments[0].scrollIntoView(true);", download_excel)  # 요소를 화면에 보이게
-            driver.execute_script("arguments[0].click();", download_excel)  # JS로 클릭
+            driver.execute_script("arguments[0].scrollIntoView(true);", download_pdf)  # 요소를 화면에 보이게
+            driver.execute_script("arguments[0].click();", download_pdf)  # JS로 클릭
         except Exception as e:
             print(f"모달 또는 Download 버튼 클릭 중 오류 발생 ({vessel_name}): {e}")
 
@@ -78,7 +76,7 @@ class ONE_Crawling(ParentsClass):
         for vessel in vessels:
             print(f"크롤링 시작: {vessel}")
             self.run(vessel)
-            self.change_filename(vessel)
+            # self.change_filename(vessel)
             print(f"크롤링 완료: {vessel}, 10초 대기...")
             time.sleep(10)  # 429 에러 방지 및 경고 팝업 대응
         

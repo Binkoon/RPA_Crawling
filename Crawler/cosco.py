@@ -15,9 +15,8 @@ import time
 ######## 부모클래스
 from .base import ParentsClass
 ######### 데이터 저장
-import tabula
+
 import os
-import glob
 import pandas as pd
 from datetime import datetime
 
@@ -87,7 +86,7 @@ class Cosco_Crawling(ParentsClass):
 
         self.Close()
 
-        # 1. 파일명 일괄 변경
+        # 파일명 일괄 변경
         pdf_files = [f for f in os.listdir(self.today_download_dir) if f.lower().endswith('.pdf')]
         pdf_files.sort()
         for i, vessel_name in enumerate(vessel_list):

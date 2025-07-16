@@ -13,7 +13,7 @@ from selenium.webdriver.chrome.options import Options
 
 from .base import ParentsClass
 import pandas as pd
-import time,os
+import time, os
 
 import openpyxl
 
@@ -38,7 +38,6 @@ class EVERGREEN_Crawling(ParentsClass):
             pass
 
         vessel_name_list = ["EVER LUCID","EVER ELITE","EVER LASTING","EVER VIM"]
-        all_tables = []
 
         for vessel_name in vessel_name_list:
             vessel_select_elem = wait.until(
@@ -61,15 +60,22 @@ class EVERGREEN_Crawling(ParentsClass):
             print(f"Submit 버튼 클릭 완료")
 
             time.sleep(2)  # 데이터 로딩 대기  
-            ############## 여기서부터 테이블 긁어오는 것. #############
-            # 1. 페이지 내 모든 table 태그 찾기  
-            # 이런 인덱스를 타고 있다.
-            # # //*[@id="schedule"]/table/tbody/tr[2]/td/table/tbody/tr[2]/td/table/tbody/tr[2]/td[2]/table[1]/tbody/tr/td/table/tbody/tr[1]
-            # //*[@id="schedule"]/table/tbody/tr[2]/td/table/tbody/tr[2]/td/table/tbody/tr[2]/td[2]/table[1]/tbody/tr/td/table/tbody/tr[2]
-            #####################################
-            # //*[@id="schedule"]/table/tbody/tr[2]/td/table/tbody/tr[2]/td/table/tbody/tr[2]/td[2]/table[2]/tbody/tr/td/table/tbody/tr[1]
-            # //*[@id="schedule"]/table/tbody/tr[2]/td/table/tbody/tr[2]/td/table/tbody/tr[2]/td[2]/table[2]/tbody/tr/td/table/tbody/tr[2]
-            # ====== 테이블 반복 추출 시작 ======
+
+            # ====== 항차번호(span[text]) 추출 ======
+            # span[1], span[3], span[5], ... 순회
+            table_titles = []
+            span_idx = 1
+            while True:
+                try:
+                    span_xpath = f'//*[@id="schedule"]/table/tbody/tr[2]/td/table/tbody/tr[2]/td/table/tbody/tr[2]/td[2]/span[{span_idx}]'
+                    span_elem = driver.find_element(By.XPATH, span_xpath)
+                    table_titles.append(span_elem.text.strip())
+                    span_idx += 2
+                except:
+                    break  # 더 이상 span이 없으면 종료
+
+            # ====== 테이블 데이터 수집 ======
+            all_tables = []
             table_idx = 1
             while True:
                 try:
@@ -83,7 +89,10 @@ class EVERGREEN_Crawling(ParentsClass):
                         tds = row_elem.find_elements(By.TAG_NAME, "td")
                         row_data = [td.text.strip() for td in tds]
                         table_data.append(row_data)
-                    all_tables.append(table_data)
+
+                    # 테이블 데이터 + 항차번호 함께 저장
+                    voyage = table_titles[table_idx - 1] if table_idx - 1 < len(table_titles) else ""
+                    all_tables.append({"voyage": voyage, "table": table_data})
                     table_idx += 1
                 except Exception:
                     # 더 이상 table이 없으면 break
@@ -93,13 +102,15 @@ class EVERGREEN_Crawling(ParentsClass):
             # 테이블별로 DataFrame 변환 후 concat
             if all_tables:
                 df_list = []
-                for table in all_tables:
+                for item in all_tables:
+                    table = item["table"]
+                    voyage = item["voyage"]
                     if len(table) == 2:
                         df = pd.DataFrame([table[1]], columns=table[0])
+                        df["항차번호"] = voyage
                         df_list.append(df)
                 if df_list:
                     result_df = pd.concat(df_list, ignore_index=True)
-                    # 파일명에 선박명 포함
                     save_path = self.get_save_path(self.carrier_name, vessel_name)
                     result_df.to_excel(save_path, index=False)
                     print(f"엑셀 저장 완료: {save_path}")
@@ -118,17 +129,20 @@ class EVERGREEN_Crawling(ParentsClass):
                     # =========================
                     processed_rows = []
                     for idx, row in result_df.iterrows():
+                        voyage = row.get("항차번호", "")
                         for col in result_df.columns:
+                            if col == "항차번호":
+                                continue
                             cell = row[col]
                             # ARRDEP 형식인지 체크
                             if isinstance(cell, str) and len(cell) == 9 and cell.count('/') == 2:
-                                arr = cell[:5]
-                                dep = cell[5:]
-                                processed_rows.append({'Port': col, 'Type': 'ARR', 'Date': arr})
-                                processed_rows.append({'Port': col, 'Type': 'DEP', 'Date': dep})
+                                eta = cell[:5]
+                                etd = cell[5:]
+                                processed_rows.append({'항차번호': voyage, 'Port': col, 'Type': 'ETA', 'Date': eta})
+                                processed_rows.append({'항차번호': voyage, 'Port': col, 'Type': 'ETD', 'Date': etd})
                             else:
                                 # 형식이 다르면 원본값 그대로 저장(필요시 주석 해제)
-                                # processed_rows.append({'Port': col, 'Type': None, 'Date': cell})
+                                # processed_rows.append({'항차번호': voyage, 'Port': col, 'Type': None, 'Date': cell})
                                 pass
 
                     # 데이터프레임 변환 및 저장
@@ -147,8 +161,4 @@ class EVERGREEN_Crawling(ParentsClass):
                         wb2.save(processed_path)
                         print("ARR/DEP 전처리 파일에도 wrapText 적용 완료")
 
-                    
-
         self.Close()
-
-        
