@@ -1,6 +1,6 @@
 # Developer : 디지털전략팀/강현빈 사원
 # Date : 2025/07/15 (완성)
-# 선사 링크 : https://ebiz.pcsline.co.kr/
+# 선사 링크 : https://ebiz.namsung.co.kr/
 # 선박 리스트 : ["STARSHIP JUPITER, "STAR CHALLENGER" , "STAR PIONEER", "PEGASUS GRACE", "STAR FRONTIER", "STAR SKIPPER ,
 # "STARSHIP MERCURY" , "STARSHIP TAURUS", "STARSHIP DRACO", "STARSHIP URSA", "STAR CLIPPER", "STAR EXPRESS", "STARSHIP AQUILA", "STAR CHASER",
 # "STAR RANGER", "STARSHIP PEGASUS"]
@@ -45,7 +45,11 @@ class NSS_Crawling(ParentsClass):
         time.sleep(0.5)
 
         # 3. 선박명 INPUT 클릭 및 처리
-        vessel_name_list = ["STARSHIP JUPITER"]
+        vessel_name_list = ["STARSHIP JUPITER"] 
+                            # """
+                            # "STAR CHALLENGER" , "STAR PIONEER", "PEGASUS GRACE", "STAR FRONTIER", "STAR SKIPPER" ,
+                            # "STARSHIP MERCURY" , "STARSHIP TAURUS", "STARSHIP DRACO", "STARSHIP URSA", "STAR CLIPPER", "STAR EXPRESS", "STARSHIP AQUILA", "STAR CHASER",
+                            # "STAR RANGER", "STARSHIP PEGASUS"]"""
         
         for vessel_name in vessel_name_list:
             all_rows = []
@@ -74,10 +78,12 @@ class NSS_Crawling(ParentsClass):
                     voy_dropdown_btn = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="mf_tac_layout_contents_00010004_body_ibx_voy_button"]')))
                     driver.execute_script("arguments[0].click();", voy_dropdown_btn)
                     time.sleep(0.5)
-
+                    
                     # 항차 tr 클릭
                     tr_xpath = f'//*[@id="mf_tac_layout_contents_00010004_body_ibx_voy_itemTable_main"]/tbody/tr[{index}]'
                     voyage_tr = wait.until(EC.element_to_be_clickable((By.XPATH, tr_xpath)))
+                    # 항차 tr 클릭 전에 텍스트 추출
+                    voyage_text = voyage_tr.text.strip()
                     voyage_tr.click()
                     time.sleep(0.5)
 
@@ -86,7 +92,44 @@ class NSS_Crawling(ParentsClass):
                     search_btn.click()
                     time.sleep(1)
 
+                    table_xpath = '//*[@id="mf_tac_layout_contents_00010004_body_grd_cur_body_table"]'
+                    table_elem = wait.until(EC.presence_of_element_located((By.XPATH, table_xpath)))
+                    all_rows = []
+
+                    last_row_reached = False
+                    scroll_attempts = 0
+                    max_scroll_attempts = 30
+
+                    while not last_row_reached and scroll_attempts < max_scroll_attempts:
+                        tr_list = table_elem.find_elements(By.TAG_NAME, 'tr')
+                        for tr in tr_list:
+                            class_attr = tr.get_attribute('class')
+                            row_data = [td.text.strip() for td in tr.find_elements(By.TAG_NAME, 'td')]
+                            row_data.append(voyage_text)
+                            all_rows.append(row_data)
+                            if 'w2grid_lastRow' in class_attr:
+                                last_row_reached = True
+                                break
+
+                        if last_row_reached:
+                            break
+
+                        driver.execute_script("arguments[0].scrollTop += 100;", table_elem)
+                        time.sleep(0.7)
+                        scroll_attempts += 1
+
+                    index += 1
+
                 except Exception:
-                    print("oh shit")
+                    # 더 이상 항차 tr이 없으면 break
+                    break
+                    
+            # 컬럼명 예시 (실제 테이블 구조에 맞게 수정)
+            if all_rows:
+                columns = ['No','Port','Skip','Terminal','ETA-Day','ETA-Date','ETA-Time','ETD-Day','ETD-Date','ETD-Time','Remark','Voy']
+                df = pd.DataFrame(all_rows, columns=columns)
+                save_path = self.get_save_path(self.carrier_name, vessel_name)
+                df.to_excel(save_path, index=False)
+                print(f"엑셀 저장 완료: {save_path}")
 
         self.Close()

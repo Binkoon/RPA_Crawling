@@ -51,10 +51,10 @@ class ONE_Crawling(ParentsClass):
 
             # PDF 라디오 버튼 클릭 (XPath는 상황에 따라 변수 처리 가능)
             pdf_radio = wait.until(EC.element_to_be_clickable((
-                By.XPATH, '//*[@id="headlessui-dialog-:ra:"]/div[2]/div[2]/div[2]/label/input'
-            ))) # //*[@id="headlessui-dialog-:r3o:"]/div[2]/div[2]/div[2]/label/input
-            # driver.execute_script("arguments[0].click();", pdf_radio)
-            pdf_radio.click()
+                By.XPATH, '//*[@id="headlessui-dialog-:ra:"]/div[2]/div[2]/div[2]/label/div'
+            ))) # //*[@id="headlessui-dialog-:ra:"]/div[2]/div[2]/div[2]/label/div
+            # pdf_radio.click()
+            driver.execute_script("arguments[0].click();",pdf_radio)
             print("PDF 다운로드 옵션 선택 완료")
             time.sleep(0.5)
 
@@ -79,5 +79,6 @@ class ONE_Crawling(ParentsClass):
             # self.change_filename(vessel)
             print(f"크롤링 완료: {vessel}, 10초 대기...")
             time.sleep(10)  # 429 에러 방지 및 경고 팝업 대응
+        
         
         self.Close()

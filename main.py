@@ -20,8 +20,8 @@ from crawler import nss
 
 if __name__ == "__main__":
     print("Entry Point is Here")
-    sitc_data = sitc.SITC_Crawling()   # 현재 스케줄 테이블 엑셀로 추출하는 작업 중
-    sitc_data.run()
+    # sitc_data = sitc.SITC_Crawling()   # 현재 스케줄 테이블 엑셀로 추출하는 작업 중
+    # sitc_data.run()
 
     # evergreen_data = evergreen.EVERGREEN_Crawling()
     # evergreen_data.run()
@@ -65,5 +65,5 @@ if __name__ == "__main__":
     # pil_data = pil.PIL_Crawling()
     # pil_data.run()
 
-    # nss_data = nss.NSS_Crawling()
-    # nss_data.run()
+    nss_data = nss.NSS_Crawling()
+    nss_data.run()
