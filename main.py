@@ -62,8 +62,8 @@ if __name__ == "__main__":
     # yml_data = yml.YML_Crawling()
     # yml_data.run()
 
-    # pil_data = pil.PIL_Crawling()
-    # pil_data.run()
+    pil_data = pil.PIL_Crawling()
+    pil_data.run()
 
-    nss_data = nss.NSS_Crawling()
-    nss_data.run()
+    # nss_data = nss.NSS_Crawling()
+    # nss_data.run()

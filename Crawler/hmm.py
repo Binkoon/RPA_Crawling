@@ -63,33 +63,47 @@ class HMM_Crawling(ParentsClass):
             search_btn.click()
             time.sleep(1.2) # 리스트 기다려줘
 
-            # 4. 다운로드 클릭
-            download_btn = wait.until(EC.element_to_be_clickable((
-                By.XPATH, '//*[@id="tab3Contents"]/div/div[3]/div[2]/button'
-            )))
-            download_btn.click()
-            time.sleep(2) # 이거 무조건 넣어주셈. 안넣으면 아직 다운로드 중일때 프로세스 종료해서 .tmp 파일로 뱉게 된다.
-        
+        # columns = ["Vessel Cdoe","Voyage" ,"Port","Terminal", "Rating Date", "ETA","ETB","ETD","Current Location"]
+        # //*[@id="byVesselNameArea"]/tr[1] ~  //*[@id="byVesselNameArea"]/tr[8]
+        # //*[@id="byVesselNextArea"]/div/div/a[2]  (next버튼)
+        # //*[@id="byVesselNameArea"]/tr[1] ~  //*[@id="byVesselNameArea"]/tr[8]
+        # -------------- 테이블 긁기: 페이지 1 --------------
+            all_rows = []
+            table_xpath_base = '//*[@id="byVesselNameArea"]/tr['
+
+            def extract_table_rows():
+                for idx in range(1, 9):  # tr[1]~tr[8]
+                    try:
+                        row_xpath = table_xpath_base + f"{idx}]"
+                        tr = driver.find_element(By.XPATH, row_xpath)
+                        tds = tr.find_elements(By.TAG_NAME, 'td')
+                        row_data = [td.text.strip() for td in tds]
+                        # 필터링 조건 추가 가능
+                        if any(row_data):  # 빈 행 제거
+                            all_rows.append(row_data)
+                    except:
+                        pass  # 혹시 없는 tr 인덱스는 건너뜀
+
+            extract_table_rows()
+
+            # -------------- 페이지 아래로 내리고 next 클릭 --------------
+            driver.execute_script("window.scrollBy(0,150);")
+            time.sleep(1)
+
+            try:
+                next_btn = driver.find_element(By.XPATH, '//*[@id="byVesselNextArea"]/div/div/a[2]')
+                next_btn.click()
+                time.sleep(1.5)  # 다음 페이지 로딩 대기
+                extract_table_rows()  # 다음 페이지 8줄 추가로 긁기
+            except Exception as e:
+                print(f"다음 페이지 버튼 클릭 실패: {e}")
+
+            # ----------- 엑셀 파일 저장 -----------
+            columns = ["Vessel Code", "Voyage" ,"Port","Terminal", "Rating Date", "ETA","ETB","ETD","Current Location"]
+            df = pd.DataFrame(all_rows, columns=columns)
+
+            file_path = self.get_save_path(self.carrier_name, vessel_name, ext="xlsx")
+            df.to_excel(file_path, index=False, engine="openpyxl")
+            print(f"엑셀 저장 완료: {file_path}")
+
         self.Close()
-
-
-        vessel_name = "HMM BANGKOK"
-        old_path = os.path.join(self.today_download_dir, "byVesselName.xls")
-        new_path = os.path.join(self.today_download_dir, f"HMM_{vessel_name}.xls")
-        if os.path.exists(old_path):
-            os.rename(old_path, new_path)
-            print(f"파일명 변경 완료: {new_path}")
-        else:
-            print("다운로드 파일이 없습니다.")
-
-        if os.path.exists(new_path):
-            df = pd.read_excel(new_path)
-            col_map = {
-                'Vessel Voyage No.': 'Vessel Code',
-                'Arrival': 'ETA',
-                'Berthing': 'ETB',
-                'Departure': 'ETD'
-            }
-            df.rename(columns=col_map, inplace=True)
-            df.to_excel(new_path, index=False)
-            print(f"칼럼명 변경 및 저장 완료: {os.path.basename(new_path)}")

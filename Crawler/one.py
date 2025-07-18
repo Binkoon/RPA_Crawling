@@ -12,7 +12,9 @@ from selenium.webdriver.support import expected_conditions as EC
 
 from .base import ParentsClass
 import time
-import os
+import os,re
+
+from datetime import datetime
 
 class ONE_Crawling(ParentsClass):
     def __init__(self):
@@ -21,12 +23,38 @@ class ONE_Crawling(ParentsClass):
 
     # 선박별 파라미터 매핑 (URL에 맞게 조정)
     vessel_params = {
-        "ONE REASSURANCE": {"vslCdParam": "RSCT", "vslEngNmParam": "ONE+REASSURANCE+%28RSCT%29"},
-        "SAN FRANCISCO BRIDGE": {"vslCdParam": "SFDT", "vslEngNmParam": "SAN+FRANCISCO+BRIDGE+%28SFDT%29"},
-        "ONE MARVEL": {"vslCdParam": "ONMT", "vslEngNmParam": "ONE+MARVEL+%28ONMT%29"},
-        "MARIA C": {"vslCdParam": "RCMT", "vslEngNmParam": "MARIA+C+%28RCMT%29"},
-        "NYK DANIELLA": {"vslCdParam": "NDLT", "vslEngNmParam": "NYK+DANIELLA+%28NDLT%29"}
+        "ONE REASSURANCE": {"vslCdParam": "RSCT", "vslEngNmParam": "ONE+REASSURANCE+%28RSCT%29"}
+        # "SAN FRANCISCO BRIDGE": {"vslCdParam": "SFDT", "vslEngNmParam": "SAN+FRANCISCO+BRIDGE+%28SFDT%29"},
+        # "ONE MARVEL": {"vslCdParam": "ONMT", "vslEngNmParam": "ONE+MARVEL+%28ONMT%29"},
+        # "MARIA C": {"vslCdParam": "RCMT", "vslEngNmParam": "MARIA+C+%28RCMT%29"},
+        # "NYK DANIELLA": {"vslCdParam": "NDLT", "vslEngNmParam": "NYK+DANIELLA+%28NDLT%29"}
     }
+
+    def change_filename(self, vessel_name):
+        # 오늘 날짜 폴더
+        target_dir = self.today_download_dir
+
+        # ONE의 다운로드 파일명 패턴 (예: ONE Vessel Schedule 250718.pdf, ONE Vessel Schedule 250718 (1).pdf ...)
+        today_str = datetime.now().strftime("%y%m%d")
+        pattern = re.compile(rf"^ONE Vessel Schedule {today_str}( \(\d+\))?\.pdf$")  # ( \(\d+\))?는 (1), (2) 등의 번호도 매치
+
+        # 폴더 내 파일 전체 중 위 패턴과 맞는 것 찾기
+        candidates = [f for f in os.listdir(target_dir) if pattern.match(f)]
+        if not candidates:
+            print("오늘자 ONE PDF 파일이 없습니다.")
+            return
+        
+        # (여러개라면 방금 생성된 것 우선, mtime 정렬)
+        candidates = sorted(candidates, key=lambda f: os.path.getmtime(os.path.join(target_dir, f)), reverse=True)
+        old_file = os.path.join(target_dir, candidates[0])
+
+        new_file = self.get_save_path('ONE', vessel_name, ext="pdf")
+        # 이미 같은 이름 있다면 덮어쓰지 않게 예외처리
+        if os.path.exists(new_file):
+            os.remove(new_file)  # 또는, 뒤에 "_1" 등 붙여도 됨
+
+        os.rename(old_file, new_file)
+        print(f"파일명 변경: {candidates[0]} → {os.path.basename(new_file)}")
 
     def run(self, vessel_name):
         # 0. 선사 접속 (동적 URL 생성)
@@ -72,11 +100,11 @@ class ONE_Crawling(ParentsClass):
 
     def start_crawling(self):
         # 선박 리스트 순회
-        vessels = ["ONE REASSURANCE", "SAN FRANCISCO BRIDGE", "ONE MARVEL", "MARIA C", "NYK DANIELLA"]
+        vessels = ["ONE REASSURANCE"] #, "SAN FRANCISCO BRIDGE"] #, "ONE MARVEL", "MARIA C", "NYK DANIELLA"]
         for vessel in vessels:
             print(f"크롤링 시작: {vessel}")
             self.run(vessel)
-            # self.change_filename(vessel)
+            self.change_filename(vessel)
             print(f"크롤링 완료: {vessel}, 10초 대기...")
             time.sleep(10)  # 429 에러 방지 및 경고 팝업 대응
         
