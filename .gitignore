@@ -7,3 +7,6 @@
 
 *.pyc
 *.pyo
+
+# json 파일 무시
+*.json
