@@ -1,3 +1,5 @@
+# 이 작업은 크롤링을 전부 다 돌린 이후에 실행할 것.
+
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
@@ -5,13 +7,13 @@ import os
 import datetime
 
 # 서비스 계정 JSON 경로
-SERVICE_ACCOUNT_FILE = 'service_account.json'
+SERVICE_ACCOUNT_FILE = 'kmtcrpa-eece167cb0ad.json'
 
 # 범위 (구글 드라이브 API)
 SCOPES = ['https://www.googleapis.com/auth/drive']
 
 # 공유 드라이브 ID (구글 드라이브 웹 공유 드라이브 주소에서 확인)
-SHARED_DRIVE_ID = '여기에_공유드라이브_ID를_적으세요'
+SHARED_DRIVE_ID = '1LDNUDHuVOOgsSxNLeayshu7QiBY5Qh4u'
 
 def get_drive_service():
     creds = service_account.Credentials.from_service_account_file(
@@ -33,6 +35,7 @@ def find_folder_in_drive(service, folder_name, parent_id=None):
         fields='files(id, name)',
         supportsAllDrives=True,
         includeItemsFromAllDrives=True,
+        corpora='drive', # 기본 드라이브면 몰라도 공유 드라이브는 이게 필요해.
         driveId=SHARED_DRIVE_ID
     ).execute()
 

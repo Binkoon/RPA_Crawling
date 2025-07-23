@@ -23,9 +23,9 @@ class ONE_Crawling(ParentsClass):
 
     # 선박별 파라미터 매핑 (URL에 맞게 조정)
     vessel_params = {
-        "ONE REASSURANCE": {"vslCdParam": "RSCT", "vslEngNmParam": "ONE+REASSURANCE+%28RSCT%29"}
-        # "SAN FRANCISCO BRIDGE": {"vslCdParam": "SFDT", "vslEngNmParam": "SAN+FRANCISCO+BRIDGE+%28SFDT%29"},
-        # "ONE MARVEL": {"vslCdParam": "ONMT", "vslEngNmParam": "ONE+MARVEL+%28ONMT%29"},
+        # "ONE REASSURANCE": {"vslCdParam": "RSCT", "vslEngNmParam": "ONE+REASSURANCE+%28RSCT%29"},
+        # "SAN FRANCISCO BRIDGE": {"vslCdParam": "SFDT", "vslEngNmParam": "SAN+FRANCISCO+BRIDGE+%28SFDT%29"}
+        "ONE MARVEL": {"vslCdParam": "ONMT", "vslEngNmParam": "ONE+MARVEL+%28ONMT%29"},
         # "MARIA C": {"vslCdParam": "RCMT", "vslEngNmParam": "MARIA+C+%28RCMT%29"},
         # "NYK DANIELLA": {"vslCdParam": "NDLT", "vslEngNmParam": "NYK+DANIELLA+%28NDLT%29"}
     }
@@ -36,7 +36,7 @@ class ONE_Crawling(ParentsClass):
 
         # ONE의 다운로드 파일명 패턴 (예: ONE Vessel Schedule 250718.pdf, ONE Vessel Schedule 250718 (1).pdf ...)
         today_str = datetime.now().strftime("%y%m%d")
-        pattern = re.compile(rf"^ONE Vessel Schedule {today_str}( \(\d+\))?\.pdf$")  # ( \(\d+\))?는 (1), (2) 등의 번호도 매치
+        pattern = re.compile(rf"^ONE Vessel Schedule {today_str}(\s?\(\d+\))?\.pdf$")# ( \(\d+\))?는 (1), (2) 등의 번호도 매치시켜야함 ㅋ
 
         # 폴더 내 파일 전체 중 위 패턴과 맞는 것 찾기
         candidates = [f for f in os.listdir(target_dir) if pattern.match(f)]
@@ -100,7 +100,7 @@ class ONE_Crawling(ParentsClass):
 
     def start_crawling(self):
         # 선박 리스트 순회
-        vessels = ["ONE REASSURANCE"] #, "SAN FRANCISCO BRIDGE"] #, "ONE MARVEL", "MARIA C", "NYK DANIELLA"]
+        vessels = ["ONE MARVEL"] #, "MARIA C", "NYK DANIELLA"] ["ONE REASSURANCE"] #, ["SAN FRANCISCO BRIDGE"] 
         for vessel in vessels:
             print(f"크롤링 시작: {vessel}")
             self.run(vessel)
