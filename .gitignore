@@ -10,3 +10,6 @@
 
 # json 파일 무시
 *.json
+
+# toekn 파일 무시
+*.pickle
