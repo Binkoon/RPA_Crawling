@@ -2,7 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.options import Options
-
+import logging
 import os
 from datetime import datetime
 
@@ -25,12 +25,52 @@ class ParentsClass:
         if not os.path.exists(self.today_download_dir):
             os.makedirs(self.today_download_dir)
 
+        # Log 폴더 구조 생성
+        self.setup_log_folder()
+
         prefs = {"download.default_directory": self.today_download_dir}
         chrome_options.add_experimental_option("prefs", prefs)
 
         self.driver = webdriver.Chrome(options=chrome_options)
         self.wait = WebDriverWait(self.driver, 20)
 
+    def setup_log_folder(self):
+        """ErrorLog 폴더 구조 생성"""
+        # ErrorLog 폴더 생성
+        self.log_base_dir = os.path.join(os.getcwd(), "ErrorLog")
+        if not os.path.exists(self.log_base_dir):
+            os.makedirs(self.log_base_dir)
+        
+        # 날짜별 폴더 생성 (YYYY-MM-DD 형식)
+        self.today_log_folder = datetime.now().strftime("%Y-%m-%d")
+        self.today_log_dir = os.path.join(self.log_base_dir, self.today_log_folder)
+        if not os.path.exists(self.today_log_dir):
+            os.makedirs(self.today_log_dir)
+
+    def setup_logging(self, carrier_name, has_error=False):
+        """
+        로깅 설정 - 에러가 발생한 경우에만 파일 로그 생성
+        
+        Args:
+            carrier_name: 선사명
+            has_error: 에러 발생 여부 (True인 경우에만 파일 로그 생성)
+        """
+        # 핸들러 설정
+        handlers = [logging.StreamHandler()]  # 콘솔 출력은 항상
+        
+        # 에러가 발생한 경우에만 파일 핸들러 추가
+        if has_error:
+            log_filename = f"{carrier_name.lower()}ErrorLog.txt"
+            log_file_path = os.path.join(self.today_log_dir, log_filename)
+            handlers.append(logging.FileHandler(log_file_path, encoding='utf-8'))
+        
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s',
+            handlers=handlers
+        )
+        
+        return logging.getLogger(__name__)
 
     def Visit_Link(self, url):
         self.driver.get(url)

@@ -7,7 +7,7 @@ import os
 import datetime
 
 # 서비스 계정 JSON 경로
-SERVICE_ACCOUNT_FILE = 'kmtcrpa-eece167cb0ad.json'
+SERVICE_ACCOUNT_FILE = os.path.join('token', 'kmtcrpa-eece167cb0ad.json')
 
 # 범위 (구글 드라이브 API)
 SCOPES = ['https://www.googleapis.com/auth/drive']
@@ -29,15 +29,28 @@ def find_folder_in_drive(service, folder_name, parent_id=None):
         # 루트가 공유 드라이브라면, 'root' 아님. shared drive 속성으로 따로 체크
         query += f" and '{SHARED_DRIVE_ID}' in parents"
 
-    results = service.files().list(
-        q=query,
-        spaces='drive',
-        fields='files(id, name)',
-        supportsAllDrives=True,
-        includeItemsFromAllDrives=True,
-        corpora='drive', # 기본 드라이브면 몰라도 공유 드라이브는 이게 필요해.
-        driveId=SHARED_DRIVE_ID
-    ).execute()
+    try:
+        results = service.files().list(
+            q=query,
+            spaces='drive',
+            fields='files(id, name)',
+            supportsAllDrives=True,
+            includeItemsFromAllDrives=True,
+            corpora='drive',
+            driveId=SHARED_DRIVE_ID
+        ).execute()
+    except Exception as e:
+        print(f"API 호출 에러: {e}")
+        # 대안: 공유 드라이브에서 직접 검색
+        results = service.files().list(
+            q=query,
+            spaces='drive',
+            fields='files(id, name)',
+            supportsAllDrives=True,
+            includeItemsFromAllDrives=True
+        ).execute()
+    
+    return results
 
     files = results.get('files', [])
     if len(files) > 0:

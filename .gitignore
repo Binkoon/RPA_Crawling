@@ -1,15 +1,37 @@
-# 엑셀 파일 무시
+# 데이터 파일 무시
 *.xlsx
 *.xls
-
-# PDF 파일 무시
 *.pdf
 
+# Python 캐시 파일
 *.pyc
 *.pyo
+__pycache__/
+*.py[cod]
 
-# json 파일 무시
+# 인증 파일 무시 (보안상 중요)
 *.json
-
-# toekn 파일 무시
 *.pickle
+token/
+
+# 로그 파일 무시
+*.txt
+ErrorLog/
+main_crawling_log.txt
+
+# 크롤링 데이터 폴더
+scheduleData/
+
+# IDE 설정 파일
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS 생성 파일
+.DS_Store
+Thumbs.db
+
+# 임시 파일
+*.tmp
+*.temp

@@ -23,6 +23,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
+import logging
+import traceback
 
 from .base import ParentsClass
 import time
@@ -32,6 +34,17 @@ class SMLINE_Crawling(ParentsClass):
     def __init__(self):
         super().__init__()
         self.carrier_name = "SML"
+        
+        # 로깅 설정
+        self.setup_logging()
+        
+        # 선박 리스트
+        self.vessel_name_list = ["SM JAKARTA"]
+        
+        # 크롤링 결과 추적
+        self.success_count = 0
+        self.fail_count = 0
+        self.failed_vessels = []
 
         # SMLINE은 저장할때, "다름이름으로 저장이 떠가지고 얘만 따로"
         chrome_options = Options()
@@ -45,54 +58,145 @@ class SMLINE_Crawling(ParentsClass):
         self.driver = webdriver.Chrome(options=chrome_options)
         self.wait = WebDriverWait(self.driver, 20)
 
-    def run(self):
-        # 0. 선사 접속
-        self.Visit_Link("https://esvc.smlines.com/smline/CUP_HOM_3005.do?sessLocale=ko")
-        driver = self.driver
-        wait = self.wait
-
-        # 1. input 찾기
-        vessel_input = wait.until(EC.element_to_be_clickable((
-            By.XPATH , '//*[@id="vslEngNm"]'
-        )))
-        vessel_input.click()
-
-        vessel_name_list = ["SM JAKARTA"]
-        # 2. 선박 넣기
-        for vessel_name in vessel_name_list:
-            vessel_input.clear()
-            vessel_input.send_keys(vessel_name)
-            time.sleep(1)
-
-            vessel_select = wait.until(EC.element_to_be_clickable((
-                By.XPATH , '/html/body/ul/li'
-            )))
-            vessel_select.click()
-            time.sleep(1)
-
-            search_btn = wait.until(EC.element_to_be_clickable((
-                By.XPATH , '//*[@id="btnSearch"]'
-            )))
-            search_btn.click()
-            time.sleep(1)
-
-            download_btn = wait.until(EC.element_to_be_clickable((
-                By.XPATH , '//*[@id="btnDownload"]'
-            )))
-            download_btn.click()
-            time.sleep(1)
-
-            vessel_name = "SM JAKARTA"
-            old_path = os.path.join(self.today_download_dir, "Vessel Schedule.xls")
-            new_name = f"{self.carrier_name}_{vessel_name}.xls"
-            new_path = os.path.join(self.today_download_dir, new_name)
-
-            if os.path.exists(old_path):
-                os.rename(old_path, new_path)
-                print(f"파일명 변경 완료: {new_path}")
-            else:
-                print("다운로드 파일이 없습니다.")
+    def setup_logging(self):
+        """로깅 설정"""
+        # 초기에는 에러가 없으므로 파일 로그 생성하지 않음
+        self.logger = self.setup_logging(self.carrier_name, has_error=False)
         
-        self.Close()
+    def setup_logging_with_error(self):
+        """에러 발생 시 로깅 설정"""
+        # 에러가 발생했으므로 파일 로그 생성
+        self.logger = self.setup_logging(self.carrier_name, has_error=True)
+
+    def step1_visit_website(self):
+        """1단계: 선사 홈페이지 접속"""
+        try:
+            self.logger.info("=== 1단계: 선사 홈페이지 접속 시작 ===")
+            
+            # 0. 선사 접속
+            self.Visit_Link("https://esvc.smlines.com/smline/CUP_HOM_3005.do?sessLocale=ko")
+            driver = self.driver
+            wait = self.wait
+
+            # 1. input 찾기
+            vessel_input = wait.until(EC.element_to_be_clickable((
+                By.XPATH , '//*[@id="vslEngNm"]'
+            )))
+            vessel_input.click()
+            
+            self.logger.info("=== 1단계: 선사 홈페이지 접속 완료 ===")
+            return True
+            
+        except Exception as e:
+            # 에러 발생 시 로깅 설정 변경
+            self.setup_logging_with_error()
+            self.logger.error(f"=== 1단계: 선사 홈페이지 접속 실패 ===")
+            self.logger.error(f"에러 메시지: {str(e)}")
+            self.logger.error(f"상세 에러: {traceback.format_exc()}")
+            return False
+
+    def step2_crawl_vessel_data(self):
+        """2단계: 지정된 선박별로 루핑 작업 시작"""
+        try:
+            self.logger.info("=== 2단계: 선박별 데이터 크롤링 시작 ===")
+            
+            driver = self.driver
+            wait = self.wait
+
+            # 2. 선박 넣기
+            for vessel_name in self.vessel_name_list:
+                try:
+                    self.logger.info(f"선박 {vessel_name} 크롤링 시작")
+                    
+                    vessel_input = wait.until(EC.element_to_be_clickable((
+                        By.XPATH , '//*[@id="vslEngNm"]'
+                    )))
+                    vessel_input.clear()
+                    vessel_input.send_keys(vessel_name)
+                    time.sleep(1)
+
+                    vessel_select = wait.until(EC.element_to_be_clickable((
+                        By.XPATH , '/html/body/ul/li'
+                    )))
+                    vessel_select.click()
+                    time.sleep(1)
+
+                    search_btn = wait.until(EC.element_to_be_clickable((
+                        By.XPATH , '//*[@id="btnSearch"]'
+                    )))
+                    search_btn.click()
+                    time.sleep(1)
+
+                    download_btn = wait.until(EC.element_to_be_clickable((
+                        By.XPATH , '//*[@id="btnDownload"]'
+                    )))
+                    download_btn.click()
+                    time.sleep(1)
+
+                    vessel_name = "SM JAKARTA"
+                    old_path = os.path.join(self.today_download_dir, "Vessel Schedule.xls")
+                    new_name = f"{self.carrier_name}_{vessel_name}.xls"
+                    new_path = os.path.join(self.today_download_dir, new_name)
+
+                    if os.path.exists(old_path):
+                        os.rename(old_path, new_path)
+                        self.logger.info(f"파일명 변경 완료: {new_path}")
+                        self.success_count += 1
+                    else:
+                        self.logger.warning("다운로드 파일이 없습니다.")
+                        self.fail_count += 1
+                        self.failed_vessels.append(vessel_name)
+                    
+                    self.logger.info(f"선박 {vessel_name} 크롤링 완료")
+                    
+                except Exception as e:
+                    self.logger.error(f"선박 {vessel_name} 크롤링 실패: {str(e)}")
+                    self.fail_count += 1
+                    self.failed_vessels.append(vessel_name)
+                    continue
+            
+            self.logger.info("=== 2단계: 선박별 데이터 크롤링 완료 ===")
+            self.logger.info(f"성공: {self.success_count}개, 실패: {self.fail_count}개")
+            return True
+            
+        except Exception as e:
+            # 에러 발생 시 로깅 설정 변경
+            self.setup_logging_with_error()
+            self.logger.error(f"=== 2단계: 선박별 데이터 크롤링 실패 ===")
+            self.logger.error(f"에러 메시지: {str(e)}")
+            self.logger.error(f"상세 에러: {traceback.format_exc()}")
+            return False
+
+    def run(self):
+        """메인 실행 함수"""
+        try:
+            self.logger.info("=== SMLINE 크롤링 시작 ===")
+            
+            # 1단계: 선사 홈페이지 접속
+            if not self.step1_visit_website():
+                return False
+            
+            # 2단계: 지정된 선박별로 루핑 작업 시작
+            if not self.step2_crawl_vessel_data():
+                return False
+            
+            # 최종 결과 로깅
+            self.logger.info("=== SMLINE 크롤링 완료 ===")
+            self.logger.info(f"총 {len(self.vessel_name_list)}개 선박 중")
+            self.logger.info(f"성공: {self.success_count}개")
+            self.logger.info(f"실패: {self.fail_count}개")
+            if self.failed_vessels:
+                self.logger.info(f"실패한 선박: {', '.join(self.failed_vessels)}")
+            
+            self.Close()
+            return True
+            
+        except Exception as e:
+            # 에러 발생 시 로깅 설정 변경
+            self.setup_logging_with_error()
+            self.logger.error(f"=== SMLINE 크롤링 전체 실패 ===")
+            self.logger.error(f"에러 메시지: {str(e)}")
+            self.logger.error(f"상세 에러: {traceback.format_exc()}")
+            return False
 
         # //*[@id="vvd"]  
