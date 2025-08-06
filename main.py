@@ -108,9 +108,6 @@ if __name__ == "__main__":
     # 크롤링 결과를 저장할 리스트
     crawling_results = []
     
-    # 첫 번째 5개 선사 실행
-    print("\n=== 첫 번째 5개 선사 실행 ===")
-    
     sitc_data = sitc.SITC_Crawling()
     result = run_crawler_with_error_handling("SITC", sitc_data)
     crawling_results.append(("SITC", result))
@@ -131,10 +128,6 @@ if __name__ == "__main__":
     result = run_crawler_with_error_handling("CKLINE", ckline_data)
     crawling_results.append(("CKLINE", result))
     
-    print("=== 첫 번째 5개 선사 완료 ===")
-    
-    # 나머지 선사들은 주석 처리 (필요시 주석 해제)
-    """
     panocean_data = panocean.PANOCEAN_Crawling()
     result = run_crawler_with_error_handling("PANOCEAN", panocean_data)
     crawling_results.append(("PANOCEAN", result))
@@ -174,11 +167,6 @@ if __name__ == "__main__":
     one_data = one.ONE_Crawling()
     result = run_crawler_with_error_handling("ONE", one_data)
     crawling_results.append(("ONE", result))
-
-    # pil_data = pil.PIL_Crawling()
-    # result = run_crawler_with_error_handling("PIL", pil_data)
-    # crawling_results.append(("PIL", result))
-    """
 
     # 전체 크롤링 종료 시간
     total_end_time = datetime.now()
@@ -241,8 +229,8 @@ if __name__ == "__main__":
     try:
         # Google 폴더의 업로드 스크립트 import
         sys.path.append(os.path.join(os.getcwd(), 'Google'))
-        from upload_to_drive_oauth import main as upload_to_drive_main
-        
+        from .Google.upload_to_drive_oauth import main as upload_to_drive_main
+    
         # 업로드 실행
         upload_to_drive_main()
         
