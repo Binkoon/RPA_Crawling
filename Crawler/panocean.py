@@ -61,12 +61,12 @@ class PANOCEAN_Crawling(ParentsClass):
     def setup_logging(self):
         """로깅 설정"""
         # 초기에는 에러가 없으므로 파일 로그 생성하지 않음
-        self.logger = self.setup_logging(self.carrier_name, has_error=False)
+        self.logger = super().setup_logging(self.carrier_name, has_error=False)
         
     def setup_logging_with_error(self):
         """에러 발생 시 로깅 설정"""
         # 에러가 발생했으므로 파일 로그 생성
-        self.logger = self.setup_logging(self.carrier_name, has_error=True)
+        self.logger = super().setup_logging(self.carrier_name, has_error=True)
 
     def step1_visit_website_and_click_tabs(self):
         """1단계: 선사 홈페이지 접속 + 스케줄 탭 클릭 + 선박 탭 클릭"""

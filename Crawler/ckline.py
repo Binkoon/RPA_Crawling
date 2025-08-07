@@ -4,7 +4,7 @@
 # 선박 리스트 : 
 """
 ["SKY MOON" , "SKY FLOWER" , "SKY JADE" , "SKY TIARA" , "SUNWIN" , "SKY VICTORIA" , "VICTORY STAR", 
-"SKY IRIS" , "SKY SUNSHINE" , "SKY RAINBOW" , "BAL BOAN" , "SKY CHALLENGE" ,"BEI HAI" ,"XIN TAI PING" , "SKY ORION"]
+"SKY IRIS" , "SKY SUNSHINE" , "SKY RAINBOW" , "BAL BOAN" , "SKY CHALLENGE" ,"XIN TAI PING" , "SKY ORION"]
 """
 
 # 추가 정보 : 선박이 꽤 많음. 다운로드 받다가 파일명 ReName에서 가끔 꼬일때가 있음. 수정 필요
@@ -33,7 +33,7 @@ class CKLINE_Crawling(ParentsClass):
         
         # 선박 리스트
         self.vessel_name_list = ["SKY MOON", "SKY FLOWER" , "SKY JADE" , "SKY TIARA" , "SUNWIN" , "SKY VICTORIA" , "VICTORY STAR", 
-                                "SKY IRIS" , "SKY SUNSHINE" , "SKY RAINBOW" , "BAL BOAN" , "SKY CHALLENGE" ,"BEI HAI" ,"XIN TAI PING" , "SKY ORION"]
+                                "SKY IRIS" , "SKY SUNSHINE" , "SKY RAINBOW" , "BAL BOAN" , "SKY CHALLENGE" ,"XIN TAI PING" , "SKY ORION"]
         
         # 크롤링 결과 추적
         self.success_count = 0
@@ -43,12 +43,12 @@ class CKLINE_Crawling(ParentsClass):
     def setup_logging(self):
         """로깅 설정"""
         # 초기에는 에러가 없으므로 파일 로그 생성하지 않음
-        self.logger = self.setup_logging(self.carrier_name, has_error=False)
+        self.logger = super().setup_logging(self.carrier_name, has_error=False)
         
     def setup_logging_with_error(self):
         """에러 발생 시 로깅 설정"""
         # 에러가 발생했으므로 파일 로그 생성
-        self.logger = self.setup_logging(self.carrier_name, has_error=True)
+        self.logger = super().setup_logging(self.carrier_name, has_error=True)
 
     def step1_visit_website_and_handle_popup(self):
         """1단계: 웹사이트 방문 및 팝업 처리"""

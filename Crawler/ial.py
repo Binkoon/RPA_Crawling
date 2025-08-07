@@ -40,12 +40,12 @@ class IAL_Crawling(ParentsClass):
     def setup_logging(self):
         """로깅 설정"""
         # 초기에는 에러가 없으므로 파일 로그 생성하지 않음
-        self.logger = self.setup_logging(self.carrier_name, has_error=False)
+        self.logger = super().setup_logging(self.carrier_name, has_error=False)
         
     def setup_logging_with_error(self):
         """에러 발생 시 로깅 설정"""
         # 에러가 발생했으므로 파일 로그 생성
-        self.logger = self.setup_logging(self.carrier_name, has_error=True)
+        self.logger = super().setup_logging(self.carrier_name, has_error=True)
 
     def step1_visit_website_with_vessel_params(self):
         """1단계: 지정된 선박별로 url param값만 변경하는 식으로 선사 홈페이지 접속"""

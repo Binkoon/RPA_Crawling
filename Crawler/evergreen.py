@@ -38,12 +38,12 @@ class EVERGREEN_Crawling(ParentsClass):
     def setup_logging(self):
         """로깅 설정"""
         # 초기에는 에러가 없으므로 파일 로그 생성하지 않음
-        self.logger = self.setup_logging(self.carrier_name, has_error=False)
+        self.logger = super().setup_logging(self.carrier_name, has_error=False)
         
     def setup_logging_with_error(self):
         """에러 발생 시 로깅 설정"""
         # 에러가 발생했으므로 파일 로그 생성
-        self.logger = self.setup_logging(self.carrier_name, has_error=True)
+        self.logger = super().setup_logging(self.carrier_name, has_error=True)
 
     def step1_visit_website_and_handle_cookie(self):
         """1단계: 선사 홈페이지 접속하는데 쿠키허용 팝업이 뜨면 처리해주고, 없으면 다음 스텝으로 이동"""
@@ -115,7 +115,17 @@ class EVERGREEN_Crawling(ParentsClass):
                     submit_btn.click()
                     self.logger.info(f"Submit 버튼 클릭 완료")
 
-                    time.sleep(2)  # 데이터 로딩 대기  
+                    time.sleep(2)  # 데이터 로딩 대기
+
+                    # 선박조회 후 쿠키 팝업이 나타날 수 있으므로 처리
+                    try:
+                        cookie_btn = wait.until(EC.element_to_be_clickable((
+                            By.XPATH, '//*[@id="btn_cookie_accept_all"]'
+                        )))
+                        cookie_btn.click()
+                        self.logger.info("선박조회 후 쿠키 허용 팝업 처리 완료")
+                    except:
+                        self.logger.info("선박조회 후 쿠키 팝업이 없거나 이미 처리됨")  
 
                     # ====== 항차번호(span[text]) 추출 ======
                     # span[1], span[3], span[5], ... 순회
