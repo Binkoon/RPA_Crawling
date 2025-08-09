@@ -166,24 +166,25 @@ class ONE_Crawling(ParentsClass):
         all_files = os.listdir(target_dir)
         self.logger.info(f"폴더 내 모든 파일: {all_files}")
         
-        # ONE의 다운로드 파일명 패턴 (예: ONE Vessel Schedule 250718.pdf, ONE Vessel Schedule 250718 (1).pdf ...)
-        today_str = datetime.now().strftime("%y%m%d")
-        self.logger.info(f"오늘 날짜: {today_str}")
+        # ONE의 다운로드 파일명 패턴 (예: ONE Vessel Schedule 250718.pdf 또는 20250718.pdf, (1) 넘버링 포함)
+        today_str_6 = datetime.now().strftime("%y%m%d")
+        today_str_8 = datetime.now().strftime("%Y%m%d")
+        self.logger.info(f"오늘 날짜(6자리): {today_str_6}, 오늘 날짜(8자리): {today_str_8}")
         
-        # 패턴을 더 유연하게 수정
-        pattern1 = re.compile(rf"^ONE Vessel Schedule {today_str}(\s?\(\d+\))?\.pdf$")
-        pattern2 = re.compile(rf"^ONE Vessel Schedule {today_str}.*\.pdf$")  # 더 유연한 패턴
+        # 날짜를 YYMMDD 또는 YYYYMMDD 모두 허용하는 패턴
+        pattern_exact = re.compile(rf"^ONE Vessel Schedule (?:{today_str_6}|{today_str_8})(\s?\(\d+\))?\.pdf$")
+        pattern_loose = re.compile(rf"^ONE Vessel Schedule (?:{today_str_6}|{today_str_8}).*\.pdf$")
         
         # 폴더 내 파일 전체 중 위 패턴과 맞는 것 찾기 (생성 시간순 정렬)
         candidates = []
         for f in all_files:
-            if pattern1.match(f) or pattern2.match(f):
+            if pattern_exact.match(f) or pattern_loose.match(f):
                 candidates.append(f)
                 self.logger.info(f"패턴 매치 파일 발견: {f}")
         
         if not candidates:
             self.logger.warning(f"오늘자 ONE PDF 파일이 없습니다.")
-            self.logger.info(f"시도한 패턴: ONE Vessel Schedule {today_str}")
+            self.logger.info(f"시도한 패턴: 'ONE Vessel Schedule ' + {today_str_6} 또는 {today_str_8}")
             return
         
         # 생성 시간순으로 정렬 (가장 오래된 것부터)
@@ -232,7 +233,7 @@ class ONE_Crawling(ParentsClass):
                 self.logger.info(f"  대상: {new_file}")
                 self.logger.info(f"  파일 존재 여부: {os.path.exists(old_file)}")
                 
-                # 기존 파일이 있다면 삭제 (안전을 위해)
+                # 안전: 목표 파일이 우연히 존재하면 삭제
                 if os.path.exists(new_file):
                     os.remove(new_file)
                     self.logger.info(f"  기존 파일 삭제: {new_file}")

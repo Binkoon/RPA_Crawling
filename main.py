@@ -14,7 +14,6 @@ from crawler import fdt
 from crawler import ial # 완료
 from crawler import dyline
 from crawler import yml  # 완료
-from crawler import pil
 from crawler import nss
 
 import traceback
@@ -140,6 +139,29 @@ def run_crawler_with_error_handling(crawler_name, crawler_instance):
             'traceback': traceback.format_exc()
         }
 
+def try_run_carrier(crawler_name, constructor, results_list):
+    """크롤러 인스턴스화 단계에서의 예외도 잡아서 다음 선사로 넘어가도록 처리"""
+    logger = logging.getLogger(__name__)
+    try:
+        instance = constructor()
+    except Exception as e:
+        end_time = datetime.now()
+        logger.error(f"=== {crawler_name} 크롤러 인스턴스 생성 실패 ===")
+        logger.error(f"에러 메시지: {str(e)}")
+        logger.error(f"상세 에러: {traceback.format_exc()}")
+        results_list.append((crawler_name, {
+            'success': False,
+            'duration': 0,
+            'start_time': None,
+            'end_time': end_time,
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }))
+        return
+    # 인스턴스 생성에 성공하면 실행
+    result = run_crawler_with_error_handling(crawler_name, instance)
+    results_list.append((crawler_name, result))
+
 if __name__ == "__main__":
     print("Entry Point is Here")
     logger = logging.getLogger(__name__)
@@ -151,65 +173,28 @@ if __name__ == "__main__":
     # 크롤링 결과를 저장할 리스트
     crawling_results = []
     
-    # sitc_data = sitc.SITC_Crawling()
-    # result = run_crawler_with_error_handling("SITC", sitc_data)
-    # crawling_results.append(("SITC", result))
+    # 실행할 선사 정의 (필요한 선사는 주석 해제)
+    carriers_to_run = [
+        ("SITC", lambda: sitc.SITC_Crawling()),
+        ("EVERGREEN", lambda: evergreen.EVERGREEN_Crawling()),
+        ("COSCO", lambda: cosco.Cosco_Crawling()),
+        ("WANHAI", lambda: wanhai.WANHAI_Crawling()),
+        ("CKLINE", lambda: ckline.CKLINE_Crawling()),
+        ("PANOCEAN", lambda: panocean.PANOCEAN_Crawling()),
+        ("SNL", lambda: snl.SNL_Crawling()),
+        ("SMLINE", lambda: smline.SMLINE_Crawling()),
+        ("HMM", lambda: hmm.HMM_Crawling()),
+        ("FDT", lambda: fdt.FDT_Crawling()),
+        ("IAL", lambda: ial.IAL_Crawling()),
+        ("DYLINE", lambda: dyline.DYLINE_Crawling()),
+        ("YML", lambda: yml.YML_Crawling()),
+        ("NSS", lambda: nss.NSS_Crawling()),
+        ("ONE", lambda: one.ONE_Crawling()),
+    ]
 
-    # evergreen_data = evergreen.EVERGREEN_Crawling()
-    # result = run_crawler_with_error_handling("EVERGREEN", evergreen_data)
-    # crawling_results.append(("EVERGREEN", result))
-
-    # cosco_data = cosco.Cosco_Crawling()  # 작업 끝
-    # result = run_crawler_with_error_handling("COSCO", cosco_data)
-    # crawling_results.append(("COSCO", result))
-
-    # wanhai_data = wanhai.WANHAI_Crawling()
-    # result = run_crawler_with_error_handling("WANHAI", wanhai_data)
-    # crawling_results.append(("WANHAI", result))
-
-    # ckline_data = ckline.CKLINE_Crawling()
-    # result = run_crawler_with_error_handling("CKLINE", ckline_data)
-    # crawling_results.append(("CKLINE", result))
-    
-    # panocean_data = panocean.PANOCEAN_Crawling()
-    # result = run_crawler_with_error_handling("PANOCEAN", panocean_data)
-    # crawling_results.append(("PANOCEAN", result))
-
-    # snl_data = snl.SNL_Crawling()
-    # result = run_crawler_with_error_handling("SNL", snl_data)
-    # crawling_results.append(("SNL", result))
-
-    # smline_data = smline.SMLINE_Crawling()
-    # result = run_crawler_with_error_handling("SMLINE", smline_data)
-    # crawling_results.append(("SMLINE", result))
-
-    # hmm_data = hmm.HMM_Crawling()
-    # result = run_crawler_with_error_handling("HMM", hmm_data)
-    # crawling_results.append(("HMM", result))
-
-    # fdt_data = fdt.FDT_Crawling()
-    # result = run_crawler_with_error_handling("FDT", fdt_data)
-    # crawling_results.append(("FDT", result))
-
-    # ial_data = ial.IAL_Crawling()
-    # result = run_crawler_with_error_handling("IAL", ial_data)
-    # crawling_results.append(("IAL", result))
-
-    # dyline_data = dyline.DYLINE_Crawling()
-    # result = run_crawler_with_error_handling("DYLINE", dyline_data)
-    # crawling_results.append(("DYLINE", result))
-
-    # yml_data = yml.YML_Crawling()
-    # result = run_crawler_with_error_handling("YML", yml_data)
-    # crawling_results.append(("YML", result))
-
-    # nss_data = nss.NSS_Crawling()
-    # result = run_crawler_with_error_handling("NSS", nss_data)
-    # crawling_results.append(("NSS", result))
-
-    one_data = one.ONE_Crawling()
-    result = run_crawler_with_error_handling("ONE", one_data)
-    crawling_results.append(("ONE", result))
+    # 순차 실행: 인스턴스 생성 실패/실행 실패 모두 결과에 기록하고 계속 진행
+    for carrier_name, ctor in carriers_to_run:
+        try_run_carrier(carrier_name, ctor, crawling_results)
 
     # 전체 크롤링 종료 시간
     total_end_time = datetime.now()
