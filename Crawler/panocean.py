@@ -117,6 +117,9 @@ class PANOCEAN_Crawling(ParentsClass):
                 try:
                     self.logger.info(f"선박 {vessel_name} 크롤링 시작")
                     
+                    # 선박별 타이머 시작
+                    self.start_vessel_timer(vessel_name)
+                    
                     # 1. 라벨 클릭해서 input 활성화
                     label = driver.find_element(By.ID, 'mf_tac_layout_contents_11002_body_acb_vslInfo_label')
                     driver.execute_script("arguments[0].click();", label)
@@ -208,20 +211,32 @@ class PANOCEAN_Crawling(ParentsClass):
                             self.logger.info(f"{vessel_full_name} 다운로드 완료")
                             time.sleep(1.5)  # 다운로드 대기
                             
-                            self.success_count += 1
+                            self.record_vessel_success(vessel_full_name)
+                            
+                            # 선박별 타이머 종료
+                            vessel_duration = self.end_vessel_timer(vessel_name)
+                            self.logger.info(f"선박 {vessel_full_name} 크롤링 완료 (소요시간: {vessel_duration:.2f}초)")
                             
                         except Exception as e:
                             self.logger.error(f"선박 {vessel_full_name} 크롤링 실패: {str(e)}")
-                            self.fail_count += 1
-                            self.failed_vessels.append(vessel_full_name)
+                            self.record_step_failure(vessel_name, "데이터 크롤링", str(e))
+                            
+                            # 실패한 경우에도 타이머 종료
+                            vessel_duration = self.end_vessel_timer(vessel_name)
+                            self.logger.error(f"선박 {vessel_full_name} 크롤링 실패 (소요시간: {vessel_duration:.2f}초)")
                             continue
                     
-                    self.logger.info(f"선박 {vessel_name} 크롤링 완료")
+                    # 선박별 타이머 종료 (전체 선박 처리 완료)
+                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.logger.info(f"선박 {vessel_name} 크롤링 완료 (소요시간: {vessel_duration:.2f}초)")
                     
                 except Exception as e:
                     self.logger.error(f"선박 {vessel_name} 크롤링 실패: {str(e)}")
-                    self.fail_count += 1
-                    self.failed_vessels.append(vessel_name)
+                    self.record_step_failure(vessel_name, "데이터 크롤링", str(e))
+                    
+                    # 실패한 경우에도 타이머 종료
+                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.logger.error(f"선박 {vessel_name} 크롤링 실패 (소요시간: {vessel_duration:.2f}초)")
                     continue
             
             # === 다운로드 완료 후 파일명 일괄 변경 ===

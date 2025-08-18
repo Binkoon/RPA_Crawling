@@ -82,6 +82,9 @@ class FDT_Crawling(ParentsClass):
                 try:
                     self.logger.info(f"선박 {vessel_name} 크롤링 시작")
                     
+                    # 선박별 타이머 시작
+                    self.start_vessel_timer(vessel_name)
+                    
                     # 입력창 찾기
                     input_box = wait.until(EC.presence_of_element_located((
                         By.XPATH, '//*[@id="searchByVesselTab"]/div[1]/div[1]/div[2]//input'
@@ -111,14 +114,20 @@ class FDT_Crawling(ParentsClass):
                     voy_tables = driver.find_elements(By.CSS_SELECTOR, "table.voyage")
                     if not tables:
                         self.logger.warning(f"[{vessel_name}] 테이블 없음 - 스킵")
-                        self.fail_count += 1
-                        self.failed_vessels.append(vessel_name)
+                        self.record_step_failure(vessel_name, "데이터 크롤링", "테이블이 없음")
+                        
+                        # 실패한 경우에도 타이머 종료
+                        vessel_duration = self.end_vessel_timer(vessel_name)
+                        self.logger.warning(f"선박 {vessel_name} 크롤링 실패 (소요시간: {vessel_duration:.2f}초)")
                         continue
                     
                     if len(tables) != len(voy_tables):
                         self.logger.warning(f"[{vessel_name}] 테이블 수({len(tables)})와 Voyage 테이블 수({len(voy_tables)}) 불일치")
-                        self.fail_count += 1
-                        self.failed_vessels.append(vessel_name)
+                        self.record_step_failure(vessel_name, "데이터 크롤링", "테이블 수 불일치")
+                        
+                        # 실패한 경우에도 타이머 종료
+                        vessel_duration = self.end_vessel_timer(vessel_name)
+                        self.logger.warning(f"선박 {vessel_name} 크롤링 실패 (소요시간: {vessel_duration:.2f}초)")
                         continue
 
                     all_data = []
@@ -152,18 +161,26 @@ class FDT_Crawling(ParentsClass):
                         save_path = self.get_save_path(self.carrier_name, vessel_name)
                         df.to_excel(save_path, index=False)
                         self.logger.info(f"[{vessel_name}] 엑셀 저장 완료: {save_path}")
-                        self.success_count += 1
+                        self.record_vessel_success(vessel_name)
+                        
+                        # 선박별 타이머 종료
+                        vessel_duration = self.end_vessel_timer(vessel_name)
+                        self.logger.info(f"선박 {vessel_name} 크롤링 완료 (소요시간: {vessel_duration:.2f}초)")
                     else:
                         self.logger.warning(f"[{vessel_name}] 추출된 데이터 없음 - 엑셀 저장 생략")
-                        self.fail_count += 1
-                        self.failed_vessels.append(vessel_name)
-                    
-                    self.logger.info(f"선박 {vessel_name} 크롤링 완료")
+                        self.record_step_failure(vessel_name, "데이터 크롤링", "추출된 데이터가 없음")
+                        
+                        # 실패한 경우에도 타이머 종료
+                        vessel_duration = self.end_vessel_timer(vessel_name)
+                        self.logger.warning(f"선박 {vessel_name} 크롤링 실패 (소요시간: {vessel_duration:.2f}초)")
                     
                 except Exception as e:
                     self.logger.error(f"선박 {vessel_name} 크롤링 실패: {str(e)}")
-                    self.fail_count += 1
-                    self.failed_vessels.append(vessel_name)
+                    self.record_step_failure(vessel_name, "데이터 크롤링", str(e))
+                    
+                    # 실패한 경우에도 타이머 종료
+                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.logger.error(f"선박 {vessel_name} 크롤링 실패 (소요시간: {vessel_duration:.2f}초)")
                     continue
             
             self.logger.info("=== 2단계: 선박별 데이터 크롤링 완료 ===")

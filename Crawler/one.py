@@ -62,6 +62,9 @@ class ONE_Crawling(ParentsClass):
                 try:
                     self.logger.info(f"선박 {vessel_name} 접속 및 다운로드 시작")
                     
+                    # 선박별 타이머 시작
+                    self.start_vessel_timer(vessel_name)
+                    
                     # 0. 선사 접속 (동적 URL 생성)
                     params = self.vessel_params[vessel_name]
                     url = f"https://ecomm.one-line.com/one-ecom/schedule/vessel-schedule?vslCdParam={params['vslCdParam']}&vslEngNmParam={params['vslEngNmParam']}&f_cmd="
@@ -116,13 +119,19 @@ class ONE_Crawling(ParentsClass):
                     self.logger.info(f"PDF 다운로드 대기 중... ({vessel_name})")
                     time.sleep(15)  # 다운로드 대기 시간
                     
+                    # 선박별 타이머 종료
+                    vessel_duration = self.end_vessel_timer(vessel_name)
                     self.success_count += 1
-                    self.logger.info(f"선박 {vessel_name} PDF 다운로드 완료")
+                    self.logger.info(f"선박 {vessel_name} PDF 다운로드 완료 (소요시간: {vessel_duration:.2f}초)")
                     
                 except Exception as e:
                     self.logger.error(f"선박 {vessel_name} 접속 및 다운로드 실패: {str(e)}")
                     self.fail_count += 1
                     self.failed_vessels.append(vessel_name)
+                    
+                    # 실패한 경우에도 타이머 종료
+                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.logger.error(f"선박 {vessel_name} 접속 및 다운로드 실패 (소요시간: {vessel_duration:.2f}초)")
                     continue
             
             self.logger.info("=== 1단계: 선박별 접속 및 PDF 다운로드 완료 ===")

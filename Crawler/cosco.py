@@ -31,7 +31,7 @@ class Cosco_Crawling(ParentsClass):
         self.setup_logging()
         
         # 선박 리스트
-        self.vessel_list = ["XIN NAN SHA", "XIN RI ZHAO", "XIN WU HAN", "XIN FANG CHENG"]
+        self.vessel_name_list = ["XIN NAN SHA", "XIN RI ZHAO", "XIN WU HAN", "XIN FANG CHENG"]
         
         # 크롤링 결과 추적
         self.success_count = 0
@@ -85,9 +85,12 @@ class Cosco_Crawling(ParentsClass):
             input_xpath = '/html/body/div[1]/div/div[1]/div/div[2]/div[2]/div[1]/div/div/div/div/div/div/form/div/div[1]/div/div/div/div[1]/input'
             vessel_input = wait.until(EC.presence_of_element_located((By.XPATH, input_xpath)))
 
-            for vessel_name in self.vessel_list:
+            for vessel_name in self.vessel_name_list:
                 try:
                     self.logger.info(f"선박 {vessel_name} 크롤링 시작")
+                    
+                    # 선박별 타이머 시작
+                    self.start_vessel_timer(vessel_name)
                     
                     vessel_input.clear()
                     vessel_input.click()
@@ -135,13 +138,19 @@ class Cosco_Crawling(ParentsClass):
 
                     time.sleep(1)
                     
-                    self.logger.info(f"선박 {vessel_name} 크롤링 완료")
-                    self.success_count += 1
+                    self.record_vessel_success(vessel_name)
+                    
+                    # 선박별 타이머 종료
+                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.logger.info(f"선박 {vessel_name} 크롤링 완료 (소요시간: {vessel_duration:.2f}초)")
                     
                 except Exception as e:
                     self.logger.error(f"선박 {vessel_name} 크롤링 실패: {str(e)}")
-                    self.fail_count += 1
-                    self.failed_vessels.append(vessel_name)
+                    self.record_step_failure(vessel_name, "데이터 크롤링", str(e))
+                    
+                    # 실패한 경우에도 타이머 종료
+                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.logger.error(f"선박 {vessel_name} 크롤링 실패 (소요시간: {vessel_duration:.2f}초)")
                     continue
             
             self.logger.info("=== 2단계: 선박별 데이터 크롤링 완료 ===")
@@ -165,7 +174,7 @@ class Cosco_Crawling(ParentsClass):
             pdf_files = [f for f in os.listdir(self.today_download_dir) if f.lower().endswith('.pdf')]
             pdf_files.sort()
             
-            for i, vessel_name in enumerate(self.vessel_list):
+            for i, vessel_name in enumerate(self.vessel_name_list):
                 if i < len(pdf_files):
                     old_path = os.path.join(self.today_download_dir, pdf_files[i])
                     new_filename = f"COSCO_{vessel_name}.pdf"

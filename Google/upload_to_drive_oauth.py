@@ -165,7 +165,10 @@ def main():
     print(f"="*60)
     print(f" 성공: {uploaded_count}개 파일")
     print(f" 실패: {failed_count}개 파일")
-    print(f" 성공률: {(uploaded_count/(uploaded_count+failed_count)*100):.1f}%")
+    if uploaded_count + failed_count > 0:
+        print(f" 성공률: {(uploaded_count/(uploaded_count+failed_count)*100):.1f}%")
+    else:
+        print(f" 성공률: 0.0% (업로드할 파일이 없음)")
     
     print(f"\n 선사별 업로드 결과:")
     for carrier, stats in carrier_stats.items():
@@ -176,6 +179,15 @@ def main():
             print(f"    └─ 실패: {', '.join(stats['failed'])}")
     
     print(f"="*60)
+    
+    # 결과 반환
+    return {
+        'uploaded_files': [{'filename': filename, 'file_id': 'N/A'} for filename in all_files if filename in [f for f in all_files if f not in [failed for stats in carrier_stats.values() for failed in stats['failed']]]],
+        'failed_files': [{'filename': filename, 'error': '업로드 실패'} for stats in carrier_stats.values() for filename in stats['failed']],
+        'total_files': len(all_files),
+        'success_count': uploaded_count,
+        'fail_count': failed_count
+    }
 
 if __name__ == '__main__':
     main() 

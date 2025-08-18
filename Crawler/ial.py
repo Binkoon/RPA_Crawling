@@ -60,6 +60,9 @@ class IAL_Crawling(ParentsClass):
                 try:
                     self.logger.info(f"선박 {vessel_name} 접속 시작")
                     
+                    # 선박별 타이머 시작
+                    self.start_vessel_timer(vessel_name)
+                    
                     vessel_param = vessel_name.replace(" ","%20")
                     url = f'https://www.interasia.cc/Service/BoatList?ShipName={vessel_param}&StartDate={today}'
                     self.Visit_Link(url)
@@ -68,8 +71,11 @@ class IAL_Crawling(ParentsClass):
                     
                 except Exception as e:
                     self.logger.error(f"선박 {vessel_name} 접속 실패: {str(e)}")
-                    self.fail_count += 1
-                    self.failed_vessels.append(vessel_name)
+                    self.record_step_failure(vessel_name, "홈페이지 접속", str(e))
+                    
+                    # 실패한 경우에도 타이머 종료
+                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.logger.error(f"선박 {vessel_name} 접속 실패 (소요시간: {vessel_duration:.2f}초)")
                     continue
             
             self.logger.info("=== 1단계: 선박별 URL 파라미터로 홈페이지 접속 완료 ===")
@@ -95,6 +101,9 @@ class IAL_Crawling(ParentsClass):
             for vessel_name in self.vessel_name_list:
                 try:
                     self.logger.info(f"선박 {vessel_name} 데이터 수집 시작")
+                    
+                    # 선박별 타이머 시작
+                    self.start_vessel_timer(vessel_name)
                     
                     vessel_param = vessel_name.replace(" ","%20")
                     url = f'https://www.interasia.cc/Service/BoatList?ShipName={vessel_param}&StartDate={today}'
@@ -146,12 +155,19 @@ class IAL_Crawling(ParentsClass):
                     df.to_excel(filename, index=False, header=True)
                     self.logger.info(f"엑셀 저장 완료: {filename}")
                     
-                    self.success_count += 1
-                    self.logger.info(f"선박 {vessel_name} 데이터 수집 완료")
+                    self.record_vessel_success(vessel_name)
+                    
+                    # 선박별 타이머 종료
+                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.logger.info(f"선박 {vessel_name} 데이터 수집 완료 (소요시간: {vessel_duration:.2f}초)")
                     
                 except Exception as e:
                     self.logger.error(f"선박 {vessel_name} 데이터 수집 실패: {str(e)}")
-                    self.fail_count += 1
+                    self.record_step_failure(vessel_name, "데이터 수집", str(e))
+                    
+                    # 실패한 경우에도 타이머 종료
+                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.logger.error(f"선박 {vessel_name} 데이터 수집 실패 (소요시간: {vessel_duration:.2f}초)")
                     self.failed_vessels.append(vessel_name)
                     continue
             

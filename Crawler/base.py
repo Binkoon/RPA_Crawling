@@ -33,6 +33,15 @@ class ParentsClass:
 
         self.driver = webdriver.Chrome(options=chrome_options)
         self.wait = WebDriverWait(self.driver, 20)
+        
+        # 실패 추적을 위한 속성들
+        self.success_count = 0
+        self.fail_count = 0
+        self.failed_vessels = []
+        self.failed_reasons = {}
+        
+        # 선박별 소요시간 추적
+        self.vessel_durations = {}
 
     def setup_log_folder(self):
         """ErrorLog 폴더 구조 생성"""
@@ -91,6 +100,44 @@ class ParentsClass:
             )
         chrome_options.add_argument(f"--user-agent={user_agent}")
 
+    def record_vessel_failure(self, vessel_name, reason):
+        """선박 실패 기록"""
+        if vessel_name not in self.failed_vessels:
+            self.failed_vessels.append(vessel_name)
+            self.failed_reasons[vessel_name] = reason
+            self.fail_count += 1
+        self.logger.warning(f"선박 {vessel_name} 실패: {reason}")
+    
+    def record_vessel_success(self, vessel_name):
+        """선박 성공 기록"""
+        self.success_count += 1
+        self.logger.info(f"선박 {vessel_name} 성공")
+    
+    def record_step_failure(self, vessel_name, step_name, reason):
+        """특정 단계에서의 실패 기록"""
+        detailed_reason = f"{step_name} 실패: {reason}"
+        self.record_vessel_failure(vessel_name, detailed_reason)
+    
+    def start_vessel_timer(self, vessel_name):
+        """선박별 타이머 시작"""
+        self.vessel_durations[vessel_name] = {'start': datetime.now()}
+    
+    def end_vessel_timer(self, vessel_name):
+        """선박별 타이머 종료 및 소요시간 계산"""
+        if vessel_name in self.vessel_durations and 'start' in self.vessel_durations[vessel_name]:
+            start_time = self.vessel_durations[vessel_name]['start']
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            self.vessel_durations[vessel_name]['duration'] = duration
+            return duration
+        return 0
+    
+    def get_vessel_duration(self, vessel_name):
+        """선박별 소요시간 반환"""
+        if vessel_name in self.vessel_durations and 'duration' in self.vessel_durations[vessel_name]:
+            return self.vessel_durations[vessel_name]['duration']
+        return 0
+    
     def get_save_path(self, carrier_name, vessel_name, ext="xlsx"):
         """
         저장 경로 생성 (예: scheduleData/250714/SITC_SITC DECHENG.xlsx)

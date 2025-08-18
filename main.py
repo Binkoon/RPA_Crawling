@@ -21,9 +21,10 @@ import logging
 from datetime import datetime
 import os
 import sys
+import pandas as pd
 
 # ErrorLog 폴더 구조 생성
-def setup_main_log_folder():
+def setup_errorlog_folder():
     """ErrorLog 폴더 구조 생성"""
     log_base_dir = os.path.join(os.getcwd(), "ErrorLog")
     if not os.path.exists(log_base_dir):
@@ -37,18 +38,90 @@ def setup_main_log_folder():
     
     return today_log_dir
 
-# 메인 로깅 설정
-today_log_dir = setup_main_log_folder()
-main_log_file = os.path.join(today_log_dir, 'main_crawling_log.txt')
+# ErrorLog 폴더 설정
+today_log_dir = setup_errorlog_folder()
 
+# 메인 로깅 설정 (콘솔만)
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(main_log_file, encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
+
+# 엑셀 로그 데이터를 저장할 리스트
+excel_log_data = []
+
+def add_to_excel_log(carrier_name, vessel_name, status, reason, duration):
+    """엑셀 로그에 기록 추가 (성공/실패 모두)"""
+    global excel_log_data
+    now = datetime.now()
+    excel_log_data.append({
+        '날짜': now.strftime('%Y/%m/%d/%H/%M/%S'),
+        '선사': carrier_name,
+        '선박': vessel_name,
+        '상태': status,
+        '사유/결과': reason,
+        '소요시간': f"{duration:.2f}초"
+    })
+
+def save_excel_log(crawling_results, total_duration):
+    """엑셀 로그 파일 저장 (요약 정보 포함)"""
+    if not excel_log_data:
+        return
+    
+    try:
+        # 기본 로그 데이터
+        df = pd.DataFrame(excel_log_data)
+        
+        # 요약 정보 계산
+        success_count = 0
+        fail_count = 0
+        total_vessels_success = 0
+        total_vessels_fail = 0
+        
+        for carrier_name, result in crawling_results:
+            if result['success']:
+                success_count += 1
+                if 'success_count' in result:
+                    total_vessels_success += result['success_count']
+                    total_vessels_fail += result.get('fail_count', 0)
+            else:
+                fail_count += 1
+                if 'total_vessels' in result and 'fail_count' in result:
+                    total_vessels_success += result.get('success_count', 0)
+                    total_vessels_fail += result['fail_count']
+        
+        # 요약 행 추가
+        summary_rows = [
+            {'날짜': '', '선사': '', '선박': '', '상태': '', '사유/결과': '', '소요시간': ''},
+            {'날짜': '', '선사': '=== 크롤링 결과 요약 ===', '선박': '', '상태': '', '사유/결과': '', '소요시간': ''},
+            {'날짜': '', '선사': f'총 {len(crawling_results)}개 선사 중', '선박': '', '상태': '', '사유/결과': '', '소요시간': ''},
+            {'날짜': '', '선사': f'성공: {success_count}개', '선박': '', '상태': '', '사유/결과': '', '소요시간': ''},
+            {'날짜': '', '선사': f'실패: {fail_count}개', '선박': '', '상태': '', '사유/결과': '', '소요시간': ''},
+            {'날짜': '', '선사': f'총 소요시간: {total_duration:.2f}초', '선박': '', '상태': '', '사유/결과': '', '소요시간': ''},
+            {'날짜': '', '선사': '', '선박': '', '상태': '', '사유/결과': '', '소요시간': ''},
+            {'날짜': '', '선사': '=== 선박별 상세 결과 ===', '선박': '', '상태': '', '사유/결과': '', '소요시간': ''},
+            {'날짜': '', '선사': f'총 선박: {total_vessels_success + total_vessels_fail}개', '선박': '', '상태': '', '사유/결과': '', '소요시간': ''},
+            {'날짜': '', '선사': f'성공: {total_vessels_success}개', '선박': '', '상태': '', '사유/결과': '', '소요시간': ''},
+            {'날짜': '', '선사': f'실패: {total_vessels_fail}개', '선박': '', '상태': '', '사유/결과': '', '소요시간': ''}
+        ]
+        
+        # 요약 행을 DataFrame에 추가
+        summary_df = pd.DataFrame(summary_rows)
+        final_df = pd.concat([df, summary_df], ignore_index=True)
+        
+        today_str = datetime.now().strftime('%Y%m%d')
+        excel_filename = f"{today_str}_log.xlsx"
+        excel_path = os.path.join(today_log_dir, excel_filename)
+        
+        final_df.to_excel(excel_path, index=False, engine='openpyxl')
+        print(f"✅ 엑셀 로그 저장 완료: {excel_path}")
+        
+    except Exception as e:
+        print(f"❌ 엑셀 로그 저장 실패: {str(e)}")
+        logging.error(f"엑셀 로그 저장 실패: {str(e)}")
 
 def run_crawler_with_error_handling(crawler_name, crawler_instance):
     """크롤러를 실행하고 에러를 처리하는 함수"""
@@ -69,6 +142,20 @@ def run_crawler_with_error_handling(crawler_name, crawler_instance):
             success_count = getattr(crawler_instance, 'success_count', 0)
             fail_count = getattr(crawler_instance, 'fail_count', 0)
             failed_vessels = getattr(crawler_instance, 'failed_vessels', [])
+            failed_reasons = getattr(crawler_instance, 'failed_reasons', {})
+            
+            # 성공한 선박들을 엑셀 로그에 기록
+            if hasattr(crawler_instance, 'vessel_name_list'):
+                for vessel_name in crawler_instance.vessel_name_list:
+                    if vessel_name not in failed_vessels:
+                        vessel_duration = getattr(crawler_instance, 'get_vessel_duration', lambda x: duration)(vessel_name)
+                        add_to_excel_log(crawler_name, vessel_name, "성공", "크롤링 완료", vessel_duration)
+            
+            # 실패한 선박들을 엑셀 로그에 기록
+            for vessel_name in failed_vessels:
+                reason = failed_reasons.get(vessel_name, "알 수 없는 오류")
+                vessel_duration = getattr(crawler_instance, 'get_vessel_duration', lambda x: duration)(vessel_name)
+                add_to_excel_log(crawler_name, vessel_name, "실패", reason, vessel_duration)
             
             # 선박 중 하나라도 실패하면 선사도 실패로 분류
             if fail_count > 0:
@@ -175,8 +262,8 @@ if __name__ == "__main__":
     
     # 실행할 선사 정의 (필요한 선사는 주석 해제)
     carriers_to_run = [
-        ("SITC", lambda: sitc.SITC_Crawling()),
-        ("EVERGREEN", lambda: evergreen.EVERGREEN_Crawling()),
+        ("SITC", lambda: sitc.SITC_Crawling()),           # 테스트 완료
+        ("EVERGREEN", lambda: evergreen.EVERGREEN_Crawling()), # 테스트 완료
         ("COSCO", lambda: cosco.Cosco_Crawling()),
         ("WANHAI", lambda: wanhai.WANHAI_Crawling()),
         ("CKLINE", lambda: ckline.CKLINE_Crawling()),
@@ -189,7 +276,7 @@ if __name__ == "__main__":
         ("DYLINE", lambda: dyline.DYLINE_Crawling()),
         ("YML", lambda: yml.YML_Crawling()),
         ("NSS", lambda: nss.NSS_Crawling()),
-        ("ONE", lambda: one.ONE_Crawling()),
+        ("ONE", lambda: one.ONE_Crawling()),              # 테스트 완료
     ]
 
     # 순차 실행: 인스턴스 생성 실패/실행 실패 모두 결과에 기록하고 계속 진행
@@ -222,11 +309,16 @@ if __name__ == "__main__":
                 total_vessels_success += result['success_count']
                 total_vessels_fail += result['fail_count']
                 print(f"  └─ 선박: 성공 {result['success_count']}개, 실패 {result['fail_count']}개")
-                if result['failed_vessels']:
-                    print(f"  └─ 실패한 선박: {', '.join(result['failed_vessels'])}")
         else:
             fail_count += 1
-            if 'error' in result:
+            # 선박별 상세 정보가 있는 경우
+            if 'total_vessels' in result and 'fail_count' in result:
+                total_vessels_success += result.get('success_count', 0)
+                total_vessels_fail += result['fail_count']
+                print(f"  └─ 선박: 성공 {result.get('success_count', 0)}개, 실패 {result['fail_count']}개")
+                if result.get('failed_vessels'):
+                    print(f"  └─ 실패한 선박: {', '.join(result['failed_vessels'])}")
+            elif 'error' in result:
                 print(f"  └─ 에러: {result['error']}")
     
     print(f"\n총 {len(crawling_results)}개 선사 중")
@@ -249,11 +341,17 @@ if __name__ == "__main__":
     if total_vessels_success > 0 or total_vessels_fail > 0:
         logger.info(f"선박별 - 성공: {total_vessels_success}개, 실패: {total_vessels_fail}개")
     
-    # 구글 드라이브 업로드 실행 (주석처리)
-    """
+    # 엑셀 로그 저장
+    save_excel_log(crawling_results, total_duration)
+    
+        # 구글 드라이브 업로드 실행
+
     print("\n" + "="*80)
     print("구글 드라이브 업로드 시작")
     print("="*80)
+    
+    # 구글 업로드 로그를 위한 리스트
+    google_upload_logs = []
     
     try:
         # Google 폴더의 업로드 스크립트 import
@@ -261,16 +359,53 @@ if __name__ == "__main__":
         from Google.upload_to_drive_oauth import main as upload_to_drive_main
     
         # 업로드 실행
-        upload_to_drive_main()
+        upload_result = upload_to_drive_main()
+        
+        # 업로드 결과를 로그에 기록
+        if upload_result and isinstance(upload_result, dict):
+            for file_info in upload_result.get('uploaded_files', []):
+                google_upload_logs.append({
+                    '날짜': datetime.now().strftime('%Y/%m/%d/%H/%M/%S'),
+                    '선사': 'Google Drive',
+                    '선박': file_info.get('filename', '알 수 없음'),
+                    '상태': '성공',
+                    '사유/결과': f"업로드 완료 (파일 ID: {file_info.get('file_id', 'N/A')})",
+                    '소요시간': 'N/A'
+                })
+            
+            for file_info in upload_result.get('failed_files', []):
+                google_upload_logs.append({
+                    '날짜': datetime.now().strftime('%Y/%m/%d/%H/%M/%S'),
+                    '선사': 'Google Drive',
+                    '선박': file_info.get('filename', '알 수 없음'),
+                    '상태': '실패',
+                    '사유/결과': f"업로드 실패: {file_info.get('error', '알 수 없는 오류')}",
+                    '소요시간': 'N/A'
+                })
         
         print("="*80)
         print("구글 드라이브 업로드 완료")
         print("="*80)
         
+        # 구글 업로드 로그를 엑셀에 추가
+        excel_log_data.extend(google_upload_logs)
+        
     except Exception as e:
-        print(f"구글 드라이브 업로드 실패: {str(e)}")
-        logger.error(f"구글 드라이브 업로드 실패: {str(e)}")
+        error_msg = f"구글 드라이브 업로드 실패: {str(e)}"
+        print(error_msg)
+        logger.error(error_msg)
         logger.error(f"상세 에러: {traceback.format_exc()}")
+        
+        # 업로드 실패 로그를 엑셀에 추가
+        google_upload_logs.append({
+            '날짜': datetime.now().strftime('%Y/%m/%d/%H/%M/%S'),
+            '선사': 'Google Drive',
+            '선박': '전체 업로드',
+            '상태': '실패',
+            '사유/결과': error_msg,
+            '소요시간': 'N/A'
+        })
+        excel_log_data.extend(google_upload_logs)
     
     # 오래된 데이터 정리
     print("\n" + "="*80)
@@ -291,7 +426,7 @@ if __name__ == "__main__":
         print(f"오래된 데이터 정리 실패: {str(e)}")
         logger.error(f"오래된 데이터 정리 실패: {str(e)}")
         logger.error(f"상세 에러: {traceback.format_exc()}")
-    """
+
     
 
     

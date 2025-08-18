@@ -108,6 +108,9 @@ class SMLINE_Crawling(ParentsClass):
                 try:
                     self.logger.info(f"선박 {vessel_name} 크롤링 시작")
                     
+                    # 선박별 타이머 시작
+                    self.start_vessel_timer(vessel_name)
+                    
                     vessel_input = wait.until(EC.element_to_be_clickable((
                         By.XPATH , '//*[@id="vslEngNm"]'
                     )))
@@ -141,18 +144,26 @@ class SMLINE_Crawling(ParentsClass):
                     if os.path.exists(old_path):
                         os.rename(old_path, new_path)
                         self.logger.info(f"파일명 변경 완료: {new_path}")
-                        self.success_count += 1
+                        self.record_vessel_success(vessel_name)
+                        
+                        # 선박별 타이머 종료
+                        vessel_duration = self.end_vessel_timer(vessel_name)
+                        self.logger.info(f"선박 {vessel_name} 크롤링 완료 (소요시간: {vessel_duration:.2f}초)")
                     else:
                         self.logger.warning("다운로드 파일이 없습니다.")
-                        self.fail_count += 1
-                        self.failed_vessels.append(vessel_name)
-                    
-                    self.logger.info(f"선박 {vessel_name} 크롤링 완료")
+                        self.record_step_failure(vessel_name, "데이터 크롤링", "다운로드 파일이 없음")
+                        
+                        # 실패한 경우에도 타이머 종료
+                        vessel_duration = self.end_vessel_timer(vessel_name)
+                        self.logger.warning(f"선박 {vessel_name} 크롤링 실패 (소요시간: {vessel_duration:.2f}초)")
                     
                 except Exception as e:
                     self.logger.error(f"선박 {vessel_name} 크롤링 실패: {str(e)}")
-                    self.fail_count += 1
-                    self.failed_vessels.append(vessel_name)
+                    self.record_step_failure(vessel_name, "데이터 크롤링", str(e))
+                    
+                    # 실패한 경우에도 타이머 종료
+                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.logger.error(f"선박 {vessel_name} 크롤링 실패 (소요시간: {vessel_duration:.2f}초)")
                     continue
             
             self.logger.info("=== 2단계: 선박별 데이터 크롤링 완료 ===")

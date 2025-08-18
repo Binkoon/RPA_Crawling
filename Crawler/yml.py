@@ -59,6 +59,9 @@ class YML_Crawling(ParentsClass):
                 try:
                     self.logger.info(f"선박 {vessel_name} 접속 시작")
                     
+                    # 선박별 타이머 시작
+                    self.start_vessel_timer(vessel_name)
+                    
                     vessel_name_param = vessel_name.replace(" ", "%20")
                     vessel_code = {
                         "YM CREDENTIAL": "YCDL",
@@ -109,6 +112,9 @@ class YML_Crawling(ParentsClass):
             for vessel_name in self.vessel_name_list:
                 try:
                     self.logger.info(f"선박 {vessel_name} 크롤링 시작")
+                    
+                    # 선박별 타이머 시작
+                    self.start_vessel_timer(vessel_name)
                     
                     vessel_name_param = vessel_name.replace(" ", "%20")
                     vessel_code = {
@@ -195,14 +201,19 @@ class YML_Crawling(ParentsClass):
                     df.to_excel(save_path, index=False, header=True)
                     self.logger.info(f"[{vessel_name}] 테이블 원본 저장 완료: {save_path}")
                     time.sleep(1)
-                    self.success_count += 1
+                    self.record_vessel_success(vessel_name)
                     
-                    self.logger.info(f"선박 {vessel_name} 크롤링 완료")
+                    # 선박별 타이머 종료
+                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.logger.info(f"선박 {vessel_name} 크롤링 완료 (소요시간: {vessel_duration:.2f}초)")
                     
                 except Exception as e:
                     self.logger.error(f"선박 {vessel_name} 크롤링 실패: {str(e)}")
-                    self.fail_count += 1
-                    self.failed_vessels.append(vessel_name)
+                    self.record_step_failure(vessel_name, "데이터 크롤링", str(e))
+                    
+                    # 실패한 경우에도 타이머 종료
+                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.logger.error(f"선박 {vessel_name} 크롤링 실패 (소요시간: {vessel_duration:.2f}초)")
                     continue
             
             self.logger.info("=== 2단계: 선박별 데이터 크롤링 완료 ===")
