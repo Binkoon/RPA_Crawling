@@ -59,11 +59,19 @@ class ParentsClass:
     def setup_logging(self, carrier_name, has_error=False):
         """
         로깅 설정 - 에러가 발생한 경우에만 파일 로그 생성
+        로거 인스턴스를 재사용하여 중복 생성을 방지합니다.
         
         Args:
             carrier_name: 선사명
             has_error: 에러 발생 여부 (True인 경우에만 파일 로그 생성)
         """
+        # 로거 키 생성
+        logger_key = f"{carrier_name}_{has_error}"
+        
+        # 이미 생성된 로거가 있으면 재사용
+        if hasattr(self, '_loggers') and logger_key in self._loggers:
+            return self._loggers[logger_key]
+        
         # 핸들러 설정
         handlers = [logging.StreamHandler()]  # 콘솔 출력은 항상
         
@@ -73,13 +81,24 @@ class ParentsClass:
             log_file_path = os.path.join(self.today_log_dir, log_filename)
             handlers.append(logging.FileHandler(log_file_path, encoding='utf-8'))
         
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s',
-            handlers=handlers
-        )
+        # 로거 생성
+        logger = logging.getLogger(f"{carrier_name}_{has_error}")
+        logger.setLevel(logging.INFO)
         
-        return logging.getLogger(__name__)
+        # 기존 핸들러 제거 (중복 방지)
+        for handler in logger.handlers[:]:
+            logger.removeHandler(handler)
+        
+        # 새 핸들러 추가
+        for handler in handlers:
+            logger.addHandler(handler)
+        
+        # 로거 인스턴스 저장 (재사용을 위해)
+        if not hasattr(self, '_loggers'):
+            self._loggers = {}
+        self._loggers[logger_key] = logger
+        
+        return logger
 
     def Visit_Link(self, url):
         self.driver.get(url)

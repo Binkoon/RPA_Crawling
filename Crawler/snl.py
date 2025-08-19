@@ -34,7 +34,7 @@ class SNL_Crawling(ParentsClass):
         self.setup_logging()
         
         # 선박 리스트
-        self.vessel_name_list = ["REN JIAN 27"]
+        self.vessel_name_list = ["AVIOS","REN JIAN 27"]
         
         # 크롤링 결과 추적
         self.success_count = 0

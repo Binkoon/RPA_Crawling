@@ -49,139 +49,84 @@ def cleanup_old_folders(days_to_keep=30):
     logger.info(f"오늘 날짜: {today.strftime('%Y-%m-%d')}")
     logger.info(f"삭제 기준일: {cutoff_date.strftime('%Y-%m-%d')} ({days_to_keep}일 이전)")
     
-    # 1. scheduleData 폴더 정리
-    cleanup_schedule_data_folders(logger, cutoff_date)
-    
-    # 2. ErrorLog 폴더 정리
-    cleanup_errorlog_folders(logger, cutoff_date)
+    # 모든 대상 폴더를 한 번에 스캔하여 정리
+    cleanup_all_folders_batch(logger, cutoff_date)
     
     logger.info(f"=== 오래된 데이터 정리 완료 ===")
 
-def cleanup_schedule_data_folders(logger, cutoff_date):
-    """scheduleData 폴더의 오래된 폴더들을 삭제"""
-    logger.info(f"\n📁 scheduleData 폴더 정리 시작")
-    
-    schedule_data_path = os.path.join(os.getcwd(), 'scheduleData')
-    
-    if not os.path.exists(schedule_data_path):
-        logger.warning(f"scheduleData 폴더가 존재하지 않습니다: {schedule_data_path}")
-        return
-    
-    # scheduleData 하위의 모든 폴더 확인
-    folders_to_delete = []
-    folders_to_keep = []
-    
-    for item in os.listdir(schedule_data_path):
-        item_path = os.path.join(schedule_data_path, item)
-        
-        if os.path.isdir(item_path):
-            # 날짜 폴더인지 확인 (YYMMDD 형식)
-            folder_date = parse_date_folder(item)
-            
-            if folder_date:
-                if folder_date < cutoff_date:
-                    folders_to_delete.append((item, folder_date))
-                else:
-                    folders_to_keep.append((item, folder_date))
-            else:
-                # 날짜 형식이 아닌 폴더는 유지 (one_crawling, pil_crawling 등)
-                folders_to_keep.append((item, None))
-    
-    # 삭제할 폴더들 출력
-    if folders_to_delete:
-        logger.info(f"🗑️ 삭제할 폴더들 ({len(folders_to_delete)}개):")
-        for folder_name, folder_date in folders_to_delete:
-            date_str = folder_date.strftime('%Y-%m-%d') if folder_date else 'N/A'
-            logger.info(f"  - {folder_name} ({date_str})")
-        
-        # 삭제 실행
-        deleted_count = 0
-        for folder_name, folder_date in folders_to_delete:
-            folder_path = os.path.join(schedule_data_path, folder_name)
-            try:
-                shutil.rmtree(folder_path)
-                date_str = folder_date.strftime('%Y-%m-%d') if folder_date else 'N/A'
-                logger.info(f"✅ 삭제 완료: {folder_name} ({date_str})")
-                deleted_count += 1
-            except Exception as e:
-                logger.error(f"❌ 삭제 실패: {folder_name} - {str(e)}")
-        
-        logger.info(f"📊 삭제 결과: {deleted_count}/{len(folders_to_delete)}개 폴더 삭제 완료")
-    else:
-        logger.info("🗑️ 삭제할 폴더가 없습니다.")
-    
-    # 유지할 폴더들 출력
-    if folders_to_keep:
-        logger.info(f"📁 유지할 폴더들 ({len(folders_to_keep)}개):")
-        for folder_name, folder_date in folders_to_keep:
-            if folder_date:
-                date_str = folder_date.strftime('%Y-%m-%d')
-                logger.info(f"  - {folder_name} ({date_str})")
-            else:
-                logger.info(f"  - {folder_name} (특수 폴더)")
 
-def cleanup_errorlog_folders(logger, cutoff_date):
-    """ErrorLog 폴더의 오래된 폴더들을 삭제"""
-    logger.info(f"\n📁 ErrorLog 폴더 정리 시작")
+
+def cleanup_all_folders_batch(logger, cutoff_date):
+    """모든 대상 폴더를 한 번에 스캔하여 배치로 정리"""
+    logger.info(f"\n📁 전체 폴더 정리 시작 (배치 처리)")
     
-    errorlog_path = os.path.join(os.getcwd(), 'ErrorLog')
+    # 정리 대상 폴더들 정의
+    target_folders = [
+        ('scheduleData', 'YYMMDD'),
+        ('ErrorLog', 'YYYY-MM-DD')
+    ]
     
-    if not os.path.exists(errorlog_path):
-        logger.warning(f"ErrorLog 폴더가 존재하지 않습니다: {errorlog_path}")
-        return
+    all_folders_to_delete = []
+    all_folders_to_keep = []
     
-    # ErrorLog 하위의 모든 폴더 확인
-    folders_to_delete = []
-    folders_to_keep = []
-    
-    for item in os.listdir(errorlog_path):
-        item_path = os.path.join(errorlog_path, item)
+    # 모든 대상 폴더를 한 번에 스캔
+    for base_folder, date_pattern in target_folders:
+        base_path = os.path.join(os.getcwd(), base_folder)
         
-        if os.path.isdir(item_path):
-            # 날짜 폴더인지 확인 (YYYY-MM-DD 형식)
-            folder_date = parse_date_folder(item)
+        if not os.path.exists(base_path):
+            logger.warning(f"{base_folder} 폴더가 존재하지 않습니다: {base_path}")
+            continue
+        
+        logger.info(f"📂 {base_folder} 폴더 스캔 중...")
+        
+        # 폴더 스캔 및 분류
+        for item in os.listdir(base_path):
+            item_path = os.path.join(base_path, item)
             
-            if folder_date:
-                if folder_date < cutoff_date:
-                    folders_to_delete.append((item, folder_date))
+            if os.path.isdir(item_path):
+                folder_date = parse_date_folder(item)
+                
+                if folder_date:
+                    if folder_date < cutoff_date:
+                        all_folders_to_delete.append((base_folder, item, folder_date))
+                    else:
+                        all_folders_to_keep.append((base_folder, item, folder_date))
                 else:
-                    folders_to_keep.append((item, folder_date))
-            else:
-                # 날짜 형식이 아닌 폴더는 유지
-                folders_to_keep.append((item, None))
+                    # 날짜 형식이 아닌 폴더는 유지
+                    all_folders_to_keep.append((base_folder, item, None))
     
     # 삭제할 폴더들 출력
-    if folders_to_delete:
-        logger.info(f"🗑️ 삭제할 폴더들 ({len(folders_to_delete)}개):")
-        for folder_name, folder_date in folders_to_delete:
+    if all_folders_to_delete:
+        logger.info(f"🗑️ 삭제할 폴더들 ({len(all_folders_to_delete)}개):")
+        for base_folder, folder_name, folder_date in all_folders_to_delete:
             date_str = folder_date.strftime('%Y-%m-%d') if folder_date else 'N/A'
-            logger.info(f"  - {folder_name} ({date_str})")
+            logger.info(f"  - {base_folder}/{folder_name} ({date_str})")
         
-        # 삭제 실행
+        # 배치 삭제 실행
         deleted_count = 0
-        for folder_name, folder_date in folders_to_delete:
-            folder_path = os.path.join(errorlog_path, folder_name)
+        for base_folder, folder_name, folder_date in all_folders_to_delete:
+            folder_path = os.path.join(os.getcwd(), base_folder, folder_name)
             try:
                 shutil.rmtree(folder_path)
                 date_str = folder_date.strftime('%Y-%m-%d') if folder_date else 'N/A'
-                logger.info(f"✅ 삭제 완료: {folder_name} ({date_str})")
+                logger.info(f"✅ 삭제 완료: {base_folder}/{folder_name} ({date_str})")
                 deleted_count += 1
             except Exception as e:
-                logger.error(f"❌ 삭제 실패: {folder_name} - {str(e)}")
+                logger.error(f"❌ 삭제 실패: {base_folder}/{folder_name} - {str(e)}")
         
-        logger.info(f"📊 삭제 결과: {deleted_count}/{len(folders_to_delete)}개 폴더 삭제 완료")
+        logger.info(f"📊 삭제 결과: {deleted_count}/{len(all_folders_to_delete)}개 폴더 삭제 완료")
     else:
         logger.info("🗑️ 삭제할 폴더가 없습니다.")
     
     # 유지할 폴더들 출력
-    if folders_to_keep:
-        logger.info(f"📁 유지할 폴더들 ({len(folders_to_keep)}개):")
-        for folder_name, folder_date in folders_to_keep:
+    if all_folders_to_keep:
+        logger.info(f"📁 유지할 폴더들 ({len(all_folders_to_keep)}개):")
+        for base_folder, folder_name, folder_date in all_folders_to_keep:
             if folder_date:
                 date_str = folder_date.strftime('%Y-%m-%d')
-                logger.info(f"  - {folder_name} ({date_str})")
+                logger.info(f"  - {base_folder}/{folder_name} ({date_str})")
             else:
-                logger.info(f"  - {folder_name} (특수 폴더)")
+                logger.info(f"  - {base_folder}/{folder_name} (특수 폴더)")
 
 def main():
     """메인 실행 함수"""

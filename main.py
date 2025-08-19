@@ -50,6 +50,22 @@ logging.basicConfig(
     ]
 )
 
+# 크롤러 팩토리 import
+from crawler_factory import CrawlerFactory
+
+# 설정 파일에서 선사 정보 로드
+def load_carriers_config():
+    """선사 설정 파일을 로드합니다."""
+    try:
+        import json
+        config_path = os.path.join(os.getcwd(), 'config', 'carriers.json')
+        with open(config_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"설정 파일 로드 실패: {str(e)}")
+        # 기본값 반환
+        return {"carriers": []}
+
 # 엑셀 로그 데이터를 저장할 리스트
 excel_log_data = []
 
@@ -138,7 +154,8 @@ def run_crawler_with_error_handling(crawler_name, crawler_instance):
         
         # 크롤러에 성공/실패 카운트가 있는 경우 선박별 결과 확인
         if hasattr(crawler_instance, 'success_count') and hasattr(crawler_instance, 'fail_count'):
-            total_vessels = getattr(crawler_instance, 'success_count', 0) + getattr(crawler_instance, 'fail_count', 0)
+            # 실제 선박 대수는 vessel_name_list의 길이로 계산
+            total_vessels = len(getattr(crawler_instance, 'vessel_name_list', []))
             success_count = getattr(crawler_instance, 'success_count', 0)
             fail_count = getattr(crawler_instance, 'fail_count', 0)
             failed_vessels = getattr(crawler_instance, 'failed_vessels', [])
@@ -230,7 +247,8 @@ def try_run_carrier(crawler_name, constructor, results_list):
     """크롤러 인스턴스화 단계에서의 예외도 잡아서 다음 선사로 넘어가도록 처리"""
     logger = logging.getLogger(__name__)
     try:
-        instance = constructor()
+        # 크롤러 팩토리를 사용하여 인스턴스 생성
+        instance = CrawlerFactory.create_crawler(crawler_name)
     except Exception as e:
         end_time = datetime.now()
         logger.error(f"=== {crawler_name} 크롤러 인스턴스 생성 실패 ===")
@@ -260,28 +278,17 @@ if __name__ == "__main__":
     # 크롤링 결과를 저장할 리스트
     crawling_results = []
     
-    # 실행할 선사 정의 (필요한 선사는 주석 해제)
-    carriers_to_run = [
-        ("SITC", lambda: sitc.SITC_Crawling()),           # 테스트 완료
-        ("EVERGREEN", lambda: evergreen.EVERGREEN_Crawling()), # 테스트 완료
-        ("COSCO", lambda: cosco.Cosco_Crawling()),
-        ("WANHAI", lambda: wanhai.WANHAI_Crawling()),
-        ("CKLINE", lambda: ckline.CKLINE_Crawling()),
-        ("PANOCEAN", lambda: panocean.PANOCEAN_Crawling()),
-        ("SNL", lambda: snl.SNL_Crawling()),
-        ("SMLINE", lambda: smline.SMLINE_Crawling()),
-        ("HMM", lambda: hmm.HMM_Crawling()),
-        ("FDT", lambda: fdt.FDT_Crawling()),
-        ("IAL", lambda: ial.IAL_Crawling()),
-        ("DYLINE", lambda: dyline.DYLINE_Crawling()),
-        ("YML", lambda: yml.YML_Crawling()),
-        ("NSS", lambda: nss.NSS_Crawling()),
-        ("ONE", lambda: one.ONE_Crawling()),              # 테스트 완료
-    ]
+    # 실행할 선사 정의 (설정 파일에서 로드)
+    carriers_config = load_carriers_config()
+    carriers_to_run = []
 
-    # 순차 실행: 인스턴스 생성 실패/실행 실패 모두 결과에 기록하고 계속 진행
-    for carrier_name, ctor in carriers_to_run:
-        try_run_carrier(carrier_name, ctor, crawling_results)
+    for carrier_info in carriers_config['carriers']:
+        carrier_name = carrier_info['name']
+        carriers_to_run.append((carrier_name, carrier_name))
+
+    # 순차 실행: 크롤러 팩토리를 사용하여 인스턴스 생성 및 실행
+    for carrier_name, _ in carriers_to_run:
+        try_run_carrier(carrier_name, None, crawling_results)
 
     # 전체 크롤링 종료 시간
     total_end_time = datetime.now()
