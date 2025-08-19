@@ -193,6 +193,8 @@ class Cosco_Crawling(ParentsClass):
             self.logger.error(f"상세 에러: {traceback.format_exc()}")
             return False
 
+
+
     def run(self):
         """메인 실행 함수"""
         try:
@@ -212,7 +214,7 @@ class Cosco_Crawling(ParentsClass):
             
             # 최종 결과 로깅
             self.logger.info("=== COSCO 크롤링 완료 ===")
-            self.logger.info(f"총 {len(self.vessel_list)}개 선박 중")
+            self.logger.info(f"총 {len(self.vessel_name_list)}개 선박 중")
             self.logger.info(f"성공: {self.success_count}개")
             self.logger.info(f"실패: {self.fail_count}개")
             if self.failed_vessels:

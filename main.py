@@ -162,7 +162,32 @@ def run_crawler_with_error_handling(crawler_name, crawler_instance):
         logger.info(f"=== {crawler_name} 크롤링 시작 ===")
         start_time = datetime.now()
         
+        # 첫 번째 시도
         result = crawler_instance.run()
+        
+        # 실패한 선박이 있는지 확인하고 재시도
+        if hasattr(crawler_instance, 'failed_vessels') and crawler_instance.failed_vessels:
+                failed_vessels = crawler_instance.failed_vessels.copy()
+                failed_reasons = getattr(crawler_instance, 'failed_reasons', {}).copy()
+                
+                logger.info(f"=== {crawler_name} 실패한 선박 재시도 시작 ===")
+                logger.info(f"재시도 대상 선박: {', '.join(failed_vessels)}")
+                logger.info(f"재시도 대상 개수: {len(failed_vessels)}개")
+                
+                # 실패한 선박들만 재시도
+                retry_result = crawler_instance.retry_failed_vessels(failed_vessels)
+                
+                if retry_result:
+                    logger.info(f"=== {crawler_name} 재시도 완료 ===")
+                    logger.info(f"재시도 성공: {retry_result.get('retry_success', 0)}개")
+                    logger.info(f"재시도 실패: {retry_result.get('retry_fail', 0)}개")
+                    logger.info(f"재시도 후 최종 성공: {retry_result.get('final_success', 0)}개")
+                    logger.info(f"재시도 후 최종 실패: {retry_result.get('final_fail', 0)}개")
+                    
+                    if 'note' in retry_result:
+                        logger.info(f"재시도 참고사항: {retry_result['note']}")
+                else:
+                    logger.warning(f"=== {crawler_name} 재시도 실패 ===")
         
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()

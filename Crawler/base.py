@@ -176,3 +176,27 @@ class ParentsClass:
         safe_carrier = carrier_name.replace("/", "_").replace("\\", "_")
         filename = f"{safe_carrier}_{safe_vessel}.{ext}"
         return os.path.join(self.today_download_dir, filename)
+    
+    def retry_failed_vessels(self, failed_vessels):
+        """
+        실패한 선박들에 대해 재시도하는 기본 메서드
+        자식 클래스에서 오버라이드하여 구체적인 재시도 로직 구현
+        
+        Args:
+            failed_vessels: 재시도할 선박 이름 리스트
+            
+        Returns:
+            dict: 재시도 결과 (성공/실패 개수 등)
+        """
+        self.logger.warning(f"기본 재시도 메서드가 호출되었습니다. {len(failed_vessels)}개 선박에 대한 재시도가 필요합니다.")
+        self.logger.warning(f"재시도 대상 선박: {', '.join(failed_vessels)}")
+        
+        # 기본적으로는 재시도하지 않고 실패 상태 유지
+        return {
+            'retry_success': 0,
+            'retry_fail': len(failed_vessels),
+            'total_retry': len(failed_vessels),
+            'final_success': self.success_count,
+            'final_fail': self.fail_count,
+            'note': '기본 재시도 메서드 - 구체적인 재시도 로직이 구현되지 않음'
+        }
