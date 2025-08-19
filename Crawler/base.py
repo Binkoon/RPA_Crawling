@@ -1,3 +1,13 @@
+### 해당 코드 역할 요약 ###
+# 실제 역할:
+# - 공통 기능 제공 (WebDriver, 로깅, 폴더 생성)
+# - 모든 크롤러가 상속받는 부모 클래스
+# - 기본 설정 및 초기화
+
+# 하지 않는 것:
+# - 데이터 파이프라인 직접 관리하지 않음
+# - 크롤러 실행하지 않음
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
