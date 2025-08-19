@@ -166,6 +166,7 @@ def run_crawler_with_error_handling(crawler_name, crawler_instance):
         result = crawler_instance.run()
         
         # 실패한 선박이 있는지 확인하고 재시도
+        retry_result = None
         if hasattr(crawler_instance, 'failed_vessels') and crawler_instance.failed_vessels:
                 failed_vessels = crawler_instance.failed_vessels.copy()
                 failed_reasons = getattr(crawler_instance, 'failed_reasons', {}).copy()
@@ -214,12 +215,24 @@ def run_crawler_with_error_handling(crawler_name, crawler_instance):
                 vessel_duration = getattr(crawler_instance, 'get_vessel_duration', lambda x: duration)(vessel_name)
                 add_to_excel_log(crawler_name, vessel_name, "실패", reason, vessel_duration)
             
+            # 재시도 결과가 있는 경우 최종 결과 반영
+            final_success_count = success_count
+            final_fail_count = fail_count
+            final_failed_vessels = failed_vessels.copy()
+            
+            if retry_result:
+                final_success_count = retry_result.get('final_success', success_count)
+                final_fail_count = retry_result.get('final_fail', fail_count)
+                # 재시도 후 최종 실패한 선박들 업데이트
+                if 'final_failed_vessels' in retry_result:
+                    final_failed_vessels = retry_result['final_failed_vessels']
+            
             # 선박 중 하나라도 실패하면 선사도 실패로 분류
-            if fail_count > 0:
+            if final_fail_count > 0:
                 logger.error(f"=== {crawler_name} 크롤링 실패 (소요시간: {duration:.2f}초) ===")
-                logger.error(f"선박 실패로 인한 선사 실패: 총 {total_vessels}개 선박 중 성공 {success_count}개, 실패 {fail_count}개")
-                if failed_vessels:
-                    logger.error(f"실패한 선박: {', '.join(failed_vessels)}")
+                logger.error(f"선박 실패로 인한 선사 실패: 총 {total_vessels}개 선박 중 성공 {final_success_count}개, 실패 {final_fail_count}개")
+                if final_failed_vessels:
+                    logger.error(f"실패한 선박: {', '.join(final_failed_vessels)}")
                 
                 return {
                     'success': False,
@@ -227,14 +240,14 @@ def run_crawler_with_error_handling(crawler_name, crawler_instance):
                     'start_time': start_time,
                     'end_time': end_time,
                     'total_vessels': total_vessels,
-                    'success_count': success_count,
-                    'fail_count': fail_count,
-                    'failed_vessels': failed_vessels,
-                    'error': f'선박 실패로 인한 선사 실패 (실패한 선박: {", ".join(failed_vessels)})'
+                    'success_count': final_success_count,
+                    'fail_count': final_fail_count,
+                    'failed_vessels': final_failed_vessels,
+                    'error': f'선박 실패로 인한 선사 실패 (실패한 선박: {", ".join(final_failed_vessels)})'
                 }
             else:
                 logger.info(f"=== {crawler_name} 크롤링 완료 (소요시간: {duration:.2f}초) ===")
-                logger.info(f"{crawler_name} 상세 결과: 총 {total_vessels}개 선박 중 성공 {success_count}개, 실패 {fail_count}개")
+                logger.info(f"{crawler_name} 상세 결과: 총 {total_vessels}개 선박 중 성공 {final_success_count}개, 실패 {final_fail_count}개")
                 
                 return {
                     'success': True,
@@ -242,9 +255,9 @@ def run_crawler_with_error_handling(crawler_name, crawler_instance):
                     'start_time': start_time,
                     'end_time': end_time,
                     'total_vessels': total_vessels,
-                    'success_count': success_count,
-                    'fail_count': fail_count,
-                    'failed_vessels': failed_vessels
+                    'success_count': final_success_count,
+                    'fail_count': final_fail_count,
+                    'failed_vessels': final_failed_vessels
                 }
         else:
             # 성공/실패 카운트가 없는 경우 기존 로직 사용

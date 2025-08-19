@@ -31,7 +31,7 @@ class CrawlerFactory:
         'DYLINE': ('dyline', 'DYLINE_Crawling'),
         'YML': ('yml', 'YML_Crawling'),
         'NSS': ('nss', 'NSS_Crawling'),
-        'ONE': ('one', 'ONE_Crawling'),
+        'ONE': ('one', 'ONE_Crawling')
     }
     
     @classmethod
