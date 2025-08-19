@@ -13,6 +13,8 @@ __pycache__/
 *.json
 *.pickle
 token/
+# 얘는 필요해
+!config/carriers.json
 
 # 로그 파일 무시
 *.txt
