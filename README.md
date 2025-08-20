@@ -256,140 +256,6 @@ Cutoff Date  Scan All     Validation   Log Record
 ErrorLog 폴더     1t3P2oofZKnSrVMmDS6-YQcwuZC6PdCz5    Date Parse    Log Record
 ```
 
-## 🔧 주요 기능
-
-### 1. 자동화된 크롤링
-- Selenium WebDriver를 사용한 웹 자동화
-- 각 선사별 맞춤형 크롤링 로직
-- 에러 발생 시 자동 재시도 및 로깅
-- 선박별 개별 소요시간 측정
-
-### 2. 스마트 에러 처리
-- 에러가 없는 선사는 로그 파일 생성하지 않음
-- 에러 발생 시에만 상세 로그 기록
-- 선사별 개별 에러 처리
-- 단계별 실패 사유 기록 (예: "선박 조회 실패", "데이터 없음")
-
-### 3. 고급 로깅 시스템
-- **선사별 개별 로그**: 각 크롤러의 상세 실행 로그
-- **Excel 통합 로그**: 일일 크롤링 결과를 Excel 형태로 저장
-- **선박별 상세 기록**: 성공/실패, 소요시간, 실패 사유 등
-- **요약 통계**: 총 선사 수, 성공/실패 수, 총 소요시간 등
-
-### 4. 구글 드라이브 통합
-- OAuth 2.0 인증으로 안전한 API 접근
-- 날짜별 폴더 자동 생성
-- 파일 형식별 MIME 타입 자동 설정
-- 업로드 성공/실패 상세 로깅
-
-### 5. 자동 데이터 정리
-- 30일 이전 날짜 폴더 자동 삭제
-- ErrorLog 폴더도 1개월 기준으로 정리
-- YYMMDD 형식 폴더만 대상 (예: 250606)
-- 특수 폴더는 보존 (one_crawling, pil_crawling)
-
-### 6. 선박별 성공/실패 추적
-- 각 선박의 크롤링 성공/실패 개별 기록
-- 선박별 소요시간 측정 (루프 시작부터 완료까지)
-- 실패한 선박이 있으면 해당 선사 전체를 실패로 처리
-- 상세한 실패 사유 기록
-
-### 7. 에러로그 자동 업로드 및 정리
-- 오늘 날짜의 `_log.xlsx` 파일만 자동 업로드
-- 지정된 구글드라이브 폴더 ID에 직접 업로드
-- 30일 기준으로 오래된 에러로그 자동 정리
-- 폴더 구조 단순화 (ErrorLog 폴더 생성 불필요)
-- 업로드 성공/실패 상세 로깅
-
-## 📈 실행 결과 예시
-
-### 크롤링 결과 요약
-```
-=== 크롤링 결과 요약 ===
-SITC: 성공 (45.2초)
-  └─ 선박: 성공 11개, 실패 0개
-EVERGREEN: 성공 (32.1초)
-  └─ 선박: 성공 4개, 실패 0개
-COSCO: 성공 (28.7초)
-  └─ 선박: 성공 4개, 실패 0개
-
-총 15개 선사 중
-성공: 15개
-실패: 0개
-총 소요시간: 156.3초
-
-=== 선박별 상세 결과 ===
-총 선박: 88개
-성공: 88개
-실패: 0개
-```
-
-### 구글 드라이브 업로드 결과
-```
-=== 구글 드라이브 업로드 시작 ===
-📁 로컬 폴더: scheduleData/250806
-📊 총 파일 수: 82개
-🏢 선사 수: 15개
-
-🚀 구글 드라이브 업로드 시작...
-Uploaded SITC_SITC DECHENG.xlsx to Google Drive with ID: 1xAxFuoWj4f3a3M8Wrfvyp0QTqXUMVpyV
-...
-
-📈 업로드 결과 요약
-============================================================
-✅ 성공: 82개 파일
-❌ 실패: 0개 파일
-📊 성공률: 100.0%
-
-🏢 선사별 업로드 결과:
-  ✅ SITC: 11/11개 (100.0%)
-  ✅ EVERGREEN: 4/4개 (100.0%)
-  ✅ COSCO: 4/4개 (100.0%)
-  ✅ WANHAI: 6/6개 (100.0%)
-  ✅ CKLINE: 13/13개 (100.0%)
-============================================================
-```
-
-### 에러로그 자동 업로드 결과
-```
-=== 에러로그 자동 업로드 및 정리 시작 ===
-
-📋 1단계: 오래된 에러로그 정리
-✅ 에러로그 정리 완료: 2개 폴더 삭제
-   └─ 정리된 용량: 1.25 MB
-
-📋 2단계: 에러로그 구글드라이브 업로드 (오늘 날짜 로그만)
-✅ 오늘 날짜 에러로그 업로드 완료
-
-================================================================================
-📊 에러로그 업로드 결과 요약
-================================================================================
-업로드 대상: 20250120_log.xlsx
-성공: 1개
-실패: 0개
-성공률: 100.0%
-================================================================================
-```
-
-### Excel 로그 파일 구조
-```
-날짜 (Y/M/D/HH/MM/SS) | 선사 | 선박 | 상태 | 사유/결과 | 소요시간
-2025/08/06/15/00/27   | SITC | SITC DECHENG | 성공 | 크롤링 완료 | 4.2초
-2025/08/06/15/00/31   | SITC | SITC DECHENG | 성공 | 크롤링 완료 | 3.8초
-...
-
-=== 크롤링 결과 요약 ===
-총 15개 선사 중
-성공: 15개
-실패: 0개
-총 소요시간: 156.3초
-
-=== 선박별 상세 결과 ===
-총 선박: 88개
-성공: 88개
-실패: 0개
-```
-
 ## 🔒 보안 및 권한
 
 - **OAuth 2.0**: 사용자 인증으로 안전한 API 접근
@@ -403,7 +269,101 @@ Uploaded SITC_SITC DECHENG.xlsx to Google Drive with ID: 1xAxFuoWj4f3a3M8Wrfvyp0
 - **Selenium**: 4.0+
 - **Chrome**: 최신 버전
 - **OS**: Windows 10/11
-- **주요 라이브러리**: pandas, openpyxl, google-api-python-client
+- **주요 라이브러리**: pandas, openpyxl, google-api-python-client, psutil, concurrent.futures
+
+## 🔧 스레드 안전성 계산기
+
+### 스레드 수 계산 공식
+
+시스템 사양을 분석하여 안전한 스레드 수를 자동으로 계산하는 `thread_calculator.py`를 제공합니다.
+
+#### 1. **메모리 기반 계산**
+```python
+def calculate_memory_based_threads(self):
+    available_memory_gb = self.system_info['memory_available_gb']
+    # 크롬 인스턴스당 300MB 필요 (보수적 추정)
+    theoretical_threads = available_memory_gb / 0.3
+    # 안전 마진 적용 (70%만 사용)
+    safe_threads = int(theoretical_threads * 0.7)
+    return max(1, min(safe_threads, 8))  # 최소 1개, 최대 8개
+```
+
+#### 2. **CPU 기반 계산**
+```python
+def calculate_cpu_based_threads(self):
+    cpu_physical = self.system_info['cpu_physical']
+    # 물리적 코어 수의 2배까지 허용 (과부하 방지)
+    cpu_based_threads = cpu_physical * 2
+    return max(1, min(cpu_based_threads, 6))  # 최소 1개, 최대 6개
+```
+
+#### 3. **디스크 기반 계산**
+```python
+def calculate_disk_based_threads(self):
+    disk_free_gb = self.system_info['disk_free_gb']
+    # 선사당 약 100MB 필요 (보수적 추정)
+    space_per_carrier = 0.1
+    theoretical_threads = disk_free_gb / space_per_carrier
+    # 안전 마진 적용 (50%만 사용)
+    safe_threads = int(theoretical_threads * 0.5)
+    return max(1, min(safe_threads, 10))  # 최소 1개, 최대 10개
+```
+
+#### 4. **최적 스레드 수 계산**
+```python
+def get_optimal_thread_count(self):
+    memory_threads = self.calculate_memory_based_threads()
+    cpu_threads = self.calculate_cpu_based_threads()
+    disk_threads = self.calculate_disk_based_threads()
+    network_threads = 4  # 네트워크 대역폭 고려
+    
+    # 가장 보수적인 값 선택 (안전 우선)
+    return min(memory_threads, cpu_threads, disk_threads, network_threads)
+```
+
+#### 5. **권장 스레드 수 (메모리 기반)**
+```python
+def get_recommended_thread_count(self):
+    memory_total_gb = self.system_info['memory_total_gb']
+    
+    if memory_total_gb >= 32:
+        return 4      # 32GB 이상: 4개 스레드
+    elif memory_total_gb >= 16:
+        return 3      # 16GB 이상: 3개 스레드
+    elif memory_total_gb >= 8:
+        return 2      # 8GB 이상: 2개 스레드
+    else:
+        return 1      # 8GB 미만: 1개 스레드
+```
+
+### 사용 예시
+
+```python
+# main.py에서 사용
+from thread_calculator import ThreadCalculator
+
+calculator = ThreadCalculator()
+optimal_threads = calculator.get_optimal_thread_count()
+
+with ThreadPoolExecutor(max_workers=optimal_threads) as executor:
+    # 안전한 병렬 처리
+    futures = [executor.submit(run_carrier, carrier) 
+               for carrier in carriers]
+```
+
+### 안전도 평가
+
+- **🟢 매우 안전**: 1-2개 스레드
+- **🟡 안전**: 3개 스레드  
+- **🟠 주의**: 4개 스레드
+- **🔴 위험**: 5-6개 스레드
+- **⚫ 매우 위험**: 7개 이상
+
+### 성능 향상 예상치
+
+- **2개 스레드**: 50% 향상 (2배 빠름)
+- **3개 스레드**: 67% 향상 (3배 빠름)
+- **4개 스레드**: 75% 향상 (4배 빠름)
 
 ## 📝 주요 개선사항 (v3.0.0)
 
@@ -435,9 +395,21 @@ Uploaded SITC_SITC DECHENG.xlsx to Google Drive with ID: 1xAxFuoWj4f3a3M8Wrfvyp0
 - 지정된 폴더 ID에 직접 업로드로 구조 단순화
 - 업로드 성공/실패 상세 추적 및 로깅
 
+### 비동기 처리 방식 도입 (v3.1.0)
+- ThreadPoolExecutor를 활용한 스레드 기반 병렬 처리
+- 선사별 동시 크롤링으로 성능 향상 (기존 1800초 → 900초 예상)
+- 스레드 안전성을 위한 Lock 메커니즘 적용
+- 시스템 사양 기반 최적 스레드 수 자동 계산
+
+### 스레드 안전성 및 성능 최적화
+- `thread_calculator.py`를 통한 시스템 사양 분석
+- 메모리, CPU, 디스크, 네트워크 요소별 안전 스레드 수 계산
+- 크롬 인스턴스당 리소스 사용량 고려한 보수적 스레드 수 제한
+- 안전도 레벨별 분류 (매우 안전/안전/주의/위험/매우 위험)
+
 ## 📝 라이선스
 
 이 프로젝트는 업무 시간 단축으로 도움을 드리고자 사이드로 1인 개발되었습니다.
 
-**마지막 업데이트**: 2025년 8월 20일
-**버전**: 3.1.0 
+**마지막 업데이트**: 2025년 1월 20일
+**버전**: 3.2.0 
