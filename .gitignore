@@ -19,7 +19,10 @@ token/
 # 로그 파일 무시
 *.txt
 ErrorLog/
+<<<<<<< HEAD
 main_crawling_log.txt
+=======
+>>>>>>> b16d697386cf4ff21682e091e1d8f03aa97ea3db
 !requirements.txt
 
 # 크롤링 데이터 폴더
