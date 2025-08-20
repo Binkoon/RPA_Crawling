@@ -63,7 +63,7 @@ class CKLINE_Crawling(ParentsClass):
             # 1. 로딩 화면 대기
             wait.until(EC.invisibility_of_element_located((By.ID, "mf_grp_loading")))
 
-            # 2. 팝업 닫기 (팝업이 있는 경우)
+            # 2. 팝업 닫기 (팝업이 있는 경우) /html/body/div[2]/div[4]/div/div[2]/a/span[2]
             try:
                 pop_up_close = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="mf_btn_noti"]')))
                 pop_up_close.click()
