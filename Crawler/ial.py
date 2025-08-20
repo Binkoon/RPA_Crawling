@@ -244,3 +244,122 @@ class IAL_Crawling(ParentsClass):
             self.logger.error(f"에러 메시지: {str(e)}")
             self.logger.error(f"상세 에러: {traceback.format_exc()}")
             return False
+
+    def retry_failed_vessels(self, failed_vessels):
+        """
+        실패한 선박들에 대해 재시도하는 메서드
+        
+        Args:
+            failed_vessels: 재시도할 선박 이름 리스트
+            
+        Returns:
+            dict: 재시도 결과 (성공/실패 개수 등)
+        """
+        if not failed_vessels:
+            return {
+                'retry_success': 0,
+                'retry_fail': 0,
+                'total_retry': 0,
+                'final_success': self.success_count,
+                'final_fail': self.fail_count,
+                'note': '재시도할 선박이 없습니다.'
+            }
+        
+        self.logger.info(f"=== IAL 실패한 선박 재시도 시작 ===")
+        self.logger.info(f"재시도 대상 선박: {', '.join(failed_vessels)}")
+        self.logger.info(f"재시도 대상 개수: {len(failed_vessels)}개")
+        
+        # 재시도 전 상태 저장
+        original_success_count = self.success_count
+        original_fail_count = self.fail_count
+        
+        # 실패한 선박들만 재시도
+        retry_success_count = 0
+        retry_fail_count = 0
+        
+        for vessel_name in failed_vessels:
+            try:
+                self.logger.info(f"=== {vessel_name} 재시도 시작 ===")
+                
+                # 선박별 타이머 시작
+                self.start_vessel_timer(vessel_name)
+                
+                # 1. 선박별 URL 접속
+                vessel_url = f"https://www.ial.com/vessel-schedule?vessel={vessel_name}"
+                self.Visit_Link(vessel_url)
+                time.sleep(3)
+                
+                # 2. 데이터 테이블 추출
+                table_xpath = '//*[@id="vessel-schedule-table"]'
+                table = self.driver.find_element(By.XPATH, table_xpath)
+                rows = table.find_elements(By.TAG_NAME, 'tr')
+                
+                # 헤더 추출 (첫 번째 행)
+                header_row = rows[0]
+                header_cells = header_row.find_elements(By.TAG_NAME, 'th')
+                headers = [cell.text.strip() for cell in header_cells]
+                new_headers = ['Vessel'] + headers
+                
+                # 데이터 행 추출 (두 번째 행부터)
+                rows_data = []
+                for i in range(1, len(rows)):
+                    row = rows[i]
+                    cells = row.find_elements(By.TAG_NAME, 'td')
+                    if cells:
+                        row_data = [cell.text.strip() for cell in cells]
+                        rows_data.append(row_data)
+                
+                # 3. DataFrame으로 저장 및 엑셀로 내보내기
+                if rows_data:
+                    row_data_with_vessel = [[vessel_name] + row for row in rows_data]
+                    df = pd.DataFrame(row_data_with_vessel, columns=new_headers)
+                    filename = self.get_save_path(self.carrier_name, vessel_name)
+                    df.to_excel(filename, index=False, header=True)
+                    self.logger.info(f"{vessel_name} 재시도 엑셀 저장 완료: {filename}")
+                    
+                    # 성공 처리
+                    self.record_vessel_success(vessel_name)
+                    retry_success_count += 1
+                    
+                    # 실패 목록에서 제거
+                    if vessel_name in self.failed_vessels:
+                        self.failed_vessels.remove(vessel_name)
+                    if vessel_name in self.failed_reasons:
+                        del self.failed_reasons[vessel_name]
+                    
+                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.logger.info(f"선박 {vessel_name} 재시도 성공 (소요시간: {vessel_duration:.2f}초)")
+                else:
+                    self.logger.warning(f"{vessel_name} 재시도 시에도 데이터가 없음")
+                    retry_fail_count += 1
+                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.logger.warning(f"선박 {vessel_name} 재시도 실패 (소요시간: {vessel_duration:.2f}초)")
+                
+            except Exception as e:
+                self.logger.error(f"선박 {vessel_name} 재시도 실패: {str(e)}")
+                retry_fail_count += 1
+                
+                # 실패한 경우에도 타이머 종료
+                vessel_duration = self.end_vessel_timer(vessel_name)
+                self.logger.error(f"선박 {vessel_name} 재시도 실패 (소요시간: {vessel_duration:.2f}초)")
+                continue
+        
+        # 재시도 결과 요약
+        self.logger.info("="*60)
+        self.logger.info("IAL 재시도 결과 요약")
+        self.logger.info("="*60)
+        self.logger.info(f"재시도 성공: {retry_success_count}개")
+        self.logger.info(f"재시도 실패: {retry_fail_count}개")
+        self.logger.info(f"재시도 후 최종 성공: {self.success_count}개")
+        self.logger.info(f"재시도 후 최종 실패: {self.fail_count}개")
+        self.logger.info("="*60)
+        
+        return {
+            'retry_success': retry_success_count,
+            'retry_fail': retry_fail_count,
+            'total_retry': len(failed_vessels),
+            'final_success': self.success_count,
+            'final_fail': self.fail_count,
+            'final_failed_vessels': self.failed_vessels.copy(),
+            'note': f'IAL 재시도 완료 - 성공: {retry_success_count}개, 실패: {retry_fail_count}개'
+        }

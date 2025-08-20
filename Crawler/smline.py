@@ -210,4 +210,126 @@ class SMLINE_Crawling(ParentsClass):
             self.logger.error(f"상세 에러: {traceback.format_exc()}")
             return False
 
-        # //*[@id="vvd"]  
+    def retry_failed_vessels(self, failed_vessels):
+        """
+        실패한 선박들에 대해 재시도하는 메서드
+        
+        Args:
+            failed_vessels: 재시도할 선박 이름 리스트
+            
+        Returns:
+            dict: 재시도 결과 (성공/실패 개수 등)
+        """
+        if not failed_vessels:
+            return {
+                'retry_success': 0,
+                'retry_fail': 0,
+                'total_retry': 0,
+                'final_success': self.success_count,
+                'final_fail': self.fail_count,
+                'note': '재시도할 선박이 없습니다.'
+            }
+        
+        self.logger.info(f"=== SMLINE 실패한 선박 재시도 시작 ===")
+        self.logger.info(f"재시도 대상 선박: {', '.join(failed_vessels)}")
+        self.logger.info(f"재시도 대상 개수: {len(failed_vessels)}개")
+        
+        # 재시도 전 상태 저장
+        original_success_count = self.success_count
+        original_fail_count = self.fail_count
+        
+        # 실패한 선박들만 재시도
+        retry_success_count = 0
+        retry_fail_count = 0
+        
+        for vessel_name in failed_vessels:
+            try:
+                self.logger.info(f"=== {vessel_name} 재시도 시작 ===")
+                
+                # 선박별 타이머 시작
+                self.start_vessel_timer(vessel_name)
+                
+                # 1. 선박명 입력
+                vessel_input = self.wait.until(EC.element_to_be_clickable((
+                    By.XPATH, '//*[@id="vslEngNm"]'
+                )))
+                vessel_input.clear()
+                vessel_input.send_keys(vessel_name)
+                time.sleep(1)
+                
+                # 2. 선박 선택
+                vessel_select = self.wait.until(EC.element_to_be_clickable((
+                    By.XPATH, '/html/body/ul/li'
+                )))
+                vessel_select.click()
+                time.sleep(1)
+                
+                # 3. Search 버튼 클릭
+                search_btn = self.wait.until(EC.element_to_be_clickable((
+                    By.XPATH, '//*[@id="btnSearch"]'
+                )))
+                search_btn.click()
+                time.sleep(1)
+                
+                # 4. Download 버튼 클릭
+                download_btn = self.wait.until(EC.element_to_be_clickable((
+                    By.XPATH, '//*[@id="btnDownload"]'
+                )))
+                download_btn.click()
+                time.sleep(1)
+                
+                # 5. 파일명 변경
+                old_path = os.path.join(self.today_download_dir, "Vessel Schedule.xls")
+                new_name = f"{self.carrier_name}_{vessel_name}.xls"
+                new_path = os.path.join(self.today_download_dir, new_name)
+                
+                if os.path.exists(old_path):
+                    os.rename(old_path, new_path)
+                    self.logger.info(f"{vessel_name} 재시도 파일명 변경 완료: {new_path}")
+                    
+                    # 성공 처리
+                    self.record_vessel_success(vessel_name)
+                    retry_success_count += 1
+                    
+                    # 실패 목록에서 제거
+                    if vessel_name in self.failed_vessels:
+                        self.failed_vessels.remove(vessel_name)
+                    if vessel_name in self.failed_reasons:
+                        del self.failed_reasons[vessel_name]
+                    
+                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.logger.info(f"선박 {vessel_name} 재시도 성공 (소요시간: {vessel_duration:.2f}초)")
+                else:
+                    self.logger.warning(f"{vessel_name} 재시도 시에도 다운로드 파일이 없음")
+                    retry_fail_count += 1
+                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.logger.warning(f"선박 {vessel_name} 재시도 실패 (소요시간: {vessel_duration:.2f}초)")
+                
+            except Exception as e:
+                self.logger.error(f"선박 {vessel_name} 재시도 실패: {str(e)}")
+                retry_fail_count += 1
+                
+                # 실패한 경우에도 타이머 종료
+                vessel_duration = self.end_vessel_timer(vessel_name)
+                self.logger.error(f"선박 {vessel_name} 재시도 실패 (소요시간: {vessel_duration:.2f}초)")
+                continue
+        
+        # 재시도 결과 요약
+        self.logger.info("="*60)
+        self.logger.info("SMLINE 재시도 결과 요약")
+        self.logger.info("="*60)
+        self.logger.info(f"재시도 성공: {retry_success_count}개")
+        self.logger.info(f"재시도 실패: {retry_fail_count}개")
+        self.logger.info(f"재시도 후 최종 성공: {self.success_count}개")
+        self.logger.info(f"재시도 후 최종 실패: {self.fail_count}개")
+        self.logger.info("="*60)
+        
+        return {
+            'retry_success': retry_success_count,
+            'retry_fail': retry_fail_count,
+            'total_retry': len(failed_vessels),
+            'final_success': self.success_count,
+            'final_fail': self.fail_count,
+            'final_failed_vessels': self.failed_vessels.copy(),
+            'note': f'SMLINE 재시도 완료 - 성공: {retry_success_count}개, 실패: {retry_fail_count}개'
+        }  
