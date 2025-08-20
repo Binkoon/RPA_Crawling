@@ -4,7 +4,7 @@
 현업의 수기 작업에 오랜 시간이 들어가는것 같아 사이드로 시작된 1인 개발 (크롤링) 입니다.
 
 기술 스택 : Python
-디자인 패턴 : 팩토리 메서드
+디자인 패턴 : 팩토리 메서드 + 빌더 패턴
 API : 구글 드라이브 API (OAuth 접근 방식)
 형상 관리 : Git
 
@@ -16,6 +16,7 @@ API : 구글 드라이브 API (OAuth 접근 방식)
 - **저장소**: 로컬 → 구글 공유 드라이브 자동 업로드
 - **로깅 시스템**: 선사별 개별 로그 + Excel 형태의 통합 로그
 - **에러로그 관리**: 자동 구글드라이브 업로드 + 30일 기준 자동 정리
+- **빌더 패턴**: 단계별 크롤링 프로세스 구성 및 유연한 실행
 
 ## 🏗️ 프로젝트 구조
 
@@ -53,17 +54,21 @@ RPA_Crawling/
 │   ├── nss.py                    # NSS 크롤러
 │   ├── one.py                    # ONE 크롤러
 │   └── pil.py                    # PIL 크롤러
-├── main.py                    # 메인 실행 파일 (에러로그 자동 업로드 포함)
+├── main.py                    # 메인 실행 파일 (빌더 패턴 + 스레드 기반 병렬 처리 + 에러로그 자동 업로드)
 ├── crawler_factory.py         # 크롤러 팩토리 클래스
 ├── cleanup_old_data.py        # 오래된 데이터 정리 스크립트
 ├── test_main.py               # 에러로그 업로드 테스트 스크립트
+├── requirements.txt            # Python 의존성 패키지 목록
+├── thread_calculator.py       # 스레드 안전성 계산기
 └── README.md                  # 프로젝트 설명서
 ```
 
 ## 🏛️ 시스템 아키텍처
 
 ### 전체 시스템 구조
-main.py (메인 컨트롤러)
+main.py (메인 컨트롤러 + 빌더 패턴)
+    ↓
+CrawlingProcessBuilder (프로세스 구성기)
     ↓
 CrawlerFactory (크롤러 생성기)
     ↓
@@ -102,6 +107,8 @@ Data Cleanup
 
 #### 1. **Main Controller (main.py)**
 - 전체 프로세스의 진입점
+- **빌더 패턴**을 통한 단계별 프로세스 구성
+- **스레드 기반 병렬 처리**로 성능 향상
 - 크롤러 팩토리를 통한 크롤러 인스턴스 생성
 - 실행 흐름 제어 및 결과 집계
 - Excel 통합 로그 생성
@@ -140,19 +147,26 @@ Data Cleanup
 
 ## 🔄 파일 실행 흐름
 
-### 1. **프로그램 시작 (main.py)**
+### 1. **프로그램 시작 (main.py) - 빌더 패턴 적용**
 ```python
-# 1. 환경 설정 및 폴더 구조 생성
-setup_errorlog_folder()           # ErrorLog 폴더 생성
-load_carriers_config()            # 선사 설정 로드
+# 빌더 패턴을 사용한 단계별 프로세스 구성
+crawling_process = (CrawlingProcessBuilder()
+    .setup_environment()           # 1단계: 환경 설정 및 폴더 구조 생성
+    .configure_threading(2)       # 2단계: 스레드 설정 (2개 워커)
+    .add_carriers()               # 3단계: 선사 설정 로드
+    .execute_crawling()           # 4단계: 스레드 기반 병렬 크롤링
+    .generate_reports()           # 5단계: 결과 집계 및 Excel 로그 생성
+    .upload_to_drive()            # 6단계: 구글 드라이브 업로드
+    .cleanup_resources()          # 7단계: 리소스 정리
+    .build())                     # 최종 프로세스 반환
 
-# 2. 크롤러 팩토리 초기화
+# 크롤러 팩토리를 통한 크롤러 인스턴스 생성
 crawler_factory = CrawlerFactory()
 
-# 3. 선사별 크롤링 실행
-for carrier_name in carrier_names:
-    crawler = crawler_factory.create_crawler(carrier_name)
-    result = execute_crawling(crawler, carrier_name)
+# 스레드 풀을 사용한 병렬 크롤링
+with ThreadPoolExecutor(max_workers=2) as executor:
+    futures = [executor.submit(run_carrier_parallel, carrier_name) 
+               for carrier_name in carriers_to_run]
 ```
 
 ### 2. **크롤러 실행 흐름**
@@ -177,13 +191,16 @@ def execute_crawling(crawler, carrier_name):
     return aggregate_results(crawler)
 ```
 
-### 3. **데이터 파이프라인 흐름**
+### 3. **데이터 파이프라인 흐름 (빌더 패턴 적용)**
 ```
 웹사이트 → Selenium → 데이터 추출 → 파일 저장 → 구글 드라이브 업로드
    ↓           ↓           ↓           ↓           ↓
 HTML/JS → WebDriver → Parsing → Excel/PDF → OAuth API
    ↓           ↓           ↓           ↓           ↓
 선박정보 → 스케줄데이터 → 구조화 → 로컬저장 → 클라우드동기화
+
+**빌더 패턴 프로세스 단계:**
+환경설정 → 스레드설정 → 선사설정 → 크롤링실행 → 보고서생성 → 업로드 → 정리
 ```
 
 ### 4. **에러 처리 및 로깅 흐름**
@@ -263,13 +280,100 @@ ErrorLog 폴더     1t3P2oofZKnSrVMmDS6-YQcwuZC6PdCz5    Date Parse    Log Recor
 - **에러 로그**: 민감한 정보 제외하고 로그 기록
 - **로그 보관**: 1개월 후 자동 삭제
 
-## 🛠️ 개발 환경
+## 🛠️ 개발 환경 빠른 시작 가이드
 
-- **Python**: 3.8+
-- **Selenium**: 4.0+
-- **Chrome**: 최신 버전
-- **OS**: Windows 10/11
-- **주요 라이브러리**: pandas, openpyxl, google-api-python-client, psutil, concurrent.futures
+```bash
+# 1. 프로젝트 다운로드
+cd RPA_Crawling
+
+# 2. 의존성 설치
+pip install -r requirements.txt
+
+# 3. 구글 API 설정 (Google/token/ 폴더에 credentials.json 배치)
+# 4. 실행
+python main.py
+```
+
+## 📦 설치 및 의존성
+
+### 필수 Python 모듈 설치
+
+```bash
+# 기본 크롤링 및 데이터 처리
+pip install selenium==4.15.2
+pip install pandas==2.1.4
+pip install openpyxl==3.1.2
+pip install webdriver-manager==4.0.1
+
+# 구글 드라이브 API 연동
+pip install google-api-python-client==2.108.0
+pip install google-auth-httplib2==0.1.1
+pip install google-auth-oauthlib==1.1.0
+
+# 시스템 모니터링 및 병렬 처리
+pip install psutil==5.9.6
+pip install concurrent-futures==3.1.1
+
+# 웹 스크래핑 및 파싱
+pip install beautifulsoup4==4.12.2
+pip install lxml==4.9.3
+pip install requests==2.31.0
+
+# 파일 처리 및 압축
+pip install python-dotenv==1.0.0
+pip install PyPDF2==3.0.1
+pip install Pillow==10.1.0
+
+# 로깅 및 유틸리티
+pip install colorama==0.4.6
+pip install tqdm==4.66.1
+```
+
+### requirements.txt로 일괄 설치
+
+```bash
+# requirements.txt 파일이 있는 경우
+pip install -r requirements.txt
+
+# 특정 버전으로 설치 (권장)
+pip install -r requirements.txt --force-reinstall
+```
+
+
+
+## 🏗️ 디자인 패턴
+
+### 팩토리 메서드 패턴 (Factory Method Pattern)
+- **용도**: 크롤러 인스턴스 생성
+- **장점**: 크롤러 타입에 따른 동적 인스턴스 생성, 확장성
+- **구현**: `CrawlerFactory.create_crawler(carrier_name)`
+
+### 빌더 패턴 (Builder Pattern)
+- **용도**: 크롤링 프로세스의 단계별 구성
+- **장점**: 복잡한 프로세스를 단계별로 분리, 유연한 구성, 테스트 용이성
+- **구현**: `CrawlingProcessBuilder` 클래스
+
+```python
+# 빌더 패턴 사용 예시
+crawling_process = (CrawlingProcessBuilder()
+    .setup_environment()           # 1단계: 환경 설정
+    .configure_threading(2)       # 2단계: 스레드 설정
+    .add_carriers()               # 3단계: 선사 설정
+    .execute_crawling()           # 4단계: 크롤링 실행
+    .generate_reports()           # 5단계: 보고서 생성
+    .upload_to_drive()            # 6단계: 드라이브 업로드
+    .cleanup_resources()          # 7단계: 리소스 정리
+    .build())                     # 최종 프로세스 반환
+```
+
+**프로세스 단계별 설명:**
+1. **환경 설정**: 폴더 생성, 설정 로드, 로깅 설정
+2. **스레드 설정**: 병렬 처리 워커 수 설정
+3. **선사 설정**: 크롤링할 선사 목록 구성
+4. **크롤링 실행**: 실제 크롤링 수행 및 결과 수집
+5. **보고서 생성**: 결과 요약 및 Excel 로그 생성
+6. **드라이브 업로드**: 구글 드라이브 업로드 실행
+7. **리소스 정리**: 오래된 데이터 및 에러로그 정리
 
 ## 🔧 스레드 안전성 계산기
 
@@ -401,6 +505,19 @@ with ThreadPoolExecutor(max_workers=optimal_threads) as executor:
 - 스레드 안전성을 위한 Lock 메커니즘 적용
 - 시스템 사양 기반 최적 스레드 수 자동 계산
 
+### 빌더 패턴 도입 (v3.3.0)
+- 크롤링 프로세스를 단계별로 구성하는 빌더 패턴 적용
+- 체이닝 방식으로 유연한 프로세스 구성 가능
+- 각 단계를 선택적으로 실행하여 테스트 및 디버깅 용이성 향상
+- 프로세스 단계: 환경설정 → 스레드설정 → 선사설정 → 크롤링실행 → 보고서생성 → 드라이브업로드 → 리소스정리
+
+**빌더 패턴의 장점:**
+- **유연성**: 필요한 단계만 선택적으로 실행 가능
+- **가독성**: 체이닝 방식으로 명확한 프로세스 흐름
+- **테스트 용이성**: 특정 단계만 독립적으로 테스트 가능
+- **확장성**: 새로운 단계 추가 및 기존 단계 수정 용이
+- **유지보수성**: 각 단계가 독립적으로 관리되어 코드 복잡도 감소
+
 ### 스레드 안전성 및 성능 최적화
 - `thread_calculator.py`를 통한 시스템 사양 분석
 - 메모리, CPU, 디스크, 네트워크 요소별 안전 스레드 수 계산
@@ -411,5 +528,5 @@ with ThreadPoolExecutor(max_workers=optimal_threads) as executor:
 
 이 프로젝트는 업무 시간 단축으로 도움을 드리고자 사이드로 1인 개발되었습니다.
 
-**마지막 업데이트**: 2025년 1월 20일
-**버전**: 3.2.0 
+**마지막 업데이트**: 2025년 8월 20일
+**버전**: 3.3.0 

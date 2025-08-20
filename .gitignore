@@ -19,7 +19,7 @@ token/
 # 로그 파일 무시
 *.txt
 ErrorLog/
-main_crawling_log.txt
+!requirements.txt
 
 # 크롤링 데이터 폴더
 scheduleData/
