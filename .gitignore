@@ -42,4 +42,4 @@ Thumbs.db
 *.tmp
 *.temp.venv/
 
-*.env
+.env
