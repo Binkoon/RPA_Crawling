@@ -20,6 +20,7 @@ token/
 *.txt
 ErrorLog/
 main_crawling_log.txt
+!requirements.txt
 
 # 크롤링 데이터 폴더
 scheduleData/
@@ -38,4 +39,4 @@ Thumbs.db
 *.tmp
 *.temp.venv/
 
-*.venv/
+*.venv/.env

@@ -411,5 +411,5 @@ with ThreadPoolExecutor(max_workers=optimal_threads) as executor:
 
 이 프로젝트는 업무 시간 단축으로 도움을 드리고자 사이드로 1인 개발되었습니다.
 
-**마지막 업데이트**: 2025년 1월 20일
+**마지막 업데이트**: 2025년 8월 20일
 **버전**: 3.2.0 

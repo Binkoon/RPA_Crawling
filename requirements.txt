@@ -1,0 +1,28 @@
+# 기본 크롤링 및 데이터 처리
+selenium>=4.15.0
+pandas>=2.1.0
+openpyxl>=3.1.0
+webdriver-manager>=4.0.0
+
+# 구글 드라이브 API 연동
+google-api-python-client>=2.108.0
+google-auth-httplib2>=0.1.0
+google-auth-oauthlib>=1.1.0
+
+# 시스템 모니터링 및 병렬 처리
+psutil>=5.9.0
+concurrent-futures>=3.1.0
+
+# 웹 스크래핑 및 파싱
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+requests>=2.31.0
+
+# 파일 처리 및 압축
+python-dotenv>=1.0.0
+PyPDF2>=3.0.0
+Pillow>=10.1.0
+
+# 로깅 및 유틸리티
+colorama>=0.4.0
+tqdm>=4.66.0

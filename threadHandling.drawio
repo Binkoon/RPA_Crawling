@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2025-01-20T10:00:00.000Z" agent="5.0" etag="xxx" version="22.1.16" type="device">
+  <diagram name="Threading_Architecture" id="threading">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- 메인 스레드 -->
+        <mxCell id="main" value="Main Thread&#xa;메인 프로세스" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="50" width="150" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 스레드 풀 -->
+        <mxCell id="pool" value="ThreadPoolExecutor&#xa;max_workers=2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="150" width="150" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 워커 1 -->
+        <mxCell id="worker1" value="Worker Thread 1&#xa;선사 A 크롤링" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="300" y="250" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 워커 2 -->
+        <mxCell id="worker2" value="Worker Thread 2&#xa;선사 B 크롤링" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="680" y="250" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 크롤러 인스턴스들 -->
+        <mxCell id="crawler1" value="Selenium WebDriver&#xa;Chrome Instance 1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="300" y="350" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="crawler2" value="Selenium WebDriver&#xa;Chrome Instance 2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="680" y="350" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 결과 수집 -->
+        <mxCell id="collector" value="Result Collector&#xa;as_completed()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="500" y="450" width="150" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 스레드 계산기 -->
+        <mxCell id="calc" value="ThreadCalculator&#xa;시스템 사양 분석" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="700" y="150" width="150" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 연결선들 -->
+        <mxCell id="edge1" edge="1" parent="1" source="main" target="pool">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="edge2" edge="1" parent="1" source="pool" target="worker1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="edge3" edge="1" parent="1" source="pool" target="worker2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="edge4" edge="1" parent="1" source="worker1" target="crawler1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="edge5" edge="1" parent="1" source="worker2" target="crawler2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="edge6" edge="1" parent="1" source="crawler1" target="collector">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="edge7" edge="1" parent="1" source="crawler2" target="collector">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="edge8" edge="1" parent="1" source="calc" target="pool">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- 레이블 -->
+        <mxCell id="label1" value="병렬 실행" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="450" y="200" width="60" height="20" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="label2" value="동시 크롤링" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="450" y="220" width="60" height="20" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="label3" value="결과 집계" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="450" y="240" width="60" height="20" as="geometry" />
+        </mxCell>
+        
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

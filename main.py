@@ -34,7 +34,7 @@ from crawler import nss
 
 import traceback
 import logging
-from datetime import datetime
+import datetime
 import os
 import sys
 import pandas as pd
@@ -60,8 +60,16 @@ def setup_errorlog_folder():
 # ErrorLog 폴더 설정
 today_log_dir = setup_errorlog_folder()
 
-# 에러로그 구글드라이브 폴더 ID
-ERRORLOG_DRIVE_FOLDER_ID = '1t3P2oofZKnSrVMmDS6-YQcwuZC6PdCz5'
+# 에러로그 구글드라이브 폴더 ID (환경 변수에서 읽기)
+import os
+from dotenv import load_dotenv
+
+# .env 파일 로드
+load_dotenv()
+
+ERRORLOG_DRIVE_FOLDER_ID = os.getenv('GOOGLE_DRIVE_ERRORLOG_FOLDER_ID')
+if not ERRORLOG_DRIVE_FOLDER_ID:
+    raise ValueError("GOOGLE_DRIVE_ERRORLOG_FOLDER_ID 환경 변수가 설정되지 않았습니다.")
 
 # 메인 로깅 설정 (콘솔만)
 logging.basicConfig(
@@ -118,7 +126,7 @@ def get_errorlog_folders():
         if os.path.isdir(item_path):
             # YYYY-MM-DD 형식인지 확인
             try:
-                datetime.datetime.strptime(item, '%Y-%m-%d')
+                datetime.strptime(item, '%Y-%m-%d')
                 folders.append(item)
             except ValueError:
                 continue
@@ -135,7 +143,7 @@ def upload_errorlog_to_drive(logger):
         logger.info("✅ 구글 드라이브 서비스 연결 성공")
         
         # 오늘 날짜의 에러로그 파일 찾기
-        today = datetime.datetime.now()
+        today = datetime.now()
         today_folder = today.strftime('%Y-%m-%d')
         today_log_file = f"{today.strftime('%Y%m%d')}_log.xlsx"
         
@@ -166,7 +174,7 @@ def upload_errorlog_to_drive(logger):
         try:
             # 파일 정보 가져오기
             file_size = os.path.getsize(today_log_path)
-            file_modified = datetime.datetime.fromtimestamp(os.path.getmtime(today_log_path))
+            file_modified = datetime.fromtimestamp(os.path.getmtime(today_log_path))
             
             # 파일 업로드
             upload_file_to_drive(service, today_log_path, target_folder_id)
@@ -231,7 +239,7 @@ def cleanup_old_errorlogs(days_to_keep=30, logger=None):
     
     try:
         # 기준 날짜 계산 (30일 전)
-        cutoff_date = datetime.datetime.now() - datetime.timedelta(days=days_to_keep)
+        cutoff_date = datetime.now() - timedelta(days=days_to_keep)
         logger.info(f"🗓️ {days_to_keep}일 이전 데이터 정리 기준: {cutoff_date.strftime('%Y-%m-%d')}")
         
         # 에러로그 폴더들 가져오기
@@ -250,7 +258,7 @@ def cleanup_old_errorlogs(days_to_keep=30, logger=None):
         for folder_name in errorlog_folders:
             try:
                 # 폴더명을 날짜로 파싱
-                folder_date = datetime.datetime.strptime(folder_name, '%Y-%m-%d')
+                folder_date = datetime.strptime(folder_name, '%Y-%m-%d')
                 
                 # 기준 날짜보다 오래된 폴더인지 확인
                 if folder_date < cutoff_date:

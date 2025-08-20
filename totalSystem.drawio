@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2025-01-20T10:00:00.000Z" agent="5.0" etag="xxx" version="22.1.16" type="device">
+  <diagram name="RPA_Crawling_Architecture" id="architecture">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- 메인 컨트롤러 -->
+        <mxCell id="main" value="main.py&#xa;메인 컨트롤러&#xa;(빌더 패턴 + 스레드)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="50" width="150" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 빌더 패턴 -->
+        <mxCell id="builder" value="CrawlingProcessBuilder&#xa;프로세스 구성기&#xa;(7단계 체이닝)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="150" width="150" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 크롤러 팩토리 -->
+        <mxCell id="factory" value="CrawlerFactory&#xa;크롤러 생성기&#xa;(15개 선사)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="250" width="150" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 개별 크롤러들 -->
+        <mxCell id="crawlers" value="Individual Crawlers&#xa;15개 선사별 크롤러&#xa;(SITC, EVERGREEN, COSCO...)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="350" width="150" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 부모 클래스 -->
+        <mxCell id="base" value="ParentsClass&#xa;공통 기능 제공&#xa;(WebDriver, 로깅, 폴더관리)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="450" width="150" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 데이터 저장소 -->
+        <mxCell id="storage" value="Data Storage&#xa;로컬 파일 시스템&#xa;(scheduleData/, ErrorLog/)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="550" width="150" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 구글 드라이브 -->
+        <mxCell id="gdrive" value="Google Drive API&#xa;OAuth 2.0 인증&#xa;(스케줄 + 에러로그 업로드)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="650" width="150" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 스레드 풀 -->
+        <mxCell id="threadpool" value="ThreadPoolExecutor&#xa;병렬 처리 엔진&#xa;(기본 2개 워커)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="200" width="150" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 스레드 계산기 -->
+        <mxCell id="calculator" value="ThreadCalculator&#xa;시스템 사양 분석&#xa;(안전 스레드 수 계산)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="300" width="150" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 환경 변수 -->
+        <mxCell id="env" value="Environment Variables&#xa;.env 파일&#xa;(폴더 ID, 설정값)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="400" width="150" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 유틸리티 -->
+        <mxCell id="utils" value="Utility Modules&#xa;cleanup_old_data.py&#xa;thread_calculator.py" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="500" width="150" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 연결선들 -->
+        <mxCell id="edge1" edge="1" parent="1" source="main" target="builder">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="edge2" edge="1" parent="1" source="builder" target="factory">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="edge3" edge="1" parent="1" source="factory" target="crawlers">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="edge4" edge="1" parent="1" source="crawlers" target="base">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="edge5" edge="1" parent="1" source="base" target="storage">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="edge6" edge="1" parent="1" source="storage" target="gdrive">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- 스레드 관련 연결 -->
+        <mxCell id="edge7" edge="1" parent="1" source="main" target="threadpool">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="edge8" edge="1" parent="1" source="threadpool" target="calculator">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="edge9" edge="1" parent="1" source="env" target="main">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="edge10" edge="1" parent="1" source="utils" target="main">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- 레이블 -->
+        <mxCell id="label1" value="1. 환경설정" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="450" y="190" width="60" height="20" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="label2" value="2. 스레드설정" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="450" y="210" width="60" height="20" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="label3" value="3. 선사설정" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="450" y="230" width="60" height="20" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="label4" value="4. 크롤링실행" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="450" y="250" width="60" height="20" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="label5" value="5. 보고서생성" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="450" y="270" width="60" height="20" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="label6" value="6. 드라이브업로드" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="450" y="290" width="60" height="20" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="label7" value="7. 리소스정리" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="450" y="310" width="60" height="20" as="geometry" />
+        </mxCell>
+        
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
