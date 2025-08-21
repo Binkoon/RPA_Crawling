@@ -1,119 +1,203 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mxfile host="app.diagrams.net" modified="2025-01-20T10:00:00.000Z" agent="5.0" etag="xxx" version="22.1.16" type="device">
-  <diagram name="Data_Flow" id="dataflow">
-    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+<mxfile host="app.diagrams.net" modified="2025-08-21T10:00:00.000Z" agent="5.0" etag="xxx" version="22.1.16" type="device">
+  <diagram name="Data_Flow_v3.4.0" id="dataflow">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1000" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         
         <!-- 시작점 -->
-        <mxCell id="start" value="프로그램 시작" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
-          <mxGeometry x="50" y="350" width="100" height="60" as="geometry" />
+        <mxCell id="start" value="프로그램 시작&#xa;main2_lightweight.py" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="400" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 설정 로드 -->
+        <mxCell id="config_load" value="설정 파일 로드&#xa;config_loader.py" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="200" y="400" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 설정 파일들 -->
+        <mxCell id="config_files" value="설정 파일들&#xa;carriers.json&#xa;execution_mode.json" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="200" y="300" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 로깅 설정 -->
+        <mxCell id="logging_setup" value="로깅 설정&#xa;logging_setup.py" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="350" y="400" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 스레드 설정 -->
+        <mxCell id="thread_setup" value="스레드 설정&#xa;ThreadPoolExecutor&#xa;(설정 파일 기반)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="400" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 크롤러 실행 -->
+        <mxCell id="crawler_exec" value="크롤러 실행&#xa;crawler_executor.py" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="650" y="400" width="120" height="80" as="geometry" />
         </mxCell>
         
         <!-- 웹사이트 -->
-        <mxCell id="website" value="해운 선사 웹사이트&#xa;(15개 선사)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
-          <mxGeometry x="200" y="340" width="120" height="80" as="geometry" />
+        <mxCell id="website" value="해운 선사 웹사이트&#xa;(15개 선사)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="800" y="400" width="120" height="80" as="geometry" />
         </mxCell>
         
         <!-- Selenium -->
-        <mxCell id="selenium" value="Selenium WebDriver&#xa;브라우저 자동화" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
-          <mxGeometry x="350" y="340" width="120" height="80" as="geometry" />
+        <mxCell id="selenium" value="Selenium WebDriver&#xa;ParentsClass 기반" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="950" y="400" width="120" height="80" as="geometry" />
         </mxCell>
         
         <!-- 데이터 추출 -->
-        <mxCell id="extract" value="데이터 추출&#xa;HTML/JS 파싱" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
-          <mxGeometry x="500" y="340" width="120" height="80" as="geometry" />
+        <mxCell id="extract" value="데이터 추출&#xa;HTML/JS 파싱" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="400" width="120" height="80" as="geometry" />
         </mxCell>
         
         <!-- 파일 저장 -->
-        <mxCell id="save" value="파일 저장&#xa;Excel/PDF 생성" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
-          <mxGeometry x="650" y="340" width="120" height="80" as="geometry" />
+        <mxCell id="save" value="파일 저장&#xa;scheduleData/ 폴더" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="300" width="120" height="80" as="geometry" />
         </mxCell>
         
-        <!-- 구글 드라이브 -->
-        <mxCell id="upload" value="구글 드라이브 업로드&#xa;OAuth API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
-          <mxGeometry x="800" y="340" width="120" height="80" as="geometry" />
-        </mxCell>
-        
-        <!-- 에러로그 -->
-        <mxCell id="errorlog" value="에러로그 생성&#xa;Excel 통합 로그" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
-          <mxGeometry x="500" y="200" width="120" height="80" as="geometry" />
-        </mxCell>
-        
-        <!-- 에러로그 업로드 -->
-        <mxCell id="errorupload" value="에러로그 업로드&#xa;구글 드라이브" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+        <!-- 엑셀 로그 -->
+        <mxCell id="excel_log" value="엑셀 로그 생성&#xa;excel_logger.py" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="800" y="200" width="120" height="80" as="geometry" />
         </mxCell>
         
-        <!-- 정리 -->
-        <mxCell id="cleanup" value="오래된 데이터 정리&#xa;(30일 기준)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
-          <mxGeometry x="500" y="500" width="120" height="80" as="geometry" />
+        <!-- 구글 드라이브 업로드 -->
+        <mxCell id="gdrive_upload" value="구글 드라이브 업로드&#xa;google_upload.py" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="950" y="200" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 에러로그 업로드 -->
+        <mxCell id="errorlog_upload" value="에러로그 업로드&#xa;오늘 날짜 로그" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="200" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 데이터 정리 -->
+        <mxCell id="cleanup" value="데이터 정리&#xa;data_cleanup.py&#xa;(30일 기준)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="800" y="500" width="120" height="80" as="geometry" />
         </mxCell>
         
         <!-- 완료 -->
-        <mxCell id="end" value="프로세스 완료" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b656;" vertex="1" parent="1">
-          <mxGeometry x="950" y="340" width="100" height="60" as="geometry" />
+        <mxCell id="end" value="프로세스 완료" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b656;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1250" y="400" width="120" height="80" as="geometry" />
         </mxCell>
         
-        <!-- 연결선들 -->
-        <mxCell id="edge1" edge="1" parent="1" source="start" target="website">
+        <!-- 병렬 처리 표시 -->
+        <mxCell id="parallel" value="병렬 처리&#xa;(ThreadPoolExecutor)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;fontStyle=1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="300" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- 연결선들 - 메인 플로우 -->
+        <mxCell id="edge1" edge="1" parent="1" source="start" target="config_load">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         
-        <mxCell id="edge2" edge="1" parent="1" source="website" target="selenium">
+        <mxCell id="edge2" edge="1" parent="1" source="config_load" target="logging_setup">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         
-        <mxCell id="edge3" edge="1" parent="1" source="selenium" target="extract">
+        <mxCell id="edge3" edge="1" parent="1" source="logging_setup" target="thread_setup">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         
-        <mxCell id="edge4" edge="1" parent="1" source="extract" target="save">
+        <mxCell id="edge4" edge="1" parent="1" source="thread_setup" target="crawler_exec">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         
-        <mxCell id="edge5" edge="1" parent="1" source="save" target="upload">
+        <mxCell id="edge5" edge="1" parent="1" source="crawler_exec" target="website">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         
-        <mxCell id="edge6" edge="1" parent="1" source="upload" target="end">
+        <mxCell id="edge6" edge="1" parent="1" source="website" target="selenium">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         
-        <!-- 에러로그 플로우 -->
-        <mxCell id="edge7" edge="1" parent="1" source="extract" target="errorlog">
+        <mxCell id="edge7" edge="1" parent="1" source="selenium" target="extract">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         
-        <mxCell id="edge8" edge="1" parent="1" source="errorlog" target="errorupload">
+        <mxCell id="edge8" edge="1" parent="1" source="extract" target="save">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         
-        <!-- 정리 플로우 -->
-        <mxCell id="edge9" edge="1" parent="1" source="save" target="cleanup">
+        <mxCell id="edge9" edge="1" parent="1" source="extract" target="end">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- 설정 파일 연결 -->
+        <mxCell id="edge10" edge="1" parent="1" source="config_load" target="config_files">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- 병렬 처리 연결 -->
+        <mxCell id="edge11" edge="1" parent="1" source="thread_setup" target="parallel">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- 엑셀 로그 플로우 -->
+        <mxCell id="edge12" edge="1" parent="1" source="crawler_exec" target="excel_log">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="edge13" edge="1" parent="1" source="excel_log" target="gdrive_upload">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="edge14" edge="1" parent="1" source="gdrive_upload" target="errorlog_upload">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- 데이터 정리 플로우 -->
+        <mxCell id="edge15" edge="1" parent="1" source="save" target="cleanup">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         
         <!-- 화살표 레이블 -->
-        <mxCell id="label1" value="웹 크롤링" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;" vertex="1" parent="1">
-          <mxGeometry x="175" y="320" width="60" height="20" as="geometry" />
+        <mxCell id="label1" value="설정 로드" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="175" y="380" width="60" height="20" as="geometry" />
         </mxCell>
         
-        <mxCell id="label2" value="브라우저 자동화" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;" vertex="1" parent="1">
-          <mxGeometry x="325" y="320" width="60" height="20" as="geometry" />
+        <mxCell id="label2" value="로깅 설정" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="325" y="380" width="60" height="20" as="geometry" />
         </mxCell>
         
-        <mxCell id="label3" value="데이터 파싱" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;" vertex="1" parent="1">
-          <mxGeometry x="475" y="320" width="60" height="20" as="geometry" />
+        <mxCell id="label3" value="스레드 설정" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="475" y="380" width="60" height="20" as="geometry" />
         </mxCell>
         
-        <mxCell id="label4" value="파일 생성" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;" vertex="1" parent="1">
-          <mxGeometry x="625" y="320" width="60" height="20" as="geometry" />
+        <mxCell id="label4" value="크롤러 실행" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="625" y="380" width="60" height="20" as="geometry" />
         </mxCell>
         
-        <mxCell id="label5" value="클라우드 동기화" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;" vertex="1" parent="1">
-          <mxGeometry x="775" y="320" width="60" height="20" as="geometry" />
+        <mxCell id="label5" value="웹 크롤링" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="775" y="380" width="60" height="20" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="label6" value="브라우저 자동화" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="925" y="380" width="60" height="20" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="label7" value="데이터 파싱" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1075" y="380" width="60" height="20" as="geometry" />
+        </mxCell>
+        
+        <!-- 모듈화 패턴 표시 -->
+        <mxCell id="module_label" value="모듈화 패턴 기반&#xa;공통 모듈 활용" style="text;html=1;strokeColor=none;fillColor=#fff2cc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=12;fontStyle=1;fontColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="50" y="200" width="150" height="40" as="geometry" />
+        </mxCell>
+        
+        <!-- 설정 파일 기반 표시 -->
+        <mxCell id="config_label" value="설정 파일 기반&#xa;동적 실행 옵션" style="text;html=1;strokeColor=none;fillColor=#ffe6cc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=12;fontStyle=1;fontColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="50" y="250" width="150" height="40" as="geometry" />
+        </mxCell>
+        
+        <!-- 버전 정보 -->
+        <mxCell id="version" value="v3.4.0 - 모듈화된 데이터 플로우" style="text;html=1;strokeColor=none;fillColor=#dae8fc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=14;fontStyle=1;fontColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="500" y="600" width="400" height="40" as="geometry" />
+        </mxCell>
+        
+        <!-- 플로우 설명 -->
+        <mxCell id="flow_desc" value="1. 설정 로드 → 2. 로깅 설정 → 3. 스레드 설정 → 4. 크롤러 실행 → 5. 웹 크롤링 → 6. 데이터 처리 → 7. 파일 저장 → 8. 업로드 → 9. 정리" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="200" y="650" width="1000" height="30" as="geometry" />
         </mxCell>
         
       </root>

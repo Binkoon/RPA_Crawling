@@ -26,14 +26,12 @@ class ParentsClass:
         
         # ScheduleData 상위 폴더만 생성
         self.base_download_dir = os.path.join(os.getcwd(), "scheduleData")
-        if not os.path.exists(self.base_download_dir):
-            os.makedirs(self.base_download_dir)
+        os.makedirs(self.base_download_dir, exist_ok=True)
 
         # 오늘 날짜 폴더명 (YYMMDD)
         self.today_folder = datetime.now().strftime("%y%m%d")
         self.today_download_dir = os.path.join(self.base_download_dir, self.today_folder)
-        if not os.path.exists(self.today_download_dir):
-            os.makedirs(self.today_download_dir)
+        os.makedirs(self.today_download_dir, exist_ok=True)
 
         # Log 폴더 구조 생성
         self.setup_log_folder()
@@ -57,14 +55,12 @@ class ParentsClass:
         """ErrorLog 폴더 구조 생성"""
         # ErrorLog 폴더 생성
         self.log_base_dir = os.path.join(os.getcwd(), "ErrorLog")
-        if not os.path.exists(self.log_base_dir):
-            os.makedirs(self.log_base_dir)
+        os.makedirs(self.log_base_dir, exist_ok=True)
         
         # 날짜별 폴더 생성 (YYYY-MM-DD 형식)
         self.today_log_folder = datetime.now().strftime("%Y-%m-%d")
         self.today_log_dir = os.path.join(self.log_base_dir, self.today_log_folder)
-        if not os.path.exists(self.today_log_dir):
-            os.makedirs(self.today_log_dir)
+        os.makedirs(self.today_log_dir, exist_ok=True)
 
     def setup_logging(self, carrier_name, has_error=False):
         """

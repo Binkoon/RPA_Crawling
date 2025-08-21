@@ -22,96 +22,78 @@ API : 구글 드라이브 API (OAuth 접근 방식)
 
 ```
 RPA_Crawling/
-├── Google/                    # 구글 드라이브 관련 파일들
+├── utils/                     # 🆕 공통 모듈 (경량화)
+│   ├── __init__.py               # 패키지 초기화
+│   ├── logging_setup.py         # 로깅 설정 공통 모듈
+│   ├── google_upload.py         # 구글 드라이브 업로드 공통 모듈
+│   ├── data_cleanup.py          # 데이터 정리 공통 모듈
+│   ├── excel_logger.py          # 엑셀 로그 관리 공통 모듈
+│   ├── crawler_executor.py      # 크롤러 실행 공통 모듈
+│   └── config_loader.py         # 설정 파일 로드 공통 모듈
+├── config/                     # 🆕 설정 파일
+│   ├── carriers.json             # 선사 설정 (기존)
+│   └── execution_mode.json      # 🆕 실행 모드 설정
+├── Google/                     # 구글 드라이브 관련 파일들
 │   ├── upload_to_drive_oauth.py    # OAuth 인증 업로드 스크립트
 │   ├── upload_to_drive.py          # 서비스 계정 업로드 스크립트
 │   ├── first_OAuth.py              # OAuth 인증 설정
 │   └── google_drive_idCheck.py     # 드라이브 연결 테스트
-├── token/                     # 인증 파일들
-│   ├── token.pickle              # OAuth 토큰
-│   └── *.json                   # 구글 API 인증 파일들
-├── ErrorLog/                  # 에러 로그 및 통합 로그
-│   └── YYYY-MM-DD/             # 날짜별 폴더
-│       ├── carrierErrorLog.txt    # 선사별 에러 로그
-│       └── YYYY-MM-DD_log.xlsx   # 일일 통합 로그 (Excel)
-├── scheduleData/              # 크롤링 데이터 저장소
-│   └── YYMMDD/                # 날짜별 데이터 폴더
-├── crawler/                   # 크롤러 모듈들
-│   ├── base.py                   # 기본 크롤러 클래스 (공통 기능)
-│   ├── sitc.py                   # SITC 크롤러
-│   ├── evergreen.py              # EVERGREEN 크롤러
-│   ├── cosco.py                  # COSCO 크롤러
-│   ├── wanhai.py                 # WANHAI 크롤러
-│   ├── ckline.py                 # CKLINE 크롤러
-│   ├── panocean.py               # PANOCEAN 크롤러
-│   ├── snl.py                    # SNL 크롤러
-│   ├── smline.py                 # SMLINE 크롤러
-│   ├── hmm.py                    # HMM 크롤러
-│   ├── fdt.py                    # FDT 크롤러
-│   ├── ial.py                    # IAL 크롤러
-│   ├── dyline.py                 # DYLINE 크롤러
-│   ├── yml.py                    # YML 크롤러
-│   ├── nss.py                    # NSS 크롤러
-│   ├── one.py                    # ONE 크롤러
-│   └── pil.py                    # PIL 크롤러
-├── main.py                    # 메인 실행 파일 (빌더 패턴 + 스레드 기반 병렬 처리 + 에러로그 자동 업로드)
-├── crawler_factory.py         # 크롤러 팩토리 클래스
-├── cleanup_old_data.py        # 오래된 데이터 정리 스크립트
-├── test_main.py               # 에러로그 업로드 테스트 스크립트
-├── requirements.txt            # Python 의존성 패키지 목록
-├── thread_calculator.py       # 스레드 안전성 계산기
-└── README.md                  # 프로젝트 설명서
+├── token/                      # 인증 파일들
+│   ├── token.pickle               # OAuth 토큰
+│   └── *.json                    # 구글 API 인증 파일들
+├── ErrorLog/                   # 에러 로그 및 통합 로그
+│   └── YYYY-MM-DD/              # 날짜별 폴더
+│       ├── carrierErrorLog.txt     # 선사별 에러 로그
+│       └── YYYY-MM-DD_log.xlsx    # 일일 통합 로그 (Excel)
+├── scheduleData/               # 크롤링 데이터 저장소
+│   └── YYMMDD/                 # 날짜별 데이터 폴더
+├── crawler/                    # 크롤러 모듈들
+│   ├── base.py                    # 기본 크롤러 클래스 (공통 기능)
+│   ├── sitc.py                    # SITC 크롤러
+│   ├── evergreen.py               # EVERGREEN 크롤러
+│   ├── cosco.py                   # COSCO 크롤러
+│   ├── wanhai.py                  # WANHAI 크롤러
+│   ├── ckline.py                  # CKLINE 크롤러
+│   ├── panocean.py                # PANOCEAN 크롤러
+│   ├── snl.py                     # SNL 크롤러
+│   ├── smline.py                  # SMLINE 크롤러
+│   ├── hmm.py                     # HMM 크롤러
+│   ├── fdt.py                     # FDT 크롤러
+│   ├── ial.py                     # IAL 크롤러
+│   ├── dyline.py                  # DYLINE 크롤러
+│   ├── yml.py                     # YML 크롤러
+│   ├── nss.py                     # NSS 크롤러
+│   ├── one.py                     # ONE 크롤러
+│   └── pil.py                     # PIL 크롤러
+├── main.py                     # 메인 실행 파일 (백업용 - 기존)
+├── main2.py                    # 메인 실행 파일 (기존 - 무거운 버전)
+├── main2_lightweight.py        # 🆕 경량화된 메인 실행 파일
+├── crawler_factory.py          # 크롤러 팩토리 클래스
+├── cleanup_old_data.py         # 오래된 데이터 정리 스크립트
+├── test_main.py                # 에러로그 업로드 테스트 스크립트
+├── requirements.txt             # Python 의존성 패키지 목록
+├── thread_calculator.py        # 스레드 안전성 계산기
+└── README.md                   # 프로젝트 설명서
 ```
 
 ## 🏛️ 시스템 아키텍처
 
 ### 전체 시스템 구조
-main.py (메인 컨트롤러 + 빌더 패턴)
-    ↓
-CrawlingProcessBuilder (프로세스 구성기)
-    ↓
-CrawlerFactory (크롤러 생성기)
-    ↓
-Individual Crawler (개별 크롤러)
-    ↓
-ParentsClass (공통 기능)
-    ↓
-Data Storage (로컬 파일)
-    ↓
-Google Drive Upload (스케줄 데이터)
-    ↓
-Data Cleanup
-    ↓
-**에러로그 자동 업로드 및 정리**
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Main Entry    │───▶│  Crawler        │───▶│  Data Storage   │
-│   (main.py)     │    │  Factory        │    │  (Local Files)  │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  Individual     │    │  Base Crawler   │    │  Google Drive   │
-│  Crawlers       │    │  (base.py)      │    │  Upload         │
-│  (15 carriers)  │    │                 │    │  (OAuth/API)    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  Error Logging  │    │  Data Pipeline  │    │  Cleanup        │
-│  System         │    │  Management     │    │  (Auto)         │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
+![System Architecture](totalSystem.drawio)
+
+**시스템 흐름:**
+main2_lightweight.py (경량화된 메인 컨트롤러) → Utils Modules (공통 모듈) → CrawlerFactory (크롤러 생성기) → Individual Crawler (개별 크롤러) → ParentsClass (공통 기능) → Data Storage (로컬 파일) → Google Drive Upload (스케줄 데이터) → Data Cleanup → **에러로그 자동 업로드 및 정리**
 
 ### 핵심 컴포넌트
 
-#### 1. **Main Controller (main.py)**
-- 전체 프로세스의 진입점
-- **빌더 패턴**을 통한 단계별 프로세스 구성
+#### 1. **Main Controller (main2_lightweight.py)**
+- 전체 프로세스의 진입점 (경량화된 버전)
+- **공통 모듈 기반** 모듈화된 구조
 - **스레드 기반 병렬 처리**로 성능 향상
 - 크롤러 팩토리를 통한 크롤러 인스턴스 생성
 - 실행 흐름 제어 및 결과 집계
 - Excel 통합 로그 생성
+- **설정 파일 기반** 실행 옵션 관리
 
 #### 2. **Crawler Factory (crawler_factory.py)**
 - 15개 선사 크롤러의 동적 생성 및 관리
@@ -134,40 +116,53 @@ Data Cleanup
 - 파일별 MIME 타입 자동 감지
 - 공유 드라이브 지원 및 권한 관리
 
-#### 6. **Data Management (cleanup_old_data.py)**
+#### 6. **Utils Modules (utils/*.py)** 🆕
+- **로깅 설정**: `logging_setup.py` - 로깅 시스템 공통 관리
+- **구글 업로드**: `google_upload.py` - 구글 드라이브 업로드 공통 로직
+- **데이터 정리**: `data_cleanup.py` - 오래된 데이터 정리 공통 로직
+- **엑셀 로그**: `excel_logger.py` - 엑셀 로그 관리 공통 로직
+- **크롤러 실행**: `crawler_executor.py` - 크롤러 실행 공통 로직
+- **설정 로더**: `config_loader.py` - 설정 파일 로드 공통 로직
+
+#### 7. **Data Management (cleanup_old_data.py)**
 - 30일 이전 데이터 자동 정리
 - 스케줄링된 정리 작업 지원
 - 디스크 공간 최적화
 
-#### 7. **ErrorLog Management (main.py)**
+#### 8. **ErrorLog Management (main2_lightweight.py)** 🆕
 - 오늘 날짜 에러로그 자동 구글드라이브 업로드
 - 30일 기준 오래된 에러로그 자동 정리
 - 지정된 폴더 ID에 직접 업로드
 - 폴더 구조 단순화 (ErrorLog 폴더 생성 불필요)
 
+#### 9. **Configuration Management (config/*.json)** 🆕
+- **선사 설정**: `carriers.json` - 크롤링할 선사 목록 관리
+- **실행 모드**: `execution_mode.json` - 병렬/순차 실행, 스레드 수, 로깅 옵션 등 설정
+
 ## 🔄 파일 실행 흐름
 
-### 1. **프로그램 시작 (main.py) - 빌더 패턴 적용**
+### 1. **프로그램 시작 (main2_lightweight.py) - 공통 모듈 기반**
 ```python
-# 빌더 패턴을 사용한 단계별 프로세스 구성
-crawling_process = (CrawlingProcessBuilder()
-    .setup_environment()           # 1단계: 환경 설정 및 폴더 구조 생성
-    .configure_threading(2)       # 2단계: 스레드 설정 (2개 워커)
-    .add_carriers()               # 3단계: 선사 설정 로드
-    .execute_crawling()           # 4단계: 스레드 기반 병렬 크롤링
-    .generate_reports()           # 5단계: 결과 집계 및 Excel 로그 생성
-    .upload_to_drive()            # 6단계: 구글 드라이브 업로드
-    .cleanup_resources()          # 7단계: 리소스 정리
-    .build())                     # 최종 프로세스 반환
+# 공통 모듈을 활용한 모듈화된 구조
+from utils.logging_setup import setup_main_logging, get_today_log_dir
+from utils.config_loader import get_carriers_to_run, load_execution_config
+from utils.crawler_executor import run_carrier_parallel
+from utils.excel_logger import save_excel_log, add_google_upload_logs
+from utils.google_upload import run_main_upload, upload_errorlog_to_drive
+from utils.data_cleanup import cleanup_old_data, cleanup_old_errorlogs
 
-# 크롤러 팩토리를 통한 크롤러 인스턴스 생성
-crawler_factory = CrawlerFactory()
+# 설정 파일 기반 실행 옵션 로드
+execution_config = load_execution_config()
+max_workers = execution_config['execution']['max_workers']
 
 # 스레드 풀을 사용한 병렬 크롤링
-with ThreadPoolExecutor(max_workers=2) as executor:
-    futures = [executor.submit(run_carrier_parallel, carrier_name) 
+with ThreadPoolExecutor(max_workers=max_workers) as executor:
+    futures = [executor.submit(run_carrier_parallel, carrier_name, crawling_results) 
                for carrier_name in carriers_to_run]
 ```
+
+### 2. **데이터 플로우 구조**
+![Data Flow](dataFlow.drawio)
 
 ### 2. **크롤러 실행 흐름**
 ```python
@@ -191,7 +186,7 @@ def execute_crawling(crawler, carrier_name):
     return aggregate_results(crawler)
 ```
 
-### 3. **데이터 파이프라인 흐름 (빌더 패턴 적용)**
+### 3. **데이터 파이프라인 흐름 (모듈화 적용)**
 ```
 웹사이트 → Selenium → 데이터 추출 → 파일 저장 → 구글 드라이브 업로드
    ↓           ↓           ↓           ↓           ↓
@@ -199,8 +194,8 @@ HTML/JS → WebDriver → Parsing → Excel/PDF → OAuth API
    ↓           ↓           ↓           ↓           ↓
 선박정보 → 스케줄데이터 → 구조화 → 로컬저장 → 클라우드동기화
 
-**빌더 패턴 프로세스 단계:**
-환경설정 → 스레드설정 → 선사설정 → 크롤링실행 → 보고서생성 → 업로드 → 정리
+**공통 모듈 기반 프로세스 단계:**
+설정로드 → 로깅설정 → 크롤링실행 → 결과집계 → 업로드 → 정리 → 에러로그관리
 ```
 
 ### 4. **에러 처리 및 로깅 흐름**
@@ -217,66 +212,11 @@ if error_occurred:
     logger.error(f"선박 {vessel} 크롤링 실패: {error_message}")
 ```
 
-## 📊 데이터 파이프라인
-
-### 1. **데이터 수집 단계 (Collection)**
-```
-웹사이트 접속 → 로그인/인증 → 선박 목록 조회 → 개별 선박 상세 정보
-     ↓              ↓              ↓              ↓
-  Selenium      Cookie/Token    HTML Parsing   Data Extraction
-     ↓              ↓              ↓              ↓
-  WebDriver     Session Mgmt    DOM Traversal  Structured Data
-```
-
-### 2. **데이터 처리 단계 (Processing)**
-```
-원시 데이터 → 데이터 정제 → 형식 변환 → 파일 생성
-     ↓            ↓            ↓            ↓
-HTML/Text    Validation    Standardize   Excel/PDF
-     ↓            ↓            ↓            ↓
-Parsing      Error Check   Formatting    File Output
-```
-
-### 3. **데이터 저장 단계 (Storage)**
-```
-로컬 저장 → 폴더 구조화 → 메타데이터 생성 → 백업
-     ↓            ↓            ↓            ↓
-scheduleData  YYMMDD/      File Info     ErrorLog
-     ↓            ↓            ↓            ↓
-Excel/PDF    Date-based    Timestamp    Audit Trail
-```
-
-### 4. **데이터 동기화 단계 (Sync)**
-```
-로컬 파일 → 구글 드라이브 → 권한 설정 → 공유 설정
-     ↓            ↓            ↓            ↓
-File Check   OAuth Auth    MIME Type    Drive ID
-     ↓            ↓            ↓            ↓
-Validation   API Upload    Metadata     Access Control
-```
-
-### 5. **데이터 정리 단계 (Cleanup)**
-```
-30일 경과 → 폴더 스캔 → 삭제 대상 식별 → 자동 정리
-     ↓            ↓            ↓            ↓
-Time Check   Directory    Date Parse    File Remove
-     ↓            ↓            ↓            ↓
-Cutoff Date  Scan All     Validation   Log Record
-```
-
-### 6. **에러로그 관리 단계 (ErrorLog Management)**
-```
-오늘 날짜 로그 → 구글드라이브 업로드 → 30일 이전 로그 → 자동 정리
-     ↓                    ↓                    ↓                    ↓
-20250120_log.xlsx    지정 폴더 업로드    날짜 기준 스캔    폴더 삭제
-     ↓                    ↓                    ↓                    ↓
-ErrorLog 폴더     1t3P2oofZKnSrVMmDS6-YQcwuZC6PdCz5    Date Parse    Log Record
-```
-
 ## 🔒 보안 및 권한
 
 - **OAuth 2.0**: 사용자 인증으로 안전한 API 접근
 - **토큰 관리**: `token/` 폴더에 인증 파일 보관
+- **환경 변수**: `.env` 파일에 민감한 설정 정보 관리
 - **에러 로그**: 민감한 정보 제외하고 로그 기록
 - **로그 보관**: 1개월 후 자동 삭제
 
@@ -289,10 +229,32 @@ cd RPA_Crawling
 # 2. 의존성 설치
 pip install -r requirements.txt
 
-# 3. 구글 API 설정 (Google/token/ 폴더에 credentials.json 배치)
-# 4. 실행
-python main.py
+# 3. 환경 설정
+# 3-1. 구글 API 설정 (Google/token/ 폴더에 credentials.json 배치)
+# 3-2. .env 파일 생성 및 설정
+cp .env.example .env
+# .env 파일에 GOOGLE_DRIVE_ERRORLOG_FOLDER_ID 설정
+
+# 4. 실행 (선택)
+python main.py                    # 백업용 (기존)
+python main2.py                   # 기존 (무거운 버전)
+python main2_lightweight.py       # 🆕 권장 (경량화된 버전)
 ```
+
+**🚀 권장 실행 방법:**
+- **새로운 사용자**: `main2_lightweight.py` (경량화된 버전)
+- **기존 사용자**: `main.py` (백업용으로 보관)
+- **테스트**: `main2.py` (기존 무거운 버전)
+
+**📊 시각적 문서화:**
+- **시스템 아키텍처**: `totalSystem.drawio` - 전체 시스템 구조
+- **데이터 플로우**: `dataFlow.drawio` - 데이터 처리 흐름
+- **스레드 처리**: `threadHandling.drawio` - 병렬 처리 구조
+
+**⚠️ 환경 설정 주의사항:**
+- `.env` 파일에 `GOOGLE_DRIVE_ERRORLOG_FOLDER_ID` 설정 필요
+- 민감한 정보는 절대 Git에 커밋하지 않음
+- `.env.example` 파일을 참고하여 설정
 
 ## 📦 설치 및 의존성
 
@@ -340,7 +302,6 @@ pip install -r requirements.txt --force-reinstall
 ```
 
 
-
 ## 🏗️ 디자인 패턴
 
 ### 팩토리 메서드 패턴 (Factory Method Pattern)
@@ -348,34 +309,40 @@ pip install -r requirements.txt --force-reinstall
 - **장점**: 크롤러 타입에 따른 동적 인스턴스 생성, 확장성
 - **구현**: `CrawlerFactory.create_crawler(carrier_name)`
 
-### 빌더 패턴 (Builder Pattern)
-- **용도**: 크롤링 프로세스의 단계별 구성
-- **장점**: 복잡한 프로세스를 단계별로 분리, 유연한 구성, 테스트 용이성
-- **구현**: `CrawlingProcessBuilder` 클래스
+### 빌더 패턴 (Builder Pattern) 🔄
+- **용도**: 크롤링 프로세스를 단계별로 구성하는 유연한 실행 흐름 관리
+- **장점**: 체이닝 방식으로 명확한 프로세스 흐름, 단계별 선택적 실행, 테스트 및 디버깅 용이성
+- **구현**: 예정 (향후 업데이트에서 적용)
+
+## 🧩 코드 구조화 방법론
+
+### 모듈화 (Modularization) 🆕
+- **용도**: 공통 기능을 별도 모듈로 분리하여 코드 중복 제거
+- **장점**: 코드 재사용성 향상, 유지보수성 개선, 가독성 향상
+- **구현**: `utils/` 패키지의 공통 모듈들
 
 ```python
-# 빌더 패턴 사용 예시
-crawling_process = (CrawlingProcessBuilder()
-    .setup_environment()           # 1단계: 환경 설정
-    .configure_threading(2)       # 2단계: 스레드 설정
-    .add_carriers()               # 3단계: 선사 설정
-    .execute_crawling()           # 4단계: 크롤링 실행
-    .generate_reports()           # 5단계: 보고서 생성
-    .upload_to_drive()            # 6단계: 드라이브 업로드
-    .cleanup_resources()          # 7단계: 리소스 정리
-    .build())                     # 최종 프로세스 반환
+# 모듈화 사용 예시
+from utils.logging_setup import setup_main_logging, get_today_log_dir
+from utils.config_loader import get_carriers_to_run, load_execution_config
+from utils.crawler_executor import run_carrier_parallel
+from utils.excel_logger import save_excel_log, add_google_upload_logs
+from utils.google_upload import run_main_upload, upload_errorlog_to_drive
+from utils.data_cleanup import cleanup_old_data, cleanup_old_errorlogs
 ```
 
-**프로세스 단계별 설명:**
-1. **환경 설정**: 폴더 생성, 설정 로드, 로깅 설정
-2. **스레드 설정**: 병렬 처리 워커 수 설정
-3. **선사 설정**: 크롤링할 선사 목록 구성
-4. **크롤링 실행**: 실제 크롤링 수행 및 결과 수집
-5. **보고서 생성**: 결과 요약 및 Excel 로그 생성
-6. **드라이브 업로드**: 구글 드라이브 업로드 실행
-7. **리소스 정리**: 오래된 데이터 및 에러로그 정리
+**공통 모듈별 역할:**
+1. **로깅 설정**: `logging_setup.py` - 로깅 시스템 공통 관리
+2. **구글 업로드**: `google_upload.py` - 구글 드라이브 업로드 공통 로직
+3. **데이터 정리**: `data_cleanup.py` - 오래된 데이터 정리 공통 로직
+4. **엑셀 로그**: `excel_logger.py` - 엑셀 로그 관리 공통 로직
+5. **크롤러 실행**: `crawler_executor.py` - 크롤러 실행 공통 로직
+6. **설정 로더**: `config_loader.py` - 설정 파일 로드 공통 로직
 
 ## 🔧 스레드 안전성 계산기
+
+### 스레드 처리 구조
+![Thread Handling](threadHandling.drawio)
 
 ### 스레드 수 계산 공식
 
@@ -469,31 +436,36 @@ with ThreadPoolExecutor(max_workers=optimal_threads) as executor:
 - **3개 스레드**: 67% 향상 (3배 빠름)
 - **4개 스레드**: 75% 향상 (4배 빠름)
 
-## 📝 주요 개선사항 (v3.0.0)
+## 📝 주요 개선사항 (v3.0.0 ~ v3.4.0)
 
-### 로깅 시스템 대폭 개선
+### 🎯 **아키텍처 다이어그램**
+- **시스템 아키텍처**: `totalSystem.drawio` - 전체 시스템 구조 및 모듈화 적용
+- **데이터 플로우**: `dataFlow.drawio` - 데이터 처리 흐름 및 공통 모듈 활용
+- **스레드 처리**: `threadHandling.drawio` - 병렬 처리 구조 및 동적 워커 관리
+
+### 로깅 시스템 대폭 개선 (v3.0.0)
 - 메인 로그 파일 제거
 - 선사별 개별 로그 생성
 - Excel 형태의 통합 로그 시스템 도입
 - 선박별 상세 성공/실패 기록
 
-### 성능 및 안정성 향상
+### 성능 및 안정성 향상 (v3.0.0)
 - 선박별 개별 소요시간 측정
 - 단계별 실패 사유 기록
 - 선사 전체 실패 기준 강화 (한 선박이라도 실패하면 전체 실패)
 - 에러 처리 로직 개선
 
-### 파일 관리 개선
+### 파일 관리 개선 (v3.0.0)
 - ErrorLog 폴더 자동 정리 (1개월 기준)
 - 구글 드라이브 업로드 상세 로깅
 - 파일별 업로드 성공/실패 추적
 
-### 코드 구조 개선
+### 코드 구조 개선 (v3.0.0)
 - base.py에 공통 기능 통합
 - 크롤러별 일관된 에러 처리
 - 메모리 효율성 향상
 
-### 에러로그 관리 시스템 도입
+### 에러로그 관리 시스템 도입 (v3.0.0)
 - 오늘 날짜 에러로그 자동 구글드라이브 업로드
 - 30일 기준 오래된 에러로그 자동 정리
 - 지정된 폴더 ID에 직접 업로드로 구조 단순화
@@ -518,19 +490,52 @@ with ThreadPoolExecutor(max_workers=optimal_threads) as executor:
 - **확장성**: 새로운 단계 추가 및 기존 단계 수정 용이
 - **유지보수성**: 각 단계가 독립적으로 관리되어 코드 복잡도 감소
 
-### 스레드 안전성 및 성능 최적화
+### 스레드 안전성 및 성능 최적화 (v3.3.0)
 - `thread_calculator.py`를 통한 시스템 사양 분석
 - 메모리, CPU, 디스크, 네트워크 요소별 안전 스레드 수 계산
 - 크롬 인스턴스당 리소스 사용량 고려한 보수적 스레드 수 제한
 - 안전도 레벨별 분류 (매우 안전/안전/주의/위험/매우 위험)
 
+### 🆕 **코드 경량화 및 모듈화 (v3.4.0)**
+- **main2.py 경량화**: 834줄 → 250줄 (70% 감소)
+- **공통 모듈 분리**: `utils/` 패키지로 공통 기능 모듈화
+- **설정 파일 기반**: JSON 설정으로 실행 옵션 관리
+- **코드 중복 제거**: 동일한 로직을 공통 모듈로 통합
+- **가독성 향상**: 함수별 명확한 역할 분담
+- **유지보수성**: 개별 모듈 수정으로 전체 시스템 영향 최소화
+
+**경량화 결과:**
+- **기존 main2.py**: 834줄 (무거운 버전)
+- **새로운 main2_lightweight.py**: ~250줄 (경량화된 버전)
+- **개선율**: 70% 코드 감소
+- **가독성**: 대폭 향상
+- **유지보수성**: 대폭 향상
+- **재사용성**: 대폭 향상
+
+**새로운 구조:**
+```
+utils/                          # 공통 모듈
+├── logging_setup.py           # 로깅 설정
+├── google_upload.py           # 구글 드라이브 업로드
+├── data_cleanup.py            # 데이터 정리
+├── excel_logger.py            # 엑셀 로그 관리
+├── crawler_executor.py        # 크롤러 실행
+└── config_loader.py           # 설정 파일 로드
+
+config/                         # 설정 파일
+├── carriers.json              # 선사 설정
+└── execution_mode.json        # 실행 모드 설정
+```
+
+**설정 옵션:**
+- **실행 모드**: `parallel` (병렬) / `sequential` (순차)
+- **스레드 수**: `max_workers` 값으로 조정
+- **로깅 옵션**: 엑셀 저장, 구글 업로드 등
+- **정리 옵션**: 오래된 데이터 정리 기간 등
+
 ## 📝 라이선스
 
 이 프로젝트는 업무 시간 단축으로 도움을 드리고자 사이드로 1인 개발되었습니다.
 
-**마지막 업데이트**: 2025년 8월 20일
-<<<<<<< HEAD
-**버전**: 3.2.0 
-=======
-**버전**: 3.3.0 
->>>>>>> b16d697386cf4ff21682e091e1d8f03aa97ea3db
+**마지막 업데이트**: 2025년 8월 21일
+**버전**: 3.4.0
