@@ -1,0 +1,18 @@
+{
+  "execution": {
+    "mode": "parallel",
+    "max_workers": 2,
+    "description": "parallel: 병렬 실행, sequential: 순차 실행"
+  },
+  "logging": {
+    "level": "INFO",
+    "save_excel": true,
+    "upload_to_drive": true
+  },
+  "cleanup": {
+    "enabled": true,
+    "days_to_keep": 30,
+    "cleanup_errorlogs": true,
+    "cleanup_scheduledata": true
+  }
+}
