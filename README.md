@@ -79,7 +79,7 @@ RPA_Crawling/
 ## 🏛️ 시스템 아키텍처
 
 ### 전체 시스템 구조
-![System Architecture](totalSystem.drawio)
+<img width="813" height="798" alt="System Architecture" src="https://github.com/user-attachments/assets/341e1ea5-ca68-4cad-a20a-d752981fcae0" />
 
 **시스템 흐름:**
 main2_lightweight.py (경량화된 메인 컨트롤러) → Utils Modules (공통 모듈) → CrawlerFactory (크롤러 생성기) → Individual Crawler (개별 크롤러) → ParentsClass (공통 기능) → Data Storage (로컬 파일) → Google Drive Upload (스케줄 데이터) → Data Cleanup → **에러로그 자동 업로드 및 정리**
@@ -162,7 +162,7 @@ with ThreadPoolExecutor(max_workers=max_workers) as executor:
 ```
 
 ### 2. **데이터 플로우 구조**
-![Data Flow](dataFlow.drawio)
+<img width="1354" height="527" alt="Data Flow" src="https://github.com/user-attachments/assets/0693a22d-92a1-40dd-aeaf-7ddd2ae907fd" />
 
 ### 2. **크롤러 실행 흐름**
 ```python
@@ -247,9 +247,9 @@ python main2_lightweight.py       # 🆕 권장 (경량화된 버전)
 - **테스트**: `main2.py` (기존 무거운 버전)
 
 **📊 시각적 문서화:**
-- **시스템 아키텍처**: `totalSystem.drawio` - 전체 시스템 구조
-- **데이터 플로우**: `dataFlow.drawio` - 데이터 처리 흐름
-- **스레드 처리**: `threadHandling.drawio` - 병렬 처리 구조
+- **시스템 아키텍처**: 전체 시스템 구조 및 모듈화 패턴
+- **데이터 플로우**: 데이터 처리 흐름 및 공통 모듈 활용
+- **스레드 처리**: 병렬 처리 구조 및 동적 워커 관리
 
 **⚠️ 환경 설정 주의사항:**
 - `.env` 파일에 `GOOGLE_DRIVE_ERRORLOG_FOLDER_ID` 설정 필요
@@ -342,7 +342,7 @@ from utils.data_cleanup import cleanup_old_data, cleanup_old_errorlogs
 ## 🔧 스레드 안전성 계산기
 
 ### 스레드 처리 구조
-![Thread Handling](threadHandling.drawio)
+<img width="943" height="702" alt="Thread Handling" src="https://github.com/user-attachments/assets/e6449e0-bf3d-4a9d-a39d-332ecf7b3d03" />
 
 ### 스레드 수 계산 공식
 
@@ -439,9 +439,9 @@ with ThreadPoolExecutor(max_workers=optimal_threads) as executor:
 ## 📝 주요 개선사항 (v3.0.0 ~ v3.4.0)
 
 ### 🎯 **아키텍처 다이어그램**
-- **시스템 아키텍처**: `totalSystem.drawio` - 전체 시스템 구조 및 모듈화 적용
-- **데이터 플로우**: `dataFlow.drawio` - 데이터 처리 흐름 및 공통 모듈 활용
-- **스레드 처리**: `threadHandling.drawio` - 병렬 처리 구조 및 동적 워커 관리
+- **시스템 아키텍처**: 전체 시스템 구조 및 모듈화 패턴
+- **데이터 플로우**: 데이터 처리 흐름 및 공통 모듈 활용
+- **스레드 처리**: 병렬 처리 구조 및 동적 워커 관리
 
 ### 로깅 시스템 대폭 개선 (v3.0.0)
 - 메인 로그 파일 제거
