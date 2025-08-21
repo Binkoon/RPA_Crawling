@@ -342,7 +342,7 @@ from utils.data_cleanup import cleanup_old_data, cleanup_old_errorlogs
 ## 🔧 스레드 안전성 계산기
 
 ### 스레드 처리 구조
-<img width="943" height="702" alt="Thread Handling" src="https://github.com/user-attachments/assets/e6449e0-bf3d-4a9d-a39d-332ecf7b3d03" />
+<img width="943" height="702" alt="Image" src="https://github.com/user-attachments/assets/e64497e0-bf3d-4a9d-a39d-332ecf7b3d03" />
 
 ### 스레드 수 계산 공식
 
