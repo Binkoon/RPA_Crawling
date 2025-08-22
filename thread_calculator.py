@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 """
 스레드 안전성 계산기 (Thread Safety Calculator)
-시스템 사양을 분석하여 크롤링에 안전한 스레드 수를 계산합니다.
+시스템 사양을 분석하여 크롤링에 안전한 스레드 수를 계산하는 목적임.
+
+누가 CPU 코어만 보면 짐작간댔는데, 최대한 보수적인 접근을 위해 계산식 짜놓음.
 """
 
 import psutil
@@ -16,7 +18,7 @@ class ThreadCalculator:
     
     def __init__(self):
         self.system_info = self._get_system_info()
-        self.chrome_memory_per_instance = 0.3  # 크롬 1개당 300MB (보수적 추정)
+        self.chrome_memory_per_instance = 0.3  # 크롬 1개당 300MB (보수적 추정임)
         self.chrome_cpu_per_instance = 0.1     # 크롬 1개당 10% CPU (백그라운드 기준)
         
     def _get_system_info(self):
@@ -73,7 +75,7 @@ class ThreadCalculator:
         # 안전 마진 적용 (70%만 사용)
         safe_threads = int(theoretical_threads * 0.7)
         
-        # 최소 1개, 최대 8개로 제한
+        # 최소 1개, 최대 8개로 제한이긴한데... 8개도 무섭다.
         safe_threads = max(1, min(safe_threads, 8))
         
         return safe_threads
@@ -244,8 +246,6 @@ def main():
     
     # 간단한 사용 예시
     print("\n사용 예시:")
-    print("```python")
-    print("# test_main2.py에서 사용")
     print("from thread_calculator import ThreadCalculator")
     print("")
     print("calculator = ThreadCalculator()")
@@ -253,7 +253,7 @@ def main():
     print("")
     print(f"# 현재 시스템 기준: {calculator.get_optimal_thread_count()}개 스레드 권장")
     print("with ThreadPoolExecutor(max_workers=optimal_threads) as executor:")
-    print("    # 안전한 병렬 처리")
+    print("    # 안전한 동시 처리")
     print("```")
     
     print("\n분석 완료!")

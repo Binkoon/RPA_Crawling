@@ -1,4 +1,6 @@
-# RPA Crawling Project Requirements
+# 여기는 의존성 파일 리스트임. 깃에서 클론해왔다면 가장 먼저 모듈 설치 여기들로 하십쇼
+# install - r requirements.txt  하면 싹다 깔립니다. 언럭키 도커임 ㅋㅋㅋ
+
 # Core dependencies
 python-dotenv>=0.19.0
 selenium>=4.0.0
@@ -15,13 +17,16 @@ psutil>=5.8.0
 
 # Web scraping utilities
 requests>=2.25.0
-beautifulsoup4>=4.9.0
+beautifulsoup4>=4.9.0  # 얘 사실 필요는 없는데, 쓰시는분들 있긴해서 넣음.
+seleniumbase>=4.0.0
 
 # Data processing
 numpy>=1.21.0
 xlrd>=2.0.0
 
 # Development tools
-pytest>=6.0.0
+pytest>=6.0.0  # 미안합니다. test 설치만 하고 QA 안해봤어요.
+pytest-mock>=3.10.0
+pytest-cov>=4.0.0
 black>=21.0.0
 flake8>=3.8.0

@@ -40,3 +40,17 @@ Thumbs.db
 *.temp.venv/
 
 .env
+
+downloaded_files/
+*.lock
+*.lck
+
+# pytest 테스트 관련
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+test-results/
+test_*.log
