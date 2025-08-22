@@ -1,0 +1,39 @@
+# 테스트 환경 설정
+environment: testing
+
+database:
+  host: test-db.example.com
+  port: 5432
+  database: rpa_crawling_test
+  username: test_user
+  password: test_password
+
+logging:
+  level: INFO
+  save_excel: true
+  upload_to_drive: false  # 테스트 중에는 업로드 비활성화
+  log_rotation: true
+  max_log_size: 10  # MB
+  backup_count: 5
+
+cleanup:
+  enabled: true
+  days_to_keep: 14  # 테스트 데이터 보관
+  cleanup_errorlogs: true
+  cleanup_scheduledata: true
+  cleanup_temp_files: true
+  max_file_size: 100  # MB
+
+execution:
+  mode: parallel
+  max_workers: 2
+  timeout: 180  # 초
+  retry_on_failure: true
+  max_retries: 1
+  delay_between_requests: 1.5  # 초
+
+google_drive:
+  shared_folder_id: ""
+  upload_enabled: false
+  create_backup: false
+  max_file_size: 100  # MB 

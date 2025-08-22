@@ -38,7 +38,9 @@ def main():
 
     # 업로드할 파일 경로 및 구글 드라이브 폴더 ID
     file_path = 'test.txt'  # 실제 test.txt 경로
-    folder_id = '1LDNUDHuVOOgsSxNLeayshu7QiBY5Qh4u'  # 공유 드라이브의 폴더 ID
+    folder_id = os.getenv('GOOGLE_DRIVE_SHARED_FOLDER_ID')  # 환경변수에서 공유 드라이브 폴더 ID 로드
+    if not folder_id:
+        raise ValueError("GOOGLE_DRIVE_SHARED_FOLDER_ID 환경 변수가 설정되지 않았습니다.")
 
     # 업로드 메타데이터 (이름, 부모 폴더 설정)
     file_metadata = {

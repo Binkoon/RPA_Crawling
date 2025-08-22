@@ -1,0 +1,39 @@
+# 개발 환경 설정
+environment: development
+
+database:
+  host: localhost
+  port: 5432
+  database: rpa_crawling_dev
+  username: dev_user
+  password: dev_password
+
+logging:
+  level: DEBUG
+  save_excel: true
+  upload_to_drive: false  # 개발 중에는 업로드 비활성화
+  log_rotation: true
+  max_log_size: 5  # MB
+  backup_count: 3
+
+cleanup:
+  enabled: true
+  days_to_keep: 7  # 개발 중에는 짧게 보관
+  cleanup_errorlogs: true
+  cleanup_scheduledata: true
+  cleanup_temp_files: true
+  max_file_size: 50  # MB
+
+execution:
+  mode: sequential  # 개발 중에는 순차 실행
+  max_workers: 1
+  timeout: 120  # 초
+  retry_on_failure: true
+  max_retries: 2
+  delay_between_requests: 2.0  # 초
+
+google_drive:
+  shared_folder_id: ""
+  upload_enabled: false
+  create_backup: false
+  max_file_size: 50  # MB 

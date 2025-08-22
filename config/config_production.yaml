@@ -1,0 +1,39 @@
+# 운영 환경 설정
+environment: production
+
+database:
+  host: prod-db.example.com
+  port: 5432
+  database: rpa_crawling_prod
+  username: prod_user
+  password: ${DB_PASSWORD}  # 환경변수에서 로드
+
+logging:
+  level: WARNING  # 운영 중에는 WARNING 레벨
+  save_excel: true
+  upload_to_drive: true
+  log_rotation: true
+  max_log_size: 100  # MB
+  backup_count: 10
+
+cleanup:
+  enabled: true
+  days_to_keep: 90  # 운영 데이터 장기 보관
+  cleanup_errorlogs: true
+  cleanup_scheduledata: true
+  cleanup_temp_files: true
+  max_file_size: 500  # MB
+
+execution:
+  mode: parallel
+  max_workers: 4  # 운영 중에는 더 많은 워커
+  timeout: 600  # 초
+  retry_on_failure: true
+  max_retries: 1  # 운영 중에는 재시도 제한
+  delay_between_requests: 0.5  # 초
+
+google_drive:
+  shared_folder_id: ${GOOGLE_DRIVE_SHARED_FOLDER_ID}  # 환경변수에서 로드
+  upload_enabled: true
+  create_backup: true
+  max_file_size: 500  # MB 

@@ -7,12 +7,22 @@ from google.auth.transport.requests import Request
 import os
 import datetime
 import pickle
+from dotenv import load_dotenv
+
+# .env 파일 로드
+load_dotenv()
 
 # 구글 드라이브 파일 권한
 SCOPES = ['https://www.googleapis.com/auth/drive']
 
-# 공유 드라이브 ID (실제 공유 드라이브 ID로 변경 필요)
-SHARED_DRIVE_ID = '1LDNUDHuVOOgsSxNLeayshu7QiBY5Qh4u'
+# 공유 드라이브 ID (환경변수에서 로드)
+SHARED_DRIVE_ID = os.getenv('GOOGLE_DRIVE_SCHEDULE_FOLDER_ID')
+if not SHARED_DRIVE_ID:
+    print("⚠️  GOOGLE_DRIVE_SCHEDULE_FOLDER_ID 환경 변수가 설정되지 않았습니다.")
+    print("⚠️  .env 파일을 확인하거나 환경변수를 설정해주세요.")
+    raise ValueError("GOOGLE_DRIVE_SCHEDULE_FOLDER_ID 환경 변수가 설정되지 않았습니다.")
+
+print(f"✅ 환경변수 로드 완료: SHARED_DRIVE_ID = {SHARED_DRIVE_ID}")
 
 def get_drive_service():
     """OAuth 인증을 사용한 드라이브 서비스 생성"""

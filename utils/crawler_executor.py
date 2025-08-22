@@ -29,7 +29,7 @@ def run_crawler_with_error_handling(crawler_name, crawler_instance):
                 logger.info(f"재시도 대상 선박: {', '.join(failed_vessels)}")
                 logger.info(f"재시도 대상 개수: {len(failed_vessels)}개")
                 
-                # 실패한 선박들만 재시도
+                # 실패한 선박들만 재시도 (1회만 - 차단 방지)
                 retry_result = crawler_instance.retry_failed_vessels(failed_vessels)
                 
                 if retry_result:
@@ -60,13 +60,15 @@ def run_crawler_with_error_handling(crawler_name, crawler_instance):
             if hasattr(crawler_instance, 'vessel_name_list'):
                 for vessel_name in crawler_instance.vessel_name_list:
                     if vessel_name not in failed_vessels:
-                        vessel_duration = getattr(crawler_instance, 'get_vessel_duration', lambda x: duration)(vessel_name)
+                        # 선박별 소요시간 계산 (기본값은 전체 크롤링 시간)
+                        vessel_duration = duration / total_vessels if total_vessels > 0 else duration
                         add_to_excel_log(crawler_name, vessel_name, "성공", "크롤링 완료", vessel_duration)
             
             # 실패한 선박들을 엑셀 로그에 기록
             for vessel_name in failed_vessels:
                 reason = failed_reasons.get(vessel_name, "알 수 없는 오류")
-                vessel_duration = getattr(crawler_instance, 'get_vessel_duration', lambda x: duration)(vessel_name)
+                # 실패한 선박도 동일한 시간 분배
+                vessel_duration = duration / total_vessels if total_vessels > 0 else duration
                 add_to_excel_log(crawler_name, vessel_name, "실패", reason, vessel_duration)
             
             # 재시도 결과가 있는 경우 최종 결과 반영

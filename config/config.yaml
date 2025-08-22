@@ -1,0 +1,41 @@
+# 기본 설정 파일
+# 환경별 설정이 없을 때 사용되는 기본값
+
+environment: development
+
+database:
+  host: localhost
+  port: 5432
+  database: rpa_crawling
+  username: ""
+  password: ""
+
+logging:
+  level: INFO
+  save_excel: true
+  upload_to_drive: true
+  log_rotation: true
+  max_log_size: 10  # MB
+  backup_count: 5
+
+cleanup:
+  enabled: true
+  days_to_keep: 30
+  cleanup_errorlogs: true
+  cleanup_scheduledata: true
+  cleanup_temp_files: true
+  max_file_size: 100  # MB
+
+execution:
+  mode: parallel
+  max_workers: 2
+  timeout: 300  # 초
+  retry_on_failure: true
+  max_retries: 1
+  delay_between_requests: 1.0  # 초
+
+google_drive:
+  shared_folder_id: ""
+  upload_enabled: true
+  create_backup: true
+  max_file_size: 100  # MB 

@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # 공통 모듈 import
 from utils.logging_setup import setup_main_logging, get_today_log_dir
-from utils.config_loader import get_carriers_to_run, load_execution_config
+from utils.config_loader import get_carriers_to_run, get_system_config, reload_system_config
 from utils.crawler_executor import run_carrier_parallel
 from utils.excel_logger import save_excel_log, add_google_upload_logs
 from utils.google_upload import run_main_upload, upload_errorlog_to_drive
@@ -54,7 +54,7 @@ def safe_log_write(message, logger=None):
 def safe_config_load():
     """스레드세이프티 (락 걸어둔거)한 설정 로드"""
     with config_lock:
-        return load_execution_config()
+        return get_system_config()
 
 def safe_file_operation(operation_func):
     """스레드세이프티 (락 걸어둔거)한 파일 작업"""
@@ -79,8 +79,15 @@ def main():
     crawling_manager = ThreadSafeCrawlingManager()
     
     # 설정 로드 (스레드세이프티 (락 걸어둔거))
-    execution_config = safe_config_load()
-    max_workers = execution_config['execution']['max_workers']
+    system_config = safe_config_load()
+    max_workers = system_config.execution.max_workers
+    
+    # 설정 정보 로깅
+    safe_log_write(f"현재 환경: {system_config.environment.value}", logger)
+    safe_log_write(f"실행 모드: {system_config.execution.mode}", logger)
+    safe_log_write(f"최대 워커 수: {max_workers}", logger)
+    safe_log_write(f"로깅 레벨: {system_config.logging.level}", logger)
+    safe_log_write(f"구글 드라이브 업로드: {'활성화' if system_config.logging.upload_to_drive else '비활성화'}", logger)
     
     # 실행할 선사 목록 가져오기
     carriers_to_run = get_carriers_to_run()
@@ -130,19 +137,19 @@ def main():
     print_results_summary(crawling_results, total_duration)
     
     # 엑셀 로그 저장 (스레드세이프티 (락 걸어둔거))
-    if execution_config['logging']['save_excel']:
+    if system_config.logging.save_excel:
         safe_file_operation(lambda: save_excel_log(crawling_results, total_duration, today_log_dir))
     
     # 구글 드라이브 업로드 실행
-    if execution_config['logging']['upload_to_drive']:
+    if system_config.logging.upload_to_drive:
         run_google_upload()
     
     # 오래된 데이터 정리 (스레드세이프티 (락 걸어둔거))
-    if execution_config['cleanup']['enabled']:
-        run_data_cleanup(execution_config, logger)
+    if system_config.cleanup.enabled:
+        run_data_cleanup(system_config, logger)
     
     # 에러로그 자동 업로드 및 정리 (스레드세이프티 (락 걸어둔거))
-    run_errorlog_management(execution_config, logger)
+    run_errorlog_management(system_config, logger)
     
     safe_log_write("="*80, logger)
     safe_log_write("동시성 크롤링 완료!", logger)
@@ -207,20 +214,31 @@ def run_google_upload():
         upload_result = run_main_upload()
         
         if upload_result and isinstance(upload_result, dict):
+            success_count = upload_result.get('success_count', 0)
+            fail_count = upload_result.get('fail_count', 0)
+            total_files = upload_result.get('total_files', 0)
+            
             with log_lock:
                 print("="*80)
-                print("구글 드라이브 업로드 완료")
+                if success_count > 0:
+                    print(f"✅ 구글 드라이브 업로드 완료: {success_count}/{total_files}개 파일")
+                    if fail_count > 0:
+                        print(f"⚠️  실패: {fail_count}개 파일")
+                else:
+                    print("❌ 구글 드라이브 업로드 실패: 모든 파일 업로드 실패")
                 print("="*80)
             
             # 구글 업로드 로그를 엑셀에 추가 (스레드세이프티 (락 걸어둔거))
             safe_file_operation(lambda: add_google_upload_logs(upload_result))
         else:
-            safe_log_write("구글 드라이브 업로드 실패")
+            safe_log_write("구글 드라이브 업로드 실패: 결과가 올바르지 않음")
             
     except Exception as e:
         safe_log_write(f"구글 드라이브 업로드 실패: {str(e)}")
+        import traceback
+        safe_log_write(f"상세 에러: {traceback.format_exc()}")
 
-def run_data_cleanup(execution_config, logger):
+def run_data_cleanup(system_config, logger):
     """데이터 정리 실행 (스레드세이프티 (락 걸어둔거))"""
     with log_lock:
         print("\n" + "="*80)
@@ -228,7 +246,7 @@ def run_data_cleanup(execution_config, logger):
         print("="*80)
     
     try:
-        if execution_config['cleanup']['cleanup_scheduledata']:
+        if system_config.cleanup.cleanup_scheduledata:
             safe_file_operation(cleanup_old_data)
         
         with log_lock:
@@ -239,7 +257,7 @@ def run_data_cleanup(execution_config, logger):
     except Exception as e:
         safe_log_write(f"오래된 데이터 정리 실패: {str(e)}")
 
-def run_errorlog_management(execution_config, logger):
+def run_errorlog_management(system_config, logger):
     """에러로그 관리 실행 (스레드세이프티 (락 걸어둔거))"""
     with log_lock:
         print("\n" + "="*80)
@@ -248,11 +266,11 @@ def run_errorlog_management(execution_config, logger):
     
     try:
         # 1단계: 오래된 에러로그 정리
-        if execution_config['cleanup']['cleanup_errorlogs']:
+        if system_config.cleanup.cleanup_errorlogs:
             with log_lock:
                 print("\n1단계: 오래된 에러로그 정리")
             
-            days_to_keep = execution_config['cleanup']['days_to_keep']
+            days_to_keep = system_config.cleanup.days_to_keep
             errorlog_cleanup_result = safe_file_operation(
                 lambda: cleanup_old_errorlogs(days_to_keep, logger)
             )
@@ -266,7 +284,7 @@ def run_errorlog_management(execution_config, logger):
                 safe_log_write(f"에러로그 정리 실패: {errorlog_cleanup_result['message']}")
         
         # 2단계: 에러로그 구글드라이브 업로드
-        if execution_config['logging']['upload_to_drive']:
+        if system_config.logging.upload_to_drive:
             with log_lock:
                 print("\n2단계: 에러로그 구글드라이브 업로드 (오늘 날짜 로그만)")
             

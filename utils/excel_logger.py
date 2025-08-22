@@ -13,18 +13,26 @@ def add_to_excel_log(carrier_name, vessel_name, status, reason, duration):
     """엑셀 로그에 기록 추가 (성공/실패 모두)"""
     global excel_log_data
     now = datetime.now()
-    excel_log_data.append({
+    
+    log_entry = {
         '날짜': now.strftime('%Y/%m/%d/%H:%M:%S'),
         '선사': carrier_name,
         '선박': vessel_name,
         '상태': status,
         '사유/결과': reason,
         '소요시간': f"{duration:.2f}초"
-    })
+    }
+    
+    excel_log_data.append(log_entry)
+    print(f"📝 엑셀 로그 추가: {carrier_name} - {vessel_name} ({status})")
 
 def save_excel_log(crawling_results, total_duration, today_log_dir):
     """엑셀 로그 파일 저장 (요약 정보 포함)"""
+    print(f"🔍 엑셀 로그 저장 시작 - 데이터 개수: {len(excel_log_data)}")
+    print(f"🔍 크롤링 결과 개수: {len(crawling_results)}")
+    
     if not excel_log_data:
+        print("⚠️  엑셀 로그 데이터가 비어있습니다!")
         return
     
     try:

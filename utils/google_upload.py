@@ -93,10 +93,60 @@ def upload_errorlog_to_drive(logger):
 def run_main_upload():
     """메인 구글 드라이브 업로드 실행"""
     try:
+        print("🔍 구글 드라이브 업로드 시작...")
+        
+        # 환경변수 확인
+        shared_folder_id = os.getenv('GOOGLE_DRIVE_SCHEDULE_FOLDER_ID')
+        if not shared_folder_id:
+            error_msg = "GOOGLE_DRIVE_SCHEDULE_FOLDER_ID 환경 변수가 설정되지 않았습니다."
+            print(f"❌ {error_msg}")
+            return {
+                'success': False,
+                'message': error_msg,
+                'uploaded_files': [],
+                'failed_files': []
+            }
+        
+        print(f"✅ 환경변수 확인 완료: SCHEDULE_FOLDER_ID = {shared_folder_id}")
+        
         sys.path.append(os.path.join(os.getcwd(), 'Google'))
         from Google.upload_to_drive_oauth import main as upload_to_drive_main
-        return upload_to_drive_main()
+        
+        # 업로드 실행
+        result = upload_to_drive_main()
+        
+        # 결과 검증
+        if result and isinstance(result, dict):
+            success_count = result.get('success_count', 0)
+            fail_count = result.get('fail_count', 0)
+            total_files = result.get('total_files', 0)
+            
+            print(f"📊 업로드 결과: 성공 {success_count}개, 실패 {fail_count}개, 총 {total_files}개")
+            
+            if success_count > 0:
+                print("✅ 구글 드라이브 업로드 성공!")
+                return result
+            else:
+                print("❌ 모든 파일 업로드 실패")
+                return {
+                    'success': False,
+                    'message': '모든 파일 업로드 실패',
+                    'uploaded_files': [],
+                    'failed_files': result.get('failed_files', [])
+                }
+        else:
+            print("❌ 업로드 결과가 올바르지 않습니다")
+            return {
+                'success': False,
+                'message': '업로드 결과가 올바르지 않음',
+                'uploaded_files': [],
+                'failed_files': []
+            }
+            
     except Exception as e:
+        error_msg = f"구글 드라이브 업로드 중 오류 발생: {str(e)}"
+        print(f"❌ {error_msg}")
+        print(f"상세 에러: {traceback.format_exc()}")
         return {
             'success': False,
             'error': str(e),

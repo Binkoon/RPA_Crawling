@@ -1,7 +1,7 @@
 # RPA 선사 스케줄 크롤링 프로젝트
 
 해운 선사들의 선박 스케줄 데이터를 자동으로 크롤링하고 구글 드라이브에 업로드하는 로직입니다.
-현업의 수기 작업에 오랜 시간이 들어가는것 같아 사이드로 시작된 1인 개발 (크롤링) 입니다.
+현업의 수기 작업에 오랜 시간이 들어가는것 같아 사이드로 시작된 1인 개발 (크롤링 쪽 한정정) 입니다.
 
 기술 스택 : Python
 디자인 패턴 : 팩토리 메서드 + 빌더 패턴
@@ -32,7 +32,10 @@ RPA_Crawling/
 │   └── config_loader.py         # 설정 파일 로드 공통 모듈
 ├── config/                     # 🆕 설정 파일
 │   ├── carriers.json             # 선사 설정 (기존)
-│   └── execution_mode.json      # 🆕 실행 모드 설정
+│   ├── config.yaml               # 🆕 기본 설정 파일
+│   ├── config_development.yaml   # 🆕 개발 환경 설정
+│   ├── config_testing.yaml       # 🆕 테스트 환경 설정
+│   └── config_production.yaml    # 🆕 운영 환경 설정
 ├── Google/                     # 구글 드라이브 관련 파일들
 │   ├── upload_to_drive_oauth.py    # OAuth 인증 업로드 스크립트
 │   ├── upload_to_drive.py          # 서비스 계정 업로드 스크립트
@@ -65,14 +68,15 @@ RPA_Crawling/
 │   ├── nss.py                     # NSS 크롤러
 │   ├── one.py                     # ONE 크롤러
 │   └── pil.py                     # PIL 크롤러
-├── main.py                     # 메인 실행 파일 (백업용 - 기존)
-├── main2.py                    # 메인 실행 파일 (기존 - 무거운 버전)
 ├── main2_lightweight.py        # 🆕 경량화된 메인 실행 파일
 ├── crawler_factory.py          # 크롤러 팩토리 클래스
 ├── cleanup_old_data.py         # 오래된 데이터 정리 스크립트
 ├── test_main.py                # 에러로그 업로드 테스트 스크립트
 ├── requirements.txt             # Python 의존성 패키지 목록
 ├── thread_calculator.py        # 스레드 안전성 계산기
+├── pytest.ini                  # 🆕 pytest 설정 파일
+├── run_tests.py                 # 🆕 테스트 실행 스크립트
+├── .gitignore                   # 🆕 Git 무시 파일 목록
 └── README.md                   # 프로젝트 설명서
 ```
 
@@ -82,78 +86,91 @@ RPA_Crawling/
 <img width="813" height="798" alt="System Architecture" src="https://github.com/user-attachments/assets/341e1ea5-ca68-4cad-a20a-d752981fcae0" />
 
 **시스템 흐름:**
-main2_lightweight.py (경량화된 메인 컨트롤러) → Utils Modules (공통 모듈) → CrawlerFactory (크롤러 생성기) → Individual Crawler (개별 크롤러) → ParentsClass (공통 기능) → Data Storage (로컬 파일) → Google Drive Upload (스케줄 데이터) → Data Cleanup → **에러로그 자동 업로드 및 정리**
+main2_lightweight.py (경량화된 메인 컨트롤러) → Config Management (환경별 설정 시스템) → Utils Modules (공통 모듈) → CrawlerFactory (크롤러 생성기) → Individual Crawler (개별 크롤러) → ParentsClass (공통 기능 + 에러 처리 강화) → Data Storage (로컬 파일) → Google Drive Upload (OAuth 2.0 + 환경변수) → Data Cleanup → **에러로그 자동 업로드 및 정리**
 
 ### 핵심 컴포넌트
 
 #### 1. **Main Controller (main2_lightweight.py)**
 - 전체 프로세스의 진입점 (경량화된 버전)
 - **공통 모듈 기반** 모듈화된 구조
+- **환경별 설정 관리** 시스템 통합
 - **스레드 기반 병렬 처리**로 성능 향상
 - 크롤러 팩토리를 통한 크롤러 인스턴스 생성
 - 실행 흐름 제어 및 결과 집계
 - Excel 통합 로그 생성
-- **설정 파일 기반** 실행 옵션 관리
+- **환경별 설정 파일 기반** 실행 옵션 관리
 
-#### 2. **Crawler Factory (crawler_factory.py)**
+#### 2. **🆕 Config Management System (utils/config_loader.py)**
+- **환경별 설정**: Development/Testing/Production 환경 분리
+- **자동 검증**: 설정값 타입, 범위, 필수값 검증
+- **환경변수 오버라이드**: 런타임 설정 변경 지원
+- **동적 로딩**: 환경 감지 및 자동 설정 로딩
+
+#### 3. **Crawler Factory (crawler_factory.py)**
 - 15개 선사 크롤러의 동적 생성 및 관리
 - 모듈명과 클래스명 매핑 테이블 관리
 - 크롤러 인스턴스 생명주기 관리
 
-#### 3. **Base Crawler (crawler/base.py)**
+#### 4. **🆕 Enhanced Base Crawler (crawler/base.py)**
 - 모든 크롤러의 공통 기능 제공
+- **에러 처리 강화**: 스마트 에러 분석 + 타입별 재시도 전략
+- **스레드 안전성**: 폴더 생성 Lock 메커니즘
 - Selenium WebDriver 설정 및 관리
 - 로깅 시스템 및 에러 처리 표준화
 - 파일 다운로드 경로 관리
 
-#### 4. **Individual Crawlers (crawler/*.py)**
+#### 5. **Individual Crawlers (crawler/*.py)**
 - 각 선사별 맞춤형 크롤링 로직
 - ParentsClass 상속으로 공통 기능 활용
+- **에러 처리 강화** 시스템 적용
 - 선사별 웹사이트 구조에 최적화된 스크래핑
 
-#### 5. **Google Drive Integration (Google/*.py)**
+#### 6. **🆕 Enhanced Google Drive Integration (Google/*.py)**
 - OAuth 2.0 인증 기반 안전한 API 접근
+- **환경변수 기반** 폴더 ID 관리 (보안 강화)
 - 파일별 MIME 타입 자동 감지
 - 공유 드라이브 지원 및 권한 관리
 
-#### 6. **Utils Modules (utils/*.py)** 🆕
+#### 7. **Utils Modules (utils/*.py)** 🆕
 - **로깅 설정**: `logging_setup.py` - 로깅 시스템 공통 관리
 - **구글 업로드**: `google_upload.py` - 구글 드라이브 업로드 공통 로직
 - **데이터 정리**: `data_cleanup.py` - 오래된 데이터 정리 공통 로직
 - **엑셀 로그**: `excel_logger.py` - 엑셀 로그 관리 공통 로직
 - **크롤러 실행**: `crawler_executor.py` - 크롤러 실행 공통 로직
-- **설정 로더**: `config_loader.py` - 설정 파일 로드 공통 로직
+- **설정 로더**: `config_loader.py` - 환경별 설정 로드 공통 로직
 
-#### 7. **Data Management (cleanup_old_data.py)**
+#### 8. **🆕 Testing System (pytest + mocking)**
+- **테스트 격리**: 실제 실행 방지 mocking 시스템
+- **자동화 테스트**: pytest 기반 단위 테스트
+- **커버리지 측정**: 테스트 커버리지 리포트
+- **CI/CD 준비**: 자동화 파이프라인 준비
+
+#### 9. **Data Management (cleanup_old_data.py)**
 - 30일 이전 데이터 자동 정리
 - 스케줄링된 정리 작업 지원
 - 디스크 공간 최적화
 
-#### 8. **ErrorLog Management (main2_lightweight.py)** 🆕
+#### 10. **ErrorLog Management (main2_lightweight.py)** 🆕
 - 오늘 날짜 에러로그 자동 구글드라이브 업로드
 - 30일 기준 오래된 에러로그 자동 정리
-- 지정된 폴더 ID에 직접 업로드
+- 환경변수 기반 폴더 ID 관리
 - 폴더 구조 단순화 (ErrorLog 폴더 생성 불필요)
-
-#### 9. **Configuration Management (config/*.json)** 🆕
-- **선사 설정**: `carriers.json` - 크롤링할 선사 목록 관리
-- **실행 모드**: `execution_mode.json` - 병렬/순차 실행, 스레드 수, 로깅 옵션 등 설정
 
 ## 🔄 파일 실행 흐름
 
-### 1. **프로그램 시작 (main2_lightweight.py) - 공통 모듈 기반**
+### 1. **프로그램 시작 (main2_lightweight.py) - 환경별 설정 기반**
 ```python
-# 공통 모듈을 활용한 모듈화된 구조
+# 환경별 설정 시스템을 활용한 모듈화된 구조
+from utils.config_loader import get_system_config, reload_system_config
 from utils.logging_setup import setup_main_logging, get_today_log_dir
-from utils.config_loader import get_carriers_to_run, load_execution_config
 from utils.crawler_executor import run_carrier_parallel
 from utils.excel_logger import save_excel_log, add_google_upload_logs
 from utils.google_upload import run_main_upload, upload_errorlog_to_drive
 from utils.data_cleanup import cleanup_old_data, cleanup_old_errorlogs
 
-# 설정 파일 기반 실행 옵션 로드
-execution_config = load_execution_config()
-max_workers = execution_config['execution']['max_workers']
+# 환경별 설정 파일 기반 실행 옵션 로드
+system_config = get_system_config()
+max_workers = system_config.execution.max_workers
 
 # 스레드 풀을 사용한 병렬 크롤링
 with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -164,20 +181,46 @@ with ThreadPoolExecutor(max_workers=max_workers) as executor:
 ### 2. **데이터 플로우 구조**
 <img width="1354" height="527" alt="Data Flow" src="https://github.com/user-attachments/assets/0693a22d-92a1-40dd-aeaf-7ddd2ae907fd" />
 
-### 2. **크롤러 실행 흐름**
+### 3. **🆕 에러 처리 강화 시스템**
 ```python
-# 각 선사별 크롤링 프로세스
+# 스마트 에러 분석 및 타입별 재시도 전략
+def smart_retry(self, operation, operation_name="", max_retries=None, context=""):
+    """에러 분석 기반 스마트 재시도 메서드"""
+    for attempt in range(10):  # 최대 10회 시도 (안전장치)
+        try:
+            result = operation()
+            return True, result
+        except Exception as e:
+            error_analysis = self.analyze_error(e, context)
+            if not error_analysis['retryable']:
+                return False, error_analysis
+            
+            # 에러 타입별 재시도 전략 적용
+            retry_delay = error_analysis['retry_delay']
+            time.sleep(retry_delay)
+```
+
+### 4. **크롤러 실행 흐름**
+```python
+# 각 선사별 크롤링 프로세스 (에러 처리 강화)
 def execute_crawling(crawler, carrier_name):
     # 1. 크롤러 초기화
     crawler.setup_logging(carrier_name, has_error=False)
     
-    # 2. 선박별 순차 크롤링
+    # 2. 선박별 순차 크롤링 (스마트 재시도 적용)
     for vessel in vessels:
         start_time = time.time()
         try:
-            result = crawler.crawl_vessel(vessel)
+            success, result = crawler.smart_retry(
+                lambda: crawler.crawl_vessel(vessel),
+                f"{carrier_name} - {vessel}",
+                context=f"carrier={carrier_name},vessel={vessel}"
+            )
             duration = time.time() - start_time
-            add_to_excel_log(carrier_name, vessel, "성공", "크롤링 완료", duration)
+            if success:
+                add_to_excel_log(carrier_name, vessel, "성공", "크롤링 완료", duration)
+            else:
+                add_to_excel_log(carrier_name, vessel, "실패", str(result['error_message']), duration)
         except Exception as e:
             duration = time.time() - start_time
             add_to_excel_log(carrier_name, vessel, "실패", str(e), duration)
@@ -186,39 +229,99 @@ def execute_crawling(crawler, carrier_name):
     return aggregate_results(crawler)
 ```
 
-### 3. **데이터 파이프라인 흐름 (모듈화 적용)**
+### 5. **데이터 파이프라인 흐름 (환경별 설정 적용)**
 ```
-웹사이트 → Selenium → 데이터 추출 → 파일 저장 → 구글 드라이브 업로드
-   ↓           ↓           ↓           ↓           ↓
-HTML/JS → WebDriver → Parsing → Excel/PDF → OAuth API
-   ↓           ↓           ↓           ↓           ↓
-선박정보 → 스케줄데이터 → 구조화 → 로컬저장 → 클라우드동기화
+환경설정 → 로깅설정 → 웹사이트 → Selenium → 데이터 추출 → 파일 저장 → 구글 드라이브 업로드
+    ↓           ↓           ↓           ↓           ↓           ↓           ↓
+Environment → Logging → HTML/JS → WebDriver → Parsing → Excel/PDF → OAuth API
+    ↓           ↓           ↓           ↓           ↓           ↓           ↓
+Development → Level → 선박정보 → 스케줄데이터 → 구조화 → 로컬저장 → 클라우드동기화
 
-**공통 모듈 기반 프로세스 단계:**
-설정로드 → 로깅설정 → 크롤링실행 → 결과집계 → 업로드 → 정리 → 에러로그관리
+**환경별 설정 기반 프로세스 단계:**
+환경감지 → 설정로드 → 로깅설정 → 크롤링실행 → 에러처리 → 결과집계 → 업로드 → 정리 → 에러로그관리
 ```
 
-### 4. **에러 처리 및 로깅 흐름**
+### 6. **에러 처리 및 로깅 흐름 (보완된 시스템입니다 ㅎㅎ)**
 ```python
-# 에러 발생 시 로깅 시스템
+# 에러 발생 시 스마트 분석 및 로깅 시스템
 if error_occurred:
-    # 1. 선사별 개별 로그 파일 생성
+    # 1. 에러 타입 분석
+    error_analysis = self.analyze_error(error, context)
+    
+    # 2. 재시도 가능 여부 판단
+    if error_analysis['retryable']:
+        # 재시도 전략 적용
+        time.sleep(error_analysis['retry_delay'])
+        return self.smart_retry(operation, operation_name)
+    
+    # 3. 선사별 개별 로그 파일 생성
     crawler.setup_logging(carrier_name, has_error=True)
     
-    # 2. Excel 통합 로그에 실패 기록
-    add_to_excel_log(carrier_name, vessel, "실패", error_message, duration)
+    # 4. Excel 통합 로그에 실패 기록
+    add_to_excel_log(carrier_name, vessel, "실패", error_analysis['error_message'], duration)
     
-    # 3. 에러 상세 정보 기록
-    logger.error(f"선박 {vessel} 크롤링 실패: {error_message}")
+    # 5. 에러 상세 정보 기록 (타입별 로그 레벨 적용)
+    if error_analysis['error_type'] == ErrorType.BLOCKED_ERROR:
+        logger.error(f"선박 {vessel} 크롤링 차단: {error_analysis['error_message']}")
+    else:
+        logger.warning(f"선박 {vessel} 크롤링 재시도 가능: {error_analysis['error_message']}")
 ```
 
-## 🔒 보안 및 권한
+## 🔒 보안 및 권한 (폴더ID의 경우 접근권한이 이미 막혀있어 노출되도 크리티컬하지 않으나 env처리하였습니다.)
 
 - **OAuth 2.0**: 사용자 인증으로 안전한 API 접근
 - **토큰 관리**: `token/` 폴더에 인증 파일 보관
-- **환경 변수**: `.env` 파일에 민감한 설정 정보 관리
+- **🆕 환경 변수**: `.env` 파일에 민감한 설정 정보 관리 (폴더 ID 등)
 - **에러 로그**: 민감한 정보 제외하고 로그 기록
 - **로그 보관**: 1개월 후 자동 삭제
+- **🆕 환경별 보안**: 개발/테스트/운영 환경별 보안 수준 분리
+
+## ⚙️ 설정 관리 시스템
+
+### **🆕 환경별 설정 분리**
+- **개발 환경** (`config_development.yaml`): 디버깅, 순차 실행, 업로드 비활성화
+- **테스트 환경** (`config_testing.yaml`): 테스트용 설정, 제한된 리소스
+- **운영 환경** (`config_production.yaml`): 프로덕션 최적화, 보안 강화
+
+### **🆕 설정 검증 및 자동화**
+- **자동 검증**: 설정값 타입, 범위, 필수값 검증
+- **환경변수 오버라이드**: 런타임 설정 변경 지원
+- **설정 템플릿**: 환경별 기본 설정 자동 생성
+- **동적 로딩**: 환경 감지 및 자동 설정 로딩
+
+### **사용 예시**
+```python
+from utils.config_loader import get_system_config, reload_system_config
+
+# 현재 설정 로드
+config = get_system_config()
+print(f"환경: {config.environment.value}")
+print(f"워커 수: {config.execution.max_workers}")
+print(f"로그 레벨: {config.logging.level}")
+
+# 설정 리로드
+config = reload_system_config()
+
+# 설정 검증
+from utils.config_validator import ConfigValidator
+validator = ConfigValidator()
+results = validator.validate_all_configs()
+```
+
+### **환경변수 설정**
+```bash
+# 환경 설정
+export RPA_ENVIRONMENT=production
+
+# 구글 드라이브 설정
+export GOOGLE_DRIVE_SCHEDULE_FOLDER_ID=your_schedule_folder_id
+export GOOGLE_DRIVE_ERRORLOG_FOLDER_ID=your_errorlog_folder_id
+
+# 실행 설정
+export EXECUTION_MODE=parallel
+export MAX_WORKERS=4
+export LOG_LEVEL=WARNING
+```
 
 ## 🛠️ 개발 환경 빠른 시작 가이드
 
@@ -233,73 +336,34 @@ pip install -r requirements.txt
 # 3-1. 구글 API 설정 (Google/token/ 폴더에 credentials.json 배치)
 # 3-2. .env 파일 생성 및 설정
 cp .env.example .env
-# .env 파일에 GOOGLE_DRIVE_ERRORLOG_FOLDER_ID 설정
+# .env 파일에 GOOGLE_DRIVE_SCHEDULE_FOLDER_ID, GOOGLE_DRIVE_ERRORLOG_FOLDER_ID 설정
 
-# 4. 실행 (선택)
-python main.py                    # 백업용 (기존)
-python main2.py                   # 기존 (무거운 버전)
-python main2_lightweight.py       # 🆕 권장 (경량화된 버전)
+# 4. 환경별 설정 확인
+export RPA_ENVIRONMENT=development  # development/testing/production
+
+# 5. 테스트 실행 (선택)
+python run_tests.py --test-type unit   # 단위 테스트
+python run_tests.py --test-type mock   # 모킹 테스트
+python run_tests.py --coverage         # 커버리지 포함
+
+# 6. 실행
+python main2_lightweight.py           # 🆕 권장 (경량화된 버전)
 ```
 
 **🚀 권장 실행 방법:**
 - **새로운 사용자**: `main2_lightweight.py` (경량화된 버전)
-- **기존 사용자**: `main.py` (백업용으로 보관)
-- **테스트**: `main2.py` (기존 무거운 버전)
+- **개발/테스트**: 환경변수 `RPA_ENVIRONMENT=development` 설정
+- **운영**: 환경변수 `RPA_ENVIRONMENT=production` 설정
 
 **📊 시각적 문서화:**
-- **시스템 아키텍처**: 전체 시스템 구조 및 모듈화 패턴
-- **데이터 플로우**: 데이터 처리 흐름 및 공통 모듈 활용
+- **시스템 아키텍처**: 전체 시스템 구조 및 모듈화 패턴 (v3.5.0 업데이트)
+- **데이터 플로우**: 데이터 처리 흐름 및 공통 모듈 활용 (v3.5.0 업데이트)
 - **스레드 처리**: 병렬 처리 구조 및 동적 워커 관리
 
 **⚠️ 환경 설정 주의사항:**
-- `.env` 파일에 `GOOGLE_DRIVE_ERRORLOG_FOLDER_ID` 설정 필요
+- `.env` 파일에 `GOOGLE_DRIVE_SCHEDULE_FOLDER_ID`, `GOOGLE_DRIVE_ERRORLOG_FOLDER_ID` 설정 필요
+- 환경변수 `RPA_ENVIRONMENT`로 환경 분리
 - 민감한 정보는 절대 Git에 커밋하지 않음
-- `.env.example` 파일을 참고하여 설정
-
-## 📦 설치 및 의존성
-
-### 필수 Python 모듈 설치
-
-```bash
-# 기본 크롤링 및 데이터 처리
-pip install selenium==4.15.2
-pip install pandas==2.1.4
-pip install openpyxl==3.1.2
-pip install webdriver-manager==4.0.1
-
-# 구글 드라이브 API 연동
-pip install google-api-python-client==2.108.0
-pip install google-auth-httplib2==0.1.1
-pip install google-auth-oauthlib==1.1.0
-
-# 시스템 모니터링 및 병렬 처리
-pip install psutil==5.9.6
-pip install concurrent-futures==3.1.1
-
-# 웹 스크래핑 및 파싱
-pip install beautifulsoup4==4.12.2
-pip install lxml==4.9.3
-pip install requests==2.31.0
-
-# 파일 처리 및 압축
-pip install python-dotenv==1.0.0
-pip install PyPDF2==3.0.1
-pip install Pillow==10.1.0
-
-# 로깅 및 유틸리티
-pip install colorama==0.4.6
-pip install tqdm==4.66.1
-```
-
-### requirements.txt로 일괄 설치
-
-```bash
-# requirements.txt 파일이 있는 경우
-pip install -r requirements.txt
-
-# 특정 버전으로 설치 (권장)
-pip install -r requirements.txt --force-reinstall
-```
 
 
 ## 🏗️ 디자인 패턴
@@ -324,7 +388,7 @@ pip install -r requirements.txt --force-reinstall
 ```python
 # 모듈화 사용 예시
 from utils.logging_setup import setup_main_logging, get_today_log_dir
-from utils.config_loader import get_carriers_to_run, load_execution_config
+from utils.config_loader import get_system_config, reload_system_config
 from utils.crawler_executor import run_carrier_parallel
 from utils.excel_logger import save_excel_log, add_google_upload_logs
 from utils.google_upload import run_main_upload, upload_errorlog_to_drive
@@ -337,9 +401,9 @@ from utils.data_cleanup import cleanup_old_data, cleanup_old_errorlogs
 3. **데이터 정리**: `data_cleanup.py` - 오래된 데이터 정리 공통 로직
 4. **엑셀 로그**: `excel_logger.py` - 엑셀 로그 관리 공통 로직
 5. **크롤러 실행**: `crawler_executor.py` - 크롤러 실행 공통 로직
-6. **설정 로더**: `config_loader.py` - 설정 파일 로드 공통 로직
+6. **설정 로더**: `config_loader.py` - 환경별 설정 로드 공통 로직
 
-## 🔧 스레드 안전성 계산기
+## 🔧 스레드 안전성 계산기 (현재는 스레드 2개로 돌리고 있습니다~)
 
 ### 스레드 처리 구조
 <img width="943" height="702" alt="Image" src="https://github.com/user-attachments/assets/e64497e0-bf3d-4a9d-a39d-332ecf7b3d03" />
@@ -410,7 +474,7 @@ def get_recommended_thread_count(self):
 ### 사용 예시
 
 ```python
-# main.py에서 사용
+# main2_lightweight.py에서 사용
 from thread_calculator import ThreadCalculator
 
 calculator = ThreadCalculator()
@@ -424,10 +488,10 @@ with ThreadPoolExecutor(max_workers=optimal_threads) as executor:
 
 ### 안전도 평가
 
-- **🟢 매우 안전**: 1-2개 스레드
-- **🟡 안전**: 3개 스레드  
-- **🟠 주의**: 4개 스레드
-- **🔴 위험**: 5-6개 스레드
+- ** 매우 안전**: 1-2개 스레드
+- ** 안전**: 3개 스레드  
+- ** 주의**: 4개 스레드
+- ** 위험**: 5-6개 스레드
 - **⚫ 매우 위험**: 7개 이상
 
 ### 성능 향상 예상치
@@ -436,12 +500,67 @@ with ThreadPoolExecutor(max_workers=optimal_threads) as executor:
 - **3개 스레드**: 67% 향상 (3배 빠름)
 - **4개 스레드**: 75% 향상 (4배 빠름)
 
-## 📝 주요 개선사항 (v3.0.0 ~ v3.4.0)
+## 🧪 테스트 시스템 (ver 3.5.0에 추가입니다.)
 
-### 🎯 **아키텍처 다이어그램**
-- **시스템 아키텍처**: 전체 시스템 구조 및 모듈화 패턴
-- **데이터 플로우**: 데이터 처리 흐름 및 공통 모듈 활용
-- **스레드 처리**: 병렬 처리 구조 및 동적 워커 관리
+### **🆕 pytest 기반 테스트 환경**
+```bash
+# 전체 테스트 실행
+python run_tests.py
+
+# 특정 테스트 타입 실행
+python run_tests.py --test-type unit      # 단위 테스트
+python run_tests.py --test-type mock      # 모킹 테스트
+python run_tests.py --coverage            # 커버리지 포함
+```
+
+### **🆕 모킹 시스템**
+- **실제 실행 방지**: 크롤링, 파일 생성, Google Drive 업로드 방지
+- **격리된 테스트**: 외부 의존성 없는 순수 로직 테스트
+- **빠른 피드백**: 실제 실행 시간 없이 즉시 결과 확인
+
+### **테스트 설정**
+```python
+# pytest.ini 설정
+[tool:pytest]
+testpaths = tests
+python_files = test_*.py *_test.py
+addopts = --strict-markers --disable-warnings
+markers = 
+    unit: Unit tests
+    integration: Integration tests
+    mock: Mock tests
+```
+
+## 📝 주요 개선사항 (v3.0.0 ~ v3.5.0)
+
+### 🎯 **아키텍처 다이어그램 (v3.5.0 업데이트)**
+- **시스템 아키텍처**: 환경별 설정 시스템, 에러 처리 강화, 테스트 시스템 반영
+- **데이터 플로우**: 환경별 설정 로드, 스마트 에러 분석, 성능 지표 업데이트
+- **스레드 처리**: 병렬 처리 구조 및 동적 워커 관리 (기존 유지)
+
+### 🆕 **에러 처리 강화 (v3.5.0)**
+- **스마트 에러 분석**: 에러 타입별 분류 및 자동 분석
+- **타입별 재시도 전략**: 네트워크, 타임아웃, 차단 등 에러별 맞춤 재시도
+- **지능형 재시도**: 에러 특성에 따른 동적 재시도 횟수 및 지연 시간
+- **안전장치**: 최대 10회 시도 제한으로 무한 루프 방지
+
+### 🆕 **환경별 설정 관리 시스템 (v3.5.0)**
+- **YAML 기반 설정**: JSON에서 YAML로 전환하여 가독성 향상
+- **환경 분리**: Development/Testing/Production 환경별 최적화
+- **자동 검증**: 설정값 타입, 범위, 필수값 자동 검증
+- **환경변수 오버라이드**: 런타임 설정 변경 지원
+- **동적 로딩**: 환경 감지 및 자동 설정 로딩
+
+### 🆕 **테스트 시스템 구축 (v3.5.0)**
+- **pytest 프레임워크**: 체계적인 테스트 환경 구축
+- **모킹 시스템**: 실제 실행 방지 격리된 테스트
+- **커버리지 측정**: 테스트 품질 관리
+- **자동화 준비**: CI/CD 파이프라인 기반 마련
+
+### 🆕 **보안 강화 (v3.5.0)**
+- **환경변수 기반**: Google Drive 폴더 ID 하드코딩 제거
+- **환경별 보안**: 개발/테스트/운영 환경별 보안 수준 분리
+- **민감정보 보호**: .env 파일 기반 민감 정보 관리
 
 ### 로깅 시스템 대폭 개선 (v3.0.0)
 - 메인 로그 파일 제거
@@ -524,18 +643,23 @@ utils/                          # 공통 모듈
 
 config/                         # 설정 파일
 ├── carriers.json              # 선사 설정
-└── execution_mode.json        # 실행 모드 설정
+├── config.yaml                # 기본 설정
+├── config_development.yaml    # 개발 환경 설정
+├── config_testing.yaml        # 테스트 환경 설정
+└── config_production.yaml     # 운영 환경 설정
 ```
 
-**설정 옵션:**
+**환경별 설정 옵션:**
 - **실행 모드**: `parallel` (병렬) / `sequential` (순차)
 - **스레드 수**: `max_workers` 값으로 조정
-- **로깅 옵션**: 엑셀 저장, 구글 업로드 등
+- **로깅 레벨**: DEBUG/INFO/WARNING/ERROR
+- **구글 업로드**: 환경별 활성화/비활성화
 - **정리 옵션**: 오래된 데이터 정리 기간 등
 
 ## 📝 라이선스
 
 이 프로젝트는 업무 시간 단축으로 도움을 드리고자 사이드로 1인 개발되었습니다.
+민감정보는 env처리 했으며, 내부 데이터가 아닌 공개된 외부 데이터를 긁어오는 작업이기에 사내 허락을 받고 깃에 올렸습니다.
 
-**마지막 업데이트**: 2025년 8월 21일
-**버전**: 3.4.0
+**마지막 업데이트**: 2025년 8월 22일
+**버전**: 3.5.0

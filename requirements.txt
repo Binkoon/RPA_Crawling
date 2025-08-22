@@ -30,3 +30,6 @@ pytest-mock>=3.10.0
 pytest-cov>=4.0.0
 black>=21.0.0
 flake8>=3.8.0
+
+# Configuration management
+PyYAML>=6.0
