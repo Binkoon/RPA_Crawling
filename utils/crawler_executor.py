@@ -9,40 +9,25 @@ from crawler_factory import CrawlerFactory
 from utils.excel_logger import add_to_excel_log
 
 def run_crawler_with_error_handling(crawler_name, crawler_instance):
-    """크롤러를 실행하고 에러를 처리하는 함수"""
+    """크롤러 실행 및 에러 처리 (선박별 개별 시간 추적)"""
     logger = logging.getLogger(__name__)
+    start_time = datetime.now()
     
     try:
-        logger.info(f"=== {crawler_name} 크롤링 시작 ===")
-        start_time = datetime.now()
-        
-        # 첫 번째 시도
+        # 크롤러 실행
         result = crawler_instance.run()
         
-        # 실패한 선박이 있는지 확인하고 재시도
+        # 재시도 로직 (실패한 선박들만)
         retry_result = None
-        if hasattr(crawler_instance, 'failed_vessels') and crawler_instance.failed_vessels:
-                failed_vessels = crawler_instance.failed_vessels.copy()
-                failed_reasons = getattr(crawler_instance, 'failed_reasons', {}).copy()
+        if hasattr(crawler_instance, 'failed_vessels') and getattr(crawler_instance, 'failed_vessels', []):
+            retry_result = retry_failed_vessels(crawler_instance, crawler_name)
+            if retry_result:
+                logger.info(f"재시도 후 최종 실패: {retry_result.get('final_fail', 0)}개")
                 
-                logger.info(f"=== {crawler_name} 실패한 선박 재시도 시작 ===")
-                logger.info(f"재시도 대상 선박: {', '.join(failed_vessels)}")
-                logger.info(f"재시도 대상 개수: {len(failed_vessels)}개")
-                
-                # 실패한 선박들만 재시도 (1회만 - 차단 방지)
-                retry_result = crawler_instance.retry_failed_vessels(failed_vessels)
-                
-                if retry_result:
-                    logger.info(f"=== {crawler_name} 재시도 완료 ===")
-                    logger.info(f"재시도 성공: {retry_result.get('retry_success', 0)}개")
-                    logger.info(f"재시도 실패: {retry_result.get('retry_fail', 0)}개")
-                    logger.info(f"재시도 후 최종 성공: {retry_result.get('final_success', 0)}개")
-                    logger.info(f"재시도 후 최종 실패: {retry_result.get('final_fail', 0)}개")
-                    
-                    if 'note' in retry_result:
-                        logger.info(f"재시도 참고사항: {retry_result['note']}")
-                else:
-                    logger.warning(f"=== {crawler_name} 재시도 실패 ===")
+                if 'note' in retry_result:
+                    logger.info(f"재시도 참고사항: {retry_result['note']}")
+            else:
+                logger.warning(f"=== {crawler_name} 재시도 실패 ===")
         
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
@@ -56,19 +41,32 @@ def run_crawler_with_error_handling(crawler_name, crawler_instance):
             failed_vessels = getattr(crawler_instance, 'failed_vessels', [])
             failed_reasons = getattr(crawler_instance, 'failed_reasons', {})
             
+            # 선박별 개별 시간 추적을 위한 딕셔너리
+            vessel_timings = getattr(crawler_instance, 'vessel_timings', {})
+            
             # 성공한 선박들을 엑셀 로그에 기록
             if hasattr(crawler_instance, 'vessel_name_list'):
                 for vessel_name in crawler_instance.vessel_name_list:
                     if vessel_name not in failed_vessels:
-                        # 선박별 소요시간 계산 (기본값은 전체 크롤링 시간)
-                        vessel_duration = duration / total_vessels if total_vessels > 0 else duration
+                        # 선박별 개별 소요시간 사용 (없으면 기본값)
+                        if vessel_name in vessel_timings:
+                            vessel_duration = vessel_timings[vessel_name]
+                        else:
+                            # 개별 시간이 없는 경우 전체 시간의 1/3 (보수적 추정)
+                            vessel_duration = duration / 3 if duration > 0 else 0
+                        
                         add_to_excel_log(crawler_name, vessel_name, "성공", "크롤링 완료", vessel_duration)
             
             # 실패한 선박들을 엑셀 로그에 기록
             for vessel_name in failed_vessels:
                 reason = failed_reasons.get(vessel_name, "알 수 없는 오류")
-                # 실패한 선박도 동일한 시간 분배
-                vessel_duration = duration / total_vessels if total_vessels > 0 else duration
+                # 실패한 선박도 개별 시간 사용
+                if vessel_name in vessel_timings:
+                    vessel_duration = vessel_timings[vessel_name]
+                else:
+                    # 개별 시간이 없는 경우 전체 시간의 1/3 (보수적 추정)
+                    vessel_duration = duration / 3 if duration > 0 else 0
+                
                 add_to_excel_log(crawler_name, vessel_name, "실패", reason, vessel_duration)
             
             # 재시도 결과가 있는 경우 최종 결과 반영
@@ -151,6 +149,49 @@ def run_crawler_with_error_handling(crawler_name, crawler_instance):
             'error': str(e),
             'traceback': traceback.format_exc()
         }
+
+def retry_failed_vessels(crawler_instance, crawler_name):
+    """실패한 선박들 재시도 (1회만 - 차단 방지)"""
+    logger = logging.getLogger(__name__)
+    
+    if not hasattr(crawler_instance, 'retry_failed_vessels'):
+        logger.warning(f"{crawler_name} 크롤러에 재시도 메서드가 없습니다.")
+        return None
+    
+    try:
+        failed_vessels = getattr(crawler_instance, 'failed_vessels', []).copy()
+        failed_reasons = getattr(crawler_instance, 'failed_reasons', {}).copy()
+        
+        if not failed_vessels:
+            logger.info(f"{crawler_name} 재시도할 실패한 선박이 없습니다.")
+            return None
+        
+        logger.info(f"=== {crawler_name} 실패한 선박 재시도 시작 ===")
+        logger.info(f"재시도 대상 선박: {', '.join(failed_vessels)}")
+        logger.info(f"재시도 대상 개수: {len(failed_vessels)}개")
+        
+        # 실패한 선박들만 재시도 (1회만 - 차단 방지)
+        retry_result = crawler_instance.retry_failed_vessels(failed_vessels)
+        
+        if retry_result:
+            logger.info(f"=== {crawler_name} 재시도 완료 ===")
+            logger.info(f"재시도 성공: {retry_result.get('retry_success', 0)}개")
+            logger.info(f"재시도 실패: {retry_result.get('retry_fail', 0)}개")
+            logger.info(f"재시도 후 최종 성공: {retry_result.get('final_success', 0)}개")
+            logger.info(f"재시도 후 최종 실패: {retry_result.get('final_fail', 0)}개")
+            
+            if 'note' in retry_result:
+                logger.info(f"재시도 참고사항: {retry_result['note']}")
+            
+            return retry_result
+        else:
+            logger.warning(f"=== {crawler_name} 재시도 실패 ===")
+            return None
+            
+    except Exception as e:
+        logger.error(f"{crawler_name} 재시도 중 오류 발생: {str(e)}")
+        logger.error(f"상세 에러: {traceback.format_exc()}")
+        return None
 
 def try_run_carrier(crawler_name, constructor, results_list):
     """크롤러 인스턴스화 단계에서의 예외도 잡아서 다음 선사로 넘어가도록 처리"""

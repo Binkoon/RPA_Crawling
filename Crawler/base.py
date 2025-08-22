@@ -34,39 +34,53 @@ class ParentsClass:
     # 클래스 레벨 폴더 생성 잠금 (자원 경쟁 방지)
     _folder_creation_lock = threading.Lock()
     
-    def __init__(self):
+    def __init__(self, carrier_name):
+        """크롤러 초기화"""
+        self.carrier_name = carrier_name
+        
+        # 크롬 옵션 설정
         chrome_options = Options()
         chrome_options.add_argument("--window-size=1920,1080") # 해상도는 이거로 고정
-
         self.set_user_agent(chrome_options)  # 얘네 없으면 일부 선사는 차단함
         chrome_options.add_argument("--disable-blink-features=AutomationControlled")
         
-        # ScheduleData 상위 폴더만 생성 (자원 경쟁 방지)
-        self.base_download_dir = os.path.join(os.getcwd(), "scheduleData")
-        self._safe_create_folder(self.base_download_dir)
-
-        # 오늘 날짜 폴더명 (YYMMDD)
-        self.today_folder = datetime.now().strftime("%y%m%d")
-        self.today_download_dir = os.path.join(self.base_download_dir, self.today_folder)
-        self._safe_create_folder(self.today_download_dir)
-
-        # Log 폴더 구조 생성
-        self.setup_log_folder()
-
-        prefs = {"download.default_directory": self.today_download_dir}
-        chrome_options.add_experimental_option("prefs", prefs)
-
-        self.driver = webdriver.Chrome(options=chrome_options)
-        self.wait = WebDriverWait(self.driver, 20)
-        
-        # 실패 추적을 위한 속성들
+        # 크롤링 결과 추적
         self.success_count = 0
         self.fail_count = 0
         self.failed_vessels = []
         self.failed_reasons = {}
+        self.vessel_name_list = []
         
-        # 선박별 소요시간 추적
-        self.vessel_durations = {}
+        # 🆕 선박별 개별 시간 추적
+        self.vessel_timings = {}
+        self.vessel_start_times = {}
+        
+        # 폴더 생성 경로 설정
+        self.base_download_dir = os.path.join(os.getcwd(), 'scheduleData')
+        self.today_download_dir = os.path.join(self.base_download_dir, 
+                                              datetime.now().strftime('%y%m%d'))
+        
+        # 로그 경로 설정
+        self.log_base_dir = os.path.join(os.getcwd(), 'ErrorLog')
+        self.today_log_dir = os.path.join(self.log_base_dir, 
+                                         datetime.now().strftime('%Y-%m-%d'))
+        
+        # 폴더 생성
+        self._safe_create_folder(self.base_download_dir)
+        self._safe_create_folder(self.today_download_dir)
+        self._safe_create_folder(self.log_base_dir)
+        self._safe_create_folder(self.today_log_dir)
+        
+        # 로그 폴더 설정
+        self.setup_log_folder()
+        
+        # 다운로드 경로 설정
+        prefs = {"download.default_directory": self.today_download_dir}
+        chrome_options.add_experimental_option("prefs", prefs)
+        
+        # WebDriver 초기화
+        self.driver = webdriver.Chrome(options=chrome_options)
+        self.wait = WebDriverWait(self.driver, 20)
 
     def setup_log_folder(self):
         """ErrorLog 폴더 구조 생성 (자원 경쟁 방지)"""
@@ -300,47 +314,92 @@ class ParentsClass:
             self.failed_vessels.append(vessel_name)
             self.failed_reasons[vessel_name] = reason
             self.fail_count += 1
-            
-        # 에러 타입별 로깅
-        if error_type:
-            if error_type in [ErrorType.BLOCKED_ERROR, ErrorType.VALIDATION_ERROR]:
-                self.logger.error(f"선박 {vessel_name} 치명적 실패: {reason} (타입: {error_type.value})")
-            elif error_type in [ErrorType.NETWORK_ERROR, ErrorType.TIMEOUT_ERROR]:
-                self.logger.warning(f"선박 {vessel_name} 일시적 실패: {reason} (타입: {error_type.value}, 재시도: {'가능' if retryable else '불가'})")
-            else:
-                self.logger.warning(f"선박 {vessel_name} 실패: {reason} (타입: {error_type.value})")
+        
+        # 에러 타입에 따른 로그 레벨 결정
+        if error_type == ErrorType.BLOCKED_ERROR:
+            self.logger.error(f"선박 {vessel_name} 크롤링 차단: {reason}")
         else:
-            self.logger.warning(f"선박 {vessel_name} 실패: {reason}")
-    
-    def record_vessel_success(self, vessel_name):
-        """선박 성공 기록"""
-        self.success_count += 1
-        self.logger.info(f"선박 {vessel_name} 성공")
-    
-    def record_step_failure(self, vessel_name, step_name, reason):
-        """특정 단계에서의 실패 기록"""
-        detailed_reason = f"{step_name} 실패: {reason}"
-        self.record_vessel_failure(vessel_name, detailed_reason)
-    
-    def start_vessel_timer(self, vessel_name):
-        """선박별 타이머 시작"""
-        self.vessel_durations[vessel_name] = {'start': datetime.now()}
-    
-    def end_vessel_timer(self, vessel_name):
-        """선박별 타이머 종료 및 소요시간 계산"""
-        if vessel_name in self.vessel_durations and 'start' in self.vessel_durations[vessel_name]:
-            start_time = self.vessel_durations[vessel_name]['start']
+            self.logger.warning(f"선박 {vessel_name} 크롤링 실패 (재시도 가능): {reason}")
+
+    def start_vessel_tracking(self, vessel_name):
+        """🆕 선박별 크롤링 시작 시간 기록"""
+        self.vessel_start_times[vessel_name] = datetime.now()
+        if vessel_name not in self.vessel_name_list:
+            self.vessel_name_list.append(vessel_name)
+
+    def end_vessel_tracking(self, vessel_name, success=True):
+        """🆕 선박별 크롤링 종료 시간 기록 및 소요시간 계산"""
+        if vessel_name in self.vessel_start_times:
+            start_time = self.vessel_start_times[vessel_name]
             end_time = datetime.now()
             duration = (end_time - start_time).total_seconds()
-            self.vessel_durations[vessel_name]['duration'] = duration
-            return duration
-        return 0
-    
+            
+            # 선박별 개별 소요시간 저장
+            self.vessel_timings[vessel_name] = duration
+            
+            # 성공/실패 카운트 업데이트
+            if success:
+                self.success_count += 1
+                self.logger.info(f"선박 {vessel_name} 크롤링 완료 (소요시간: {duration:.2f}초)")
+            else:
+                self.logger.warning(f"선박 {vessel_name} 크롤링 실패 (소요시간: {duration:.2f}초)")
+            
+            # 시작 시간 제거 (메모리 정리)
+            del self.vessel_start_times[vessel_name]
+        else:
+            # 시작 시간이 없는 경우 기본값 설정
+            self.vessel_timings[vessel_name] = 0.0
+            if success:
+                self.success_count += 1
+            else:
+                self.fail_count += 1
+
     def get_vessel_duration(self, vessel_name):
-        """선박별 소요시간 반환"""
-        if vessel_name in self.vessel_durations and 'duration' in self.vessel_durations[vessel_name]:
-            return self.vessel_durations[vessel_name]['duration']
-        return 0
+        """🆕 선박별 개별 소요시간 조회"""
+        return self.vessel_timings.get(vessel_name, 0.0)
+    
+    def retry_failed_vessels(self, failed_vessels):
+        """🆕 실패한 선박들 재시도 (기본 구현)"""
+        if not failed_vessels:
+            return None
+        
+        retry_success = 0
+        retry_fail = 0
+        
+        for vessel_name in failed_vessels:
+            try:
+                # 재시도 시도
+                success = self.retry_single_vessel(vessel_name)
+                if success:
+                    retry_success += 1
+                    # 실패 목록에서 제거
+                    if vessel_name in self.failed_vessels:
+                        self.failed_vessels.remove(vessel_name)
+                    if vessel_name in self.failed_reasons:
+                        del self.failed_reasons[vessel_name]
+                else:
+                    retry_fail += 1
+            except Exception as e:
+                retry_fail += 1
+                self.logger.error(f"선박 {vessel_name} 재시도 중 오류: {str(e)}")
+        
+        # 최종 결과 계산
+        final_success = self.success_count
+        final_fail = self.fail_count
+        
+        return {
+            'retry_success': retry_success,
+            'retry_fail': retry_fail,
+            'final_success': final_success,
+            'final_fail': final_fail,
+            'final_failed_vessels': self.failed_vessels.copy(),
+            'note': f"재시도 결과: 성공 {retry_success}개, 실패 {retry_fail}개"
+        }
+    
+    def retry_single_vessel(self, vessel_name):
+        """🆕 단일 선박 재시도 (기본 구현 - 하위 클래스에서 오버라이드)"""
+        self.logger.warning(f"선박 {vessel_name} 재시도 메서드가 구현되지 않았습니다.")
+        return False
     
     def get_save_path(self, carrier_name, vessel_name, ext="xlsx"):
         """
@@ -351,33 +410,6 @@ class ParentsClass:
         safe_carrier = carrier_name.replace("/", "_").replace("\\", "_")
         filename = f"{safe_carrier}_{safe_vessel}.{ext}"
         return os.path.join(self.today_download_dir, filename)
-    
-    def retry_failed_vessels(self, failed_vessels):
-        """
-        실패한 선박들에 대해 재시도하는 기본 메서드
-        자식 클래스에서 오버라이드하여 구체적인 재시도 로직 구현
-        
-        ⚠️ 중요: 재시도는 1회만 허용 (잦은 호출로 인한 차단 방지)
-        
-        Args:
-            failed_vessels: 재시도할 선박 이름 리스트
-            
-        Returns:
-            dict: 재시도 결과 (성공/실패 개수 등)
-        """
-        self.logger.warning(f"기본 재시도 메서드가 호출되었습니다. {len(failed_vessels)}개 선박에 대한 재시도가 필요합니다.")
-        self.logger.warning(f"재시도 대상 선박: {', '.join(failed_vessels)}")
-        self.logger.warning("⚠️ 재시도는 1회만 허용됩니다 (차단 방지)")
-        
-        # 기본적으로는 재시도하지 않고 실패 상태 유지
-        return {
-            'retry_success': 0,
-            'retry_fail': len(failed_vessels),
-            'total_retry': len(failed_vessels),
-            'final_success': self.success_count,
-            'final_fail': self.fail_count,
-            'note': '기본 재시도 메서드 - 구체적인 재시도 로직이 구현되지 않음 (재시도 1회 제한)'
-        }
 
     def get_error_statistics(self):
         """에러 통계 정보 반환"""
