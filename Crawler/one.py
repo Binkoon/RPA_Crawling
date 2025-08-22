@@ -20,7 +20,7 @@ from datetime import datetime
 
 class ONE_Crawling(ParentsClass):
     def __init__(self):
-        super().__init__()
+        super().__init__("ONE")
         self.carrier_name = "ONE"
         
         # 로깅 설정
@@ -33,6 +33,7 @@ class ONE_Crawling(ParentsClass):
         self.success_count = 0
         self.fail_count = 0
         self.failed_vessels = []
+        self.failed_reasons = {}
 
     def setup_logging(self):
         """로깅 설정"""
@@ -63,7 +64,7 @@ class ONE_Crawling(ParentsClass):
                     self.logger.info(f"선박 {vessel_name} 접속 및 다운로드 시작")
                     
                     # 선박별 타이머 시작
-                    self.start_vessel_timer(vessel_name)
+                    self.start_vessel_tracking(vessel_name)
                     
                     # 0. 선사 접속 (동적 URL 생성)
                     params = self.vessel_params[vessel_name]
@@ -120,7 +121,8 @@ class ONE_Crawling(ParentsClass):
                     time.sleep(15)  # 다운로드 대기 시간
                     
                     # 선박별 타이머 종료
-                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.end_vessel_tracking(vessel_name, success=True)
+                    vessel_duration = self.get_vessel_duration(vessel_name)
                     self.success_count += 1
                     self.logger.info(f"선박 {vessel_name} PDF 다운로드 완료 (소요시간: {vessel_duration:.2f}초)")
                     
@@ -130,7 +132,8 @@ class ONE_Crawling(ParentsClass):
                     self.failed_vessels.append(vessel_name)
                     
                     # 실패한 경우에도 타이머 종료
-                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.end_vessel_tracking(vessel_name, success=True)
+                    vessel_duration = self.get_vessel_duration(vessel_name)
                     self.logger.error(f"선박 {vessel_name} 접속 및 다운로드 실패 (소요시간: {vessel_duration:.2f}초)")
                     continue
             
@@ -347,7 +350,7 @@ class ONE_Crawling(ParentsClass):
                 self.logger.info(f"=== {vessel_name} 재시도 시작 ===")
                 
                 # 선박별 타이머 시작
-                self.start_vessel_timer(vessel_name)
+                self.start_vessel_tracking(vessel_name)
                 
                 # 1. 선박별 URL 접속
                 vessel_url = f"https://www.one-line.com/schedule?vessel={vessel_name}"
@@ -365,7 +368,7 @@ class ONE_Crawling(ParentsClass):
                 self.change_filename(vessel_name)
                 
                 # 성공 처리
-                self.record_vessel_success(vessel_name)
+                # 성공 카운트는 end_vessel_tracking에서 자동 처리됨
                 retry_success_count += 1
                 
                 # 실패 목록에서 제거
@@ -374,7 +377,8 @@ class ONE_Crawling(ParentsClass):
                 if vessel_name in self.failed_reasons:
                     del self.failed_reasons[vessel_name]
                 
-                vessel_duration = self.end_vessel_timer(vessel_name)
+                self.end_vessel_tracking(vessel_name, success=True)
+                    vessel_duration = self.get_vessel_duration(vessel_name)
                 self.logger.info(f"선박 {vessel_name} 재시도 성공 (소요시간: {vessel_duration:.2f}초)")
                 
                 # 429 에러 방지를 위한 대기
@@ -385,7 +389,8 @@ class ONE_Crawling(ParentsClass):
                 retry_fail_count += 1
                 
                 # 실패한 경우에도 타이머 종료
-                vessel_duration = self.end_vessel_timer(vessel_name)
+                self.end_vessel_tracking(vessel_name, success=True)
+                    vessel_duration = self.get_vessel_duration(vessel_name)
                 self.logger.error(f"선박 {vessel_name} 재시도 실패 (소요시간: {vessel_duration:.2f}초)")
                 continue
         

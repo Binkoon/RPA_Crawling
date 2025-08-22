@@ -24,7 +24,7 @@ import traceback
 
 class Cosco_Crawling(ParentsClass):
     def __init__(self):
-        super().__init__()
+        super().__init__("COSCO")  # carrier_name을 부모 클래스에 전달
         self.carrier_name = "COS"
         
         # 로깅 설정
@@ -37,6 +37,7 @@ class Cosco_Crawling(ParentsClass):
         self.success_count = 0
         self.fail_count = 0
         self.failed_vessels = []
+        self.failed_reasons = {}
 
     def setup_logging(self):
         """로깅 설정"""
@@ -90,7 +91,7 @@ class Cosco_Crawling(ParentsClass):
                     self.logger.info(f"선박 {vessel_name} 크롤링 시작")
                     
                     # 선박별 타이머 시작
-                    self.start_vessel_timer(vessel_name)
+                    self.start_vessel_tracking(vessel_name)
                     
                     vessel_input.clear()
                     vessel_input.click()
@@ -141,16 +142,23 @@ class Cosco_Crawling(ParentsClass):
                     self.record_vessel_success(vessel_name)
                     
                     # 선박별 타이머 종료
-                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.end_vessel_tracking(vessel_name, success=True)
+                    vessel_duration = self.get_vessel_duration(vessel_name)
                     self.logger.info(f"선박 {vessel_name} 크롤링 완료 (소요시간: {vessel_duration:.2f}초)")
                     
                 except Exception as e:
                     self.logger.error(f"선박 {vessel_name} 크롤링 실패: {str(e)}")
-                    self.record_step_failure(vessel_name, "데이터 크롤링", str(e))
                     
                     # 실패한 경우에도 타이머 종료
-                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.end_vessel_tracking(vessel_name, success=False)
+                    vessel_duration = self.get_vessel_duration(vessel_name)
                     self.logger.error(f"선박 {vessel_name} 크롤링 실패 (소요시간: {vessel_duration:.2f}초)")
+                    
+                    # 실패한 선박 기록
+                    if vessel_name not in self.failed_vessels:
+                        self.failed_vessels.append(vessel_name)
+                        self.failed_reasons[vessel_name] = str(e)
+                    
                     continue
             
             self.logger.info("=== 2단계: 선박별 데이터 크롤링 완료 ===")
@@ -268,7 +276,7 @@ class Cosco_Crawling(ParentsClass):
                 self.logger.info(f"=== {vessel_name} 재시도 시작 ===")
                 
                 # 선박별 타이머 시작
-                self.start_vessel_timer(vessel_name)
+                self.start_vessel_tracking(vessel_name)
                 
                 # 1. 선박명 입력
                 input_xpath = '/html/body/div[1]/div/div[1]/div/div[2]/div[2]/div[1]/div/div/div/div/div/div/form/div/div[1]/div/div/div/div[1]/input'
@@ -277,8 +285,7 @@ class Cosco_Crawling(ParentsClass):
                 vessel_input.send_keys(vessel_name)
                 time.sleep(1)
                 
-                # 성공 처리
-                self.record_vessel_success(vessel_name)
+                # 성공 처리 (end_vessel_tracking에서 자동 처리됨)
                 retry_success_count += 1
                 
                 # 실패 목록에서 제거
@@ -287,7 +294,8 @@ class Cosco_Crawling(ParentsClass):
                 if vessel_name in self.failed_reasons:
                     del self.failed_reasons[vessel_name]
                 
-                vessel_duration = self.end_vessel_timer(vessel_name)
+                self.end_vessel_tracking(vessel_name, success=True)
+                vessel_duration = self.get_vessel_duration(vessel_name)
                 self.logger.info(f"선박 {vessel_name} 재시도 성공 (소요시간: {vessel_duration:.2f}초)")
                 
             except Exception as e:
@@ -295,7 +303,8 @@ class Cosco_Crawling(ParentsClass):
                 retry_fail_count += 1
                 
                 # 실패한 경우에도 타이머 종료
-                vessel_duration = self.end_vessel_timer(vessel_name)
+                self.end_vessel_tracking(vessel_name, success=False)
+                vessel_duration = self.get_vessel_duration(vessel_name)
                 self.logger.error(f"선박 {vessel_name} 재시도 실패 (소요시간: {vessel_duration:.2f}초)")
                 continue
         

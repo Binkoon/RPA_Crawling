@@ -23,7 +23,7 @@ import pandas as pd
 
 class IAL_Crawling(ParentsClass):
     def __init__(self):
-        super().__init__()
+        super().__init__("IAL")
         self.carrier_name = "IAL"
         
         # 로깅 설정
@@ -36,6 +36,7 @@ class IAL_Crawling(ParentsClass):
         self.success_count = 0
         self.fail_count = 0
         self.failed_vessels = []
+        self.failed_reasons = {}
 
     def setup_logging(self):
         """로깅 설정"""
@@ -61,7 +62,7 @@ class IAL_Crawling(ParentsClass):
                     self.logger.info(f"선박 {vessel_name} 접속 시작")
                     
                     # 선박별 타이머 시작
-                    self.start_vessel_timer(vessel_name)
+                    self.start_vessel_tracking(vessel_name)
                     
                     vessel_param = vessel_name.replace(" ","%20")
                     url = f'https://www.interasia.cc/Service/BoatList?ShipName={vessel_param}&StartDate={today}'
@@ -74,7 +75,8 @@ class IAL_Crawling(ParentsClass):
                     self.record_step_failure(vessel_name, "홈페이지 접속", str(e))
                     
                     # 실패한 경우에도 타이머 종료
-                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.end_vessel_tracking(vessel_name, success=True)
+                    vessel_duration = self.get_vessel_duration(vessel_name)
                     self.logger.error(f"선박 {vessel_name} 접속 실패 (소요시간: {vessel_duration:.2f}초)")
                     continue
             
@@ -103,7 +105,7 @@ class IAL_Crawling(ParentsClass):
                     self.logger.info(f"선박 {vessel_name} 데이터 수집 시작")
                     
                     # 선박별 타이머 시작
-                    self.start_vessel_timer(vessel_name)
+                    self.start_vessel_tracking(vessel_name)
                     
                     vessel_param = vessel_name.replace(" ","%20")
                     url = f'https://www.interasia.cc/Service/BoatList?ShipName={vessel_param}&StartDate={today}'
@@ -155,10 +157,11 @@ class IAL_Crawling(ParentsClass):
                     df.to_excel(filename, index=False, header=True)
                     self.logger.info(f"엑셀 저장 완료: {filename}")
                     
-                    self.record_vessel_success(vessel_name)
+                    # 성공 카운트는 end_vessel_tracking에서 자동 처리됨
                     
                     # 선박별 타이머 종료
-                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.end_vessel_tracking(vessel_name, success=True)
+                    vessel_duration = self.get_vessel_duration(vessel_name)
                     self.logger.info(f"선박 {vessel_name} 데이터 수집 완료 (소요시간: {vessel_duration:.2f}초)")
                     
                 except Exception as e:
@@ -166,7 +169,8 @@ class IAL_Crawling(ParentsClass):
                     self.record_step_failure(vessel_name, "데이터 수집", str(e))
                     
                     # 실패한 경우에도 타이머 종료
-                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.end_vessel_tracking(vessel_name, success=True)
+                    vessel_duration = self.get_vessel_duration(vessel_name)
                     self.logger.error(f"선박 {vessel_name} 데이터 수집 실패 (소요시간: {vessel_duration:.2f}초)")
                     self.failed_vessels.append(vessel_name)
                     continue
@@ -282,7 +286,7 @@ class IAL_Crawling(ParentsClass):
                 self.logger.info(f"=== {vessel_name} 재시도 시작 ===")
                 
                 # 선박별 타이머 시작
-                self.start_vessel_timer(vessel_name)
+                self.start_vessel_tracking(vessel_name)
                 
                 # 1. 선박별 URL 접속
                 vessel_url = f"https://www.ial.com/vessel-schedule?vessel={vessel_name}"
@@ -318,7 +322,7 @@ class IAL_Crawling(ParentsClass):
                     self.logger.info(f"{vessel_name} 재시도 엑셀 저장 완료: {filename}")
                     
                     # 성공 처리
-                    self.record_vessel_success(vessel_name)
+                    # 성공 카운트는 end_vessel_tracking에서 자동 처리됨
                     retry_success_count += 1
                     
                     # 실패 목록에서 제거
@@ -327,12 +331,14 @@ class IAL_Crawling(ParentsClass):
                     if vessel_name in self.failed_reasons:
                         del self.failed_reasons[vessel_name]
                     
-                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.end_vessel_tracking(vessel_name, success=True)
+                    vessel_duration = self.get_vessel_duration(vessel_name)
                     self.logger.info(f"선박 {vessel_name} 재시도 성공 (소요시간: {vessel_duration:.2f}초)")
                 else:
                     self.logger.warning(f"{vessel_name} 재시도 시에도 데이터가 없음")
                     retry_fail_count += 1
-                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.end_vessel_tracking(vessel_name, success=True)
+                    vessel_duration = self.get_vessel_duration(vessel_name)
                     self.logger.warning(f"선박 {vessel_name} 재시도 실패 (소요시간: {vessel_duration:.2f}초)")
                 
             except Exception as e:
@@ -340,7 +346,8 @@ class IAL_Crawling(ParentsClass):
                 retry_fail_count += 1
                 
                 # 실패한 경우에도 타이머 종료
-                vessel_duration = self.end_vessel_timer(vessel_name)
+                self.end_vessel_tracking(vessel_name, success=True)
+                    vessel_duration = self.get_vessel_duration(vessel_name)
                 self.logger.error(f"선박 {vessel_name} 재시도 실패 (소요시간: {vessel_duration:.2f}초)")
                 continue
         

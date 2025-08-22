@@ -23,7 +23,7 @@ from .base import ParentsClass
 
 class NSS_Crawling(ParentsClass):
     def __init__(self):
-        super().__init__()
+        super().__init__("NSS")
         self.carrier_name = "NSS"
         
         # 로깅 설정
@@ -39,6 +39,7 @@ class NSS_Crawling(ParentsClass):
         self.success_count = 0
         self.fail_count = 0
         self.failed_vessels = []
+        self.failed_reasons = {}
 
     def setup_logging(self):
         """로깅 설정"""
@@ -100,7 +101,7 @@ class NSS_Crawling(ParentsClass):
                     self.logger.info(f"선박 {vessel_name} 크롤링 시작")
                     
                     # 선박별 타이머 시작
-                    self.start_vessel_timer(vessel_name)
+                    self.start_vessel_tracking(vessel_name)
                     
                     all_rows = []
                     vessel_input = wait.until(EC.presence_of_element_located((
@@ -156,25 +157,24 @@ class NSS_Crawling(ParentsClass):
                         save_path = self.get_save_path(self.carrier_name, vessel_name)
                         df.to_excel(save_path, index=False)
                         self.logger.info(f"엑셀 저장 완료: {save_path}")
-                        self.record_vessel_success(vessel_name)
+                        # 성공 카운트는 end_vessel_tracking에서 자동 처리됨
                         
                         # 선박별 타이머 종료
-                        vessel_duration = self.end_vessel_timer(vessel_name)
+                        self.end_vessel_tracking(vessel_name, success=True)
+                    vessel_duration = self.get_vessel_duration(vessel_name)
                         self.logger.info(f"선박 {vessel_name} 크롤링 완료 (소요시간: {vessel_duration:.2f}초)")
                     else:
                         self.logger.warning(f"선박 {vessel_name}에 대한 데이터가 없습니다.")
-                        self.record_step_failure(vessel_name, "데이터 크롤링", "데이터가 없음")
-                        
                         # 실패한 경우에도 타이머 종료
-                        vessel_duration = self.end_vessel_timer(vessel_name)
+                        self.end_vessel_tracking(vessel_name, success=True)
+                    vessel_duration = self.get_vessel_duration(vessel_name)
                         self.logger.warning(f"선박 {vessel_name} 크롤링 실패 (소요시간: {vessel_duration:.2f}초)")
                     
                 except Exception as e:
                     self.logger.error(f"선박 {vessel_name} 크롤링 실패: {str(e)}")
-                    self.record_step_failure(vessel_name, "데이터 크롤링", str(e))
-                    
                     # 실패한 경우에도 타이머 종료
-                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.end_vessel_tracking(vessel_name, success=True)
+                    vessel_duration = self.get_vessel_duration(vessel_name)
                     self.logger.error(f"선박 {vessel_name} 크롤링 완료 (소요시간: {vessel_duration:.2f}초)")
                     continue
             
@@ -289,7 +289,7 @@ class NSS_Crawling(ParentsClass):
                 self.logger.info(f"=== {vessel_name} 재시도 시작 ===")
                 
                 # 선박별 타이머 시작
-                self.start_vessel_timer(vessel_name)
+                self.start_vessel_tracking(vessel_name)
                 
                 # 1. 선박명 입력
                 vessel_input = self.driver.find_element(By.ID, 'vessel')
@@ -328,7 +328,7 @@ class NSS_Crawling(ParentsClass):
                     self.logger.info(f"{vessel_name} 재시도 엑셀 저장 완료: {save_path}")
                     
                     # 성공 처리
-                    self.record_vessel_success(vessel_name)
+                    # 성공 카운트는 end_vessel_tracking에서 자동 처리됨
                     retry_success_count += 1
                     
                     # 실패 목록에서 제거
@@ -337,12 +337,14 @@ class NSS_Crawling(ParentsClass):
                     if vessel_name in self.failed_reasons:
                         del self.failed_reasons[vessel_name]
                     
-                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.end_vessel_tracking(vessel_name, success=True)
+                    vessel_duration = self.get_vessel_duration(vessel_name)
                     self.logger.info(f"선박 {vessel_name} 재시도 성공 (소요시간: {vessel_duration:.2f}초)")
                 else:
                     self.logger.warning(f"{vessel_name} 재시도 시에도 데이터가 없음")
                     retry_fail_count += 1
-                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.end_vessel_tracking(vessel_name, success=True)
+                    vessel_duration = self.get_vessel_duration(vessel_name)
                     self.logger.warning(f"선박 {vessel_name} 재시도 실패 (소요시간: {vessel_duration:.2f}초)")
                 
             except Exception as e:
@@ -350,7 +352,8 @@ class NSS_Crawling(ParentsClass):
                 retry_fail_count += 1
                 
                 # 실패한 경우에도 타이머 종료
-                vessel_duration = self.end_vessel_timer(vessel_name)
+                self.end_vessel_tracking(vessel_name, success=True)
+                    vessel_duration = self.get_vessel_duration(vessel_name)
                 self.logger.error(f"선박 {vessel_name} 재시도 실패 (소요시간: {vessel_duration:.2f}초)")
                 continue
         

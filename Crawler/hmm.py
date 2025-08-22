@@ -19,7 +19,7 @@ import traceback
 
 class HMM_Crawling(ParentsClass):
     def __init__(self):
-        super().__init__()
+        super().__init__("HMM")
         self.carrier_name = "HMM"
         
         # 로깅 설정
@@ -32,6 +32,7 @@ class HMM_Crawling(ParentsClass):
         self.success_count = 0
         self.fail_count = 0
         self.failed_vessels = []
+        self.failed_reasons = {}
 
     def setup_logging(self):
         """로깅 설정"""
@@ -85,7 +86,7 @@ class HMM_Crawling(ParentsClass):
                     self.logger.info(f"선박 {vessel_name} 크롤링 시작")
                     
                     # 선박별 타이머 시작
-                    self.start_vessel_timer(vessel_name)
+                    self.start_vessel_tracking(vessel_name)
                     
                     # 2. Vessel name 입력 //*[@id="srchByVesselVslCd"]
                     select_elem = wait.until(EC.presence_of_element_located((
@@ -103,11 +104,17 @@ class HMM_Crawling(ParentsClass):
 
                     if not found:
                         self.logger.warning("없는 선박임")
-                        self.record_step_failure(vessel_name, "선박 조회", "드롭다운에서 해당 선박을 찾을 수 없음")
                         
                         # 실패한 경우에도 타이머 종료
-                        vessel_duration = self.end_vessel_timer(vessel_name)
+                        self.end_vessel_tracking(vessel_name, success=False)
+                        vessel_duration = self.get_vessel_duration(vessel_name)
                         self.logger.warning(f"선박 {vessel_name} 크롤링 실패 (소요시간: {vessel_duration:.2f}초)")
+                        
+                        # 실패한 선박 기록
+                        if vessel_name not in self.failed_vessels:
+                            self.failed_vessels.append(vessel_name)
+                            self.failed_reasons[vessel_name] = "드롭다운에서 해당 선박을 찾을 수 없음"
+                        
                         continue
                     
                     time.sleep(1)
@@ -163,18 +170,18 @@ class HMM_Crawling(ParentsClass):
                     df.to_excel(file_path, index=False, engine="openpyxl")
                     self.logger.info(f"엑셀 저장 완료: {file_path}")
                     
-                    self.record_vessel_success(vessel_name)
+                    # 성공 카운트는 end_vessel_tracking에서 자동 처리됨
                     
                     # 선박별 타이머 종료
-                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.end_vessel_tracking(vessel_name, success=True)
+                    vessel_duration = self.get_vessel_duration(vessel_name)
                     self.logger.info(f"선박 {vessel_name} 크롤링 완료 (소요시간: {vessel_duration:.2f}초)")
                     
                 except Exception as e:
                     self.logger.error(f"선박 {vessel_name} 크롤링 실패: {str(e)}")
-                    self.record_step_failure(vessel_name, "데이터 크롤링", str(e))
-                    
                     # 실패한 경우에도 타이머 종료
-                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.end_vessel_tracking(vessel_name, success=True)
+                    vessel_duration = self.get_vessel_duration(vessel_name)
                     self.logger.error(f"선박 {vessel_name} 크롤링 실패 (소요시간: {vessel_duration:.2f}초)")
                     continue
             
@@ -306,7 +313,7 @@ class HMM_Crawling(ParentsClass):
                 self.logger.info(f"=== {vessel_name} 재시도 시작 ===")
                 
                 # 선박별 타이머 시작
-                self.start_vessel_timer(vessel_name)
+                self.start_vessel_tracking(vessel_name)
                 
                 # 1. 선박명 입력
                 vessel_input = self.driver.find_element(By.ID, 'vessel')
@@ -345,7 +352,7 @@ class HMM_Crawling(ParentsClass):
                     self.logger.info(f"{vessel_name} 재시도 엑셀 저장 완료: {save_path}")
                     
                     # 성공 처리
-                    self.record_vessel_success(vessel_name)
+                    # 성공 카운트는 end_vessel_tracking에서 자동 처리됨
                     retry_success_count += 1
                     
                     # 실패 목록에서 제거
@@ -354,12 +361,14 @@ class HMM_Crawling(ParentsClass):
                     if vessel_name in self.failed_reasons:
                         del self.failed_reasons[vessel_name]
                     
-                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.end_vessel_tracking(vessel_name, success=True)
+                    vessel_duration = self.get_vessel_duration(vessel_name)
                     self.logger.info(f"선박 {vessel_name} 재시도 성공 (소요시간: {vessel_duration:.2f}초)")
                 else:
                     self.logger.warning(f"{vessel_name} 재시도 시에도 데이터가 없음")
                     retry_fail_count += 1
-                    vessel_duration = self.end_vessel_timer(vessel_name)
+                    self.end_vessel_tracking(vessel_name, success=True)
+                    vessel_duration = self.get_vessel_duration(vessel_name)
                     self.logger.warning(f"선박 {vessel_name} 재시도 실패 (소요시간: {vessel_duration:.2f}초)")
                 
             except Exception as e:
@@ -367,7 +376,8 @@ class HMM_Crawling(ParentsClass):
                 retry_fail_count += 1
                 
                 # 실패한 경우에도 타이머 종료
-                vessel_duration = self.end_vessel_timer(vessel_name)
+                self.end_vessel_tracking(vessel_name, success=True)
+                vessel_duration = self.get_vessel_duration(vessel_name)
                 self.logger.error(f"선박 {vessel_name} 재시도 실패 (소요시간: {vessel_duration:.2f}초)")
                 continue
         
