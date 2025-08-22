@@ -3,7 +3,7 @@
 # 선사 링크 : https://container.panocean.com/
 # 선박 리스트 : 
 """
-["POS SINGAPORE" , "POS YOKOHAMA" , "POS QINGDAO" , "POS GUANGZHOU",
+["POS SINGAPORE" , "HONOR BRIGHT" , "POS QINGDAO" , "POS GUANGZHOU",
  "POS HOCHIMINH", , "POS LAEMCHABANG"]
 """
 # 추가 정보 : 드랍다운 리스트가  선명/항차 이런식이고 항차는 동적으로 바뀌기 때문에 "선명"을 포함한 애가 있다면
@@ -212,19 +212,25 @@ class PANOCEAN_Crawling(ParentsClass):
                             self.logger.info(f"{vessel_full_name} 다운로드 완료")
                             time.sleep(1.5)  # 다운로드 대기
                             
-                            self.record_vessel_success(vessel_full_name)
+                            # 성공 카운트는 end_vessel_tracking에서 자동 처리됨
                             
                             # 선박별 타이머 종료
                             self.end_vessel_tracking(vessel_name, success=True)
-                    vessel_duration = self.get_vessel_duration(vessel_name)
+                            vessel_duration = self.get_vessel_duration(vessel_name)
                             self.logger.info(f"선박 {vessel_full_name} 크롤링 완료 (소요시간: {vessel_duration:.2f}초)")
                             
                         except Exception as e:
                             self.logger.error(f"선박 {vessel_full_name} 크롤링 실패: {str(e)}")
                             # 실패한 경우에도 타이머 종료
-                            self.end_vessel_tracking(vessel_name, success=True)
-                    vessel_duration = self.get_vessel_duration(vessel_name)
+                            self.end_vessel_tracking(vessel_name, success=False)
+                            vessel_duration = self.get_vessel_duration(vessel_name)
                             self.logger.error(f"선박 {vessel_full_name} 크롤링 실패 (소요시간: {vessel_duration:.2f}초)")
+                            
+                            # 실패한 선박 기록
+                            if vessel_name not in self.failed_vessels:
+                                self.failed_vessels.append(vessel_name)
+                                self.failed_reasons[vessel_name] = str(e)
+                            
                             continue
                     
                     # 선박별 타이머 종료 (전체 선박 처리 완료)
@@ -235,9 +241,15 @@ class PANOCEAN_Crawling(ParentsClass):
                 except Exception as e:
                     self.logger.error(f"선박 {vessel_name} 크롤링 실패: {str(e)}")
                     # 실패한 경우에도 타이머 종료
-                    self.end_vessel_tracking(vessel_name, success=True)
+                    self.end_vessel_tracking(vessel_name, success=False)
                     vessel_duration = self.get_vessel_duration(vessel_name)
                     self.logger.error(f"선박 {vessel_name} 크롤링 실패 (소요시간: {vessel_duration:.2f}초)")
+                    
+                    # 실패한 선박 기록
+                    if vessel_name not in self.failed_vessels:
+                        self.failed_vessels.append(vessel_name)
+                        self.failed_reasons[vessel_name] = str(e)
+                    
                     continue
             
             # === 다운로드 완료 후 파일명 일괄 변경 ===
@@ -390,7 +402,7 @@ class PANOCEAN_Crawling(ParentsClass):
                     del self.failed_reasons[vessel_name]
                 
                 self.end_vessel_tracking(vessel_name, success=True)
-                    vessel_duration = self.get_vessel_duration(vessel_name)
+                vessel_duration = self.get_vessel_duration(vessel_name)
                 self.logger.info(f"선박 {vessel_name} 재시도 성공 (소요시간: {vessel_duration:.2f}초)")
                 
             except Exception as e:
@@ -399,7 +411,7 @@ class PANOCEAN_Crawling(ParentsClass):
                 
                 # 실패한 경우에도 타이머 종료
                 self.end_vessel_tracking(vessel_name, success=True)
-                    vessel_duration = self.get_vessel_duration(vessel_name)
+                vessel_duration = self.get_vessel_duration(vessel_name)
                 self.logger.error(f"선박 {vessel_name} 재시도 실패 (소요시간: {vessel_duration:.2f}초)")
                 continue
         

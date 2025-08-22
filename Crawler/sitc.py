@@ -34,8 +34,7 @@ class SITC_Crawling(ParentsClass):
         self.setup_logging()
         
         # 선박 리스트
-        self.vessel_name_list = ["SITC DECHENG","SITC BATANGAS"
-                                , "SITC SHENGMING" , "SITC QIMING",
+        self.vessel_name_list = [
                               "SITC XIN", "SITC YUNCHENG", "SITC MAKASSAR", "SITC CHANGDE", 
                               "SITC HANSHIN", "SITC XINGDE","AMOUREUX"]
         

@@ -25,7 +25,7 @@ class FDT_Crawling(ParentsClass):
         self.setup_logging()
         
         # 선박 리스트
-        self.vessel_name_list = ["NAVIOS BAHAMAS"]
+        self.vessel_name_list = ["SHIMIN"]
         
         # 크롤링 결과 추적
         self.success_count = 0

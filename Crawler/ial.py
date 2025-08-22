@@ -72,12 +72,17 @@ class IAL_Crawling(ParentsClass):
                     
                 except Exception as e:
                     self.logger.error(f"선박 {vessel_name} 접속 실패: {str(e)}")
-                    self.record_step_failure(vessel_name, "홈페이지 접속", str(e))
                     
                     # 실패한 경우에도 타이머 종료
-                    self.end_vessel_tracking(vessel_name, success=True)
+                    self.end_vessel_tracking(vessel_name, success=False)
                     vessel_duration = self.get_vessel_duration(vessel_name)
                     self.logger.error(f"선박 {vessel_name} 접속 실패 (소요시간: {vessel_duration:.2f}초)")
+                    
+                    # 실패한 선박 기록
+                    if vessel_name not in self.failed_vessels:
+                        self.failed_vessels.append(vessel_name)
+                        self.failed_reasons[vessel_name] = str(e)
+                    
                     continue
             
             self.logger.info("=== 1단계: 선박별 URL 파라미터로 홈페이지 접속 완료 ===")
@@ -347,7 +352,7 @@ class IAL_Crawling(ParentsClass):
                 
                 # 실패한 경우에도 타이머 종료
                 self.end_vessel_tracking(vessel_name, success=True)
-                    vessel_duration = self.get_vessel_duration(vessel_name)
+                vessel_duration = self.get_vessel_duration(vessel_name)
                 self.logger.error(f"선박 {vessel_name} 재시도 실패 (소요시간: {vessel_duration:.2f}초)")
                 continue
         

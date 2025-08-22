@@ -31,7 +31,8 @@ class Cosco_Crawling(ParentsClass):
         self.setup_logging()
         
         # 선박 리스트
-        self.vessel_name_list = ["XIN NAN SHA", "XIN RI ZHAO", "XIN WU HAN", "XIN FANG CHENG"]
+        self.vessel_name_list = ["XIN NAN SHA", "XIN RI ZHAO", "XIN WU HAN", "XIN SU ZHOU" ,"COSCO HAIFA","XIN QIN HUANG DAO","XIN TIAN JIN"
+        ,"PHEN BASIN","XIN YAN TIAN","XIN NING BO","TIAN CHANG HE"]
         
         # 크롤링 결과 추적
         self.success_count = 0

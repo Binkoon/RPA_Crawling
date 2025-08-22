@@ -28,7 +28,7 @@ class DYLINE_Crawling(ParentsClass):
         self.setup_logging()
         
         # 선박 리스트
-        self.vessel_name_list = ["PEGASUS TERA","PEGASUS GLORY","PEGASUS PETA"]
+        self.vessel_name_list = ["PEGASUS TERA","PEGASUS HOPE","PEGASUS PETA"]
         
         # 크롤링 결과 추적
         self.success_count = 0
@@ -161,16 +161,27 @@ class DYLINE_Crawling(ParentsClass):
                     else:
                         self.logger.warning(f"선박 {vessel_name}에 대한 데이터가 없습니다.")
                         # 실패한 경우에도 타이머 종료
-                        self.end_vessel_tracking(vessel_name, success=True)
+                        self.end_vessel_tracking(vessel_name, success=False)
                         vessel_duration = self.get_vessel_duration(vessel_name)
                         self.logger.warning(f"선박 {vessel_name} 크롤링 실패 (소요시간: {vessel_duration:.2f}초)")
+                        
+                        # 실패한 선박 기록
+                        if vessel_name not in self.failed_vessels:
+                            self.failed_vessels.append(vessel_name)
+                            self.failed_reasons[vessel_name] = "데이터 없음"
                     
                 except Exception as e:
                     self.logger.error(f"선박 {vessel_name} 크롤링 실패: {str(e)}")
                     # 실패한 경우에도 타이머 종료
-                    self.end_vessel_tracking(vessel_name, success=True)
+                    self.end_vessel_tracking(vessel_name, success=False)
                     vessel_duration = self.get_vessel_duration(vessel_name)
                     self.logger.error(f"선박 {vessel_name} 크롤링 실패 (소요시간: {vessel_duration:.2f}초)")
+                    
+                    # 실패한 선박 기록
+                    if vessel_name not in self.failed_vessels:
+                        self.failed_vessels.append(vessel_name)
+                        self.failed_reasons[vessel_name] = str(e)
+                    
                     continue
             
             self.logger.info("=== 2단계: 선박별 데이터 크롤링 완료 ===")

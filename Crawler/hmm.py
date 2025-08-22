@@ -180,9 +180,15 @@ class HMM_Crawling(ParentsClass):
                 except Exception as e:
                     self.logger.error(f"선박 {vessel_name} 크롤링 실패: {str(e)}")
                     # 실패한 경우에도 타이머 종료
-                    self.end_vessel_tracking(vessel_name, success=True)
+                    self.end_vessel_tracking(vessel_name, success=False)
                     vessel_duration = self.get_vessel_duration(vessel_name)
                     self.logger.error(f"선박 {vessel_name} 크롤링 실패 (소요시간: {vessel_duration:.2f}초)")
+                    
+                    # 실패한 선박 기록
+                    if vessel_name not in self.failed_vessels:
+                        self.failed_vessels.append(vessel_name)
+                        self.failed_reasons[vessel_name] = str(e)
+                    
                     continue
             
             self.logger.info("=== 2단계: 선박별 데이터 크롤링 완료 ===")

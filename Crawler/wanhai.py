@@ -34,7 +34,7 @@ class WANHAI_Crawling(ParentsClass):
         self.setup_logging()
         
         # 선박 리스트
-        self.vessel_name_list = ["WAN HAI 502","WAN HAI 521","WAN HAI 522","WAN HAI 351","WAN HAI 377","WAN HAI 322"]
+        self.vessel_name_list = ["WAN HAI 325","WAN HAI 329","WAN HAI 521","WAN HAI 522","WAN HAI 351","WAN HAI 377","WAN HAI 322"]
         
         # 크롤링 결과 추적
         self.success_count = 0

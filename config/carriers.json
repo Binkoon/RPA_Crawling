@@ -49,13 +49,7 @@
       "file_type": "Excel",
       "notes": ""
     },
-    {
-      "name": "SMLINE",
-      "module": "smline",
-      "class": "SMLINE_Crawling",
-      "file_type": "Excel",
-      "notes": ""
-    },
+
     {
       "name": "HMM",
       "module": "hmm",

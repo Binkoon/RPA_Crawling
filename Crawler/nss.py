@@ -33,7 +33,7 @@ class NSS_Crawling(ParentsClass):
         self.vessel_name_list = ["STARSHIP JUPITER",
                                  "STAR CHALLENGER" , "STAR PIONEER", "PEGASUS GRACE", "STAR FRONTIER", "STAR SKIPPER" ,
                                  "STARSHIP MERCURY" , "STARSHIP TAURUS", "STARSHIP DRACO", "STARSHIP URSA", "STAR CLIPPER", "STAR EXPRESS", "STARSHIP AQUILA", "STAR CHASER",
-                                 "STAR RANGER", "STARSHIP PEGASUS"]
+                                 "STAR RANGER", "STARSHIP PEGASUS","STAR EXPLORER"]
         
         # 크롤링 결과 추적
         self.success_count = 0
@@ -161,13 +161,13 @@ class NSS_Crawling(ParentsClass):
                         
                         # 선박별 타이머 종료
                         self.end_vessel_tracking(vessel_name, success=True)
-                    vessel_duration = self.get_vessel_duration(vessel_name)
+                        vessel_duration = self.get_vessel_duration(vessel_name)
                         self.logger.info(f"선박 {vessel_name} 크롤링 완료 (소요시간: {vessel_duration:.2f}초)")
                     else:
                         self.logger.warning(f"선박 {vessel_name}에 대한 데이터가 없습니다.")
                         # 실패한 경우에도 타이머 종료
                         self.end_vessel_tracking(vessel_name, success=True)
-                    vessel_duration = self.get_vessel_duration(vessel_name)
+                        vessel_duration = self.get_vessel_duration(vessel_name)
                         self.logger.warning(f"선박 {vessel_name} 크롤링 실패 (소요시간: {vessel_duration:.2f}초)")
                     
                 except Exception as e:
@@ -353,7 +353,7 @@ class NSS_Crawling(ParentsClass):
                 
                 # 실패한 경우에도 타이머 종료
                 self.end_vessel_tracking(vessel_name, success=True)
-                    vessel_duration = self.get_vessel_duration(vessel_name)
+                vessel_duration = self.get_vessel_duration(vessel_name)
                 self.logger.error(f"선박 {vessel_name} 재시도 실패 (소요시간: {vessel_duration:.2f}초)")
                 continue
         
