@@ -427,6 +427,20 @@ class ParentsClass:
             
         return error_stats
 
+    def record_vessel_success(self, vessel_name):
+        """선박 크롤링 성공 기록"""
+        if vessel_name not in self.failed_vessels:
+            self.success_count += 1
+            self.logger.info(f"선박 {vessel_name} 크롤링 성공 기록")
+        else:
+            # 실패 목록에서 제거
+            if vessel_name in self.failed_vessels:
+                self.failed_vessels.remove(vessel_name)
+            if vessel_name in self.failed_reasons:
+                del self.failed_reasons[vessel_name]
+            self.success_count += 1
+            self.logger.info(f"선박 {vessel_name} 재시도 성공 기록")
+
     def log_error_summary(self):
         """에러 요약 로깅"""
         stats = self.get_error_statistics()
