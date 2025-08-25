@@ -27,7 +27,7 @@ class ONE_Crawling(ParentsClass):
         self.setup_logging()
         
         # 선박 리스트
-        self.vessel_name_list = ["MARIA C", "NYK DANIELLA","ONE REASSURANCE" ,"SAN FRANCISCO BRIDGE","ONE MARVEL"]
+        self.vessel_name_list = ["MARIA C","ONE REASSURANCE" ,"ST SUCCESS","ONE MAJESTY"]
         
         # 크롤링 결과 추적
         self.success_count = 0
@@ -48,11 +48,11 @@ class ONE_Crawling(ParentsClass):
     # 선박별 파라미터 매핑 (URL에 맞게 조정)
     vessel_params = {
         "ONE REASSURANCE": {"vslCdParam": "RSCT", "vslEngNmParam": "ONE+REASSURANCE+%28RSCT%29"},
-        "SAN FRANCISCO BRIDGE": {"vslCdParam": "SFDT", "vslEngNmParam": "SAN+FRANCISCO+BRIDGE+%28SFDT%29"},
-        "ONE MARVEL": {"vslCdParam": "ONMT", "vslEngNmParam": "ONE+MARVEL+%28ONMT%29"},
+        "ONE MAJESTY": {"vslCdParam": "OMJT", "vslEngNmParam": "ONE+MAJESTY+%28OMJT%29"},
         "MARIA C": {"vslCdParam": "RCMT", "vslEngNmParam": "MARIA+C+%28RCMT%29"},
-        "NYK DANIELLA": {"vslCdParam": "NDLT", "vslEngNmParam": "NYK+DANIELLA+%28NDLT%29"}
-    }
+        "ST SUCCESS": {"vslCdParam": "TSCT", "vslEngNmParam": "ST+SUCCESS+%28TSCT%29"}
+        # https://ecomm.one-line.com/one-ecom/schedule/vessel-schedule?vslCdParam=RCMT&vslEngNmParam=MARIA+C+%28RCMT%29&f_cmd=
+    } # https://ecomm.one-line.com/one-ecom/schedule/vessel-schedule?vslCdParam=TSCT&vslEngNmParam=ST+SUCCESS+%28TSCT%29&f_cmd=
 
     def step1_visit_and_download(self):
         """1단계: 선박별 접속 후 PDF 다운로드"""

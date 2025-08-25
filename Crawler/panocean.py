@@ -3,8 +3,9 @@
 # 선사 링크 : https://container.panocean.com/
 # 선박 리스트 : 
 """
-["POS SINGAPORE" , "HONOR BRIGHT" , "POS QINGDAO" , "POS GUANGZHOU",
- "POS HOCHIMINH", , "POS LAEMCHABANG"]
+["POS SINGAPORE"
+                                , "HONOR BRIGHT" , "POS QINGDAO" , "POS GUANGZHOU",
+                                "POS HOCHIMINH", "POS LAEMCHABANG"]
 """
 # 추가 정보 : 드랍다운 리스트가  선명/항차 이런식이고 항차는 동적으로 바뀌기 때문에 "선명"을 포함한 애가 있다면
 
@@ -50,7 +51,7 @@ class PANOCEAN_Crawling(ParentsClass):
         
         # 선박 리스트
         self.vessel_name_list = ["POS SINGAPORE"
-                                , "POS YOKOHAMA" , "POS QINGDAO" , "POS GUANGZHOU",
+                                , "HONOR BRIGHT" , "POS QINGDAO" , "POS GUANGZHOU",
                                 "POS HOCHIMINH", "POS LAEMCHABANG"]
         
         # 크롤링 결과 추적

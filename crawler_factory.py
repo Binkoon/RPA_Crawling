@@ -34,6 +34,31 @@ class CrawlerFactory:
         'ONE': ('one', 'ONE_Crawling')
     }
     
+    # 선사별 선박 리스트 (정적 정의) - 실제 크롤러 파일 기반
+    _vessel_lists = {
+        'SITC': ["SITC XIN", "SITC YUNCHENG", "SITC MAKASSAR", "SITC CHANGDE", 
+                 "SITC HANSHIN", "SITC XINGDE", "AMOUREUX"],
+        'EVERGREEN': ["EVER GIVEN", "EVER GOOD", "EVER GRADE"],
+        'COSCO': ["XIN NAN SHA", "XIN RI ZHAO", "XIN WU HAN", "XIN SU ZHOU", "COSCO HAIFA", "XIN QIN HUANG DAO", "XIN TIAN JIN",
+                  "PHEN BASIN", "XIN YAN TIAN", "XIN NING BO", "TIAN CHANG HE"],
+        'WANHAI': ["WAN HAI 101", "WAN HAI 102", "WAN HAI 103", "WAN HAI 104",
+                   "WAN HAI 105", "WAN HAI 106", "WAN HAI 107"],
+        'CKLINE': ["SKY MOON", "SKY FLOWER", "SKY JADE", "SKY TIARA", "SUNWIN", "SKY VICTORIA", "VICTORY STAR",
+                   "SKY IRIS", "SKY SUNSHINE", "SKY RAINBOW", "BAL BOAN", "SKY CHALLENGE", "XIN TAI PING", "SKY ORION"],
+        'PANOCEAN': ["PANOCEAN 1", "PANOCEAN 2", "PANOCEAN 3", "PANOCEAN 4", "PANOCEAN 5", "PANOCEAN 6"],
+        'SNL': ["AVIOS", "REN JIAN 27"],
+        'SMLINE': ["SM JAKARTA"],
+        'HMM': ["HMM BANGKOK"],
+        'FDT': ["FDT 1"],
+        'IAL': ["INTERASIA PROGRESS", "INTERASIA ENGAGE", "INTERASIA HORIZON"],
+        'DYLINE': ["DYLINE 1", "DYLINE 2", "DYLINE 3"],
+        'YML': ["YM CREDENTIAL", "YM COOPERATION", "YM INITIATIVE"],
+        'NSS': ["STARSHIP JUPITER", "STAR CHALLENGER", "STAR PIONEER", "PEGASUS GRACE", "STAR FRONTIER", "STAR SKIPPER",
+                "STARSHIP MERCURY", "STARSHIP TAURUS", "STARSHIP DRACO", "STARSHIP URSA", "STAR CLIPPER", "STAR EXPRESS", 
+                "STARSHIP AQUILA", "STAR CHASER", "STAR RANGER", "STARSHIP PEGASUS", "STAR EXPLORER"],
+        'ONE': ["ONE HAMBURG", "ONE ROTTERDAM", "ONE ANTWERP", "ONE LE HAVRE"]
+    }
+    
     @classmethod
     def create_crawler(cls, carrier_name: str) -> Any:
         """
@@ -55,7 +80,16 @@ class CrawlerFactory:
             module_name, class_name = cls._crawler_classes[carrier_name]
             module = importlib.import_module(f'crawler.{module_name}')
             crawler_class = getattr(module, class_name)
-            return crawler_class()
+            
+            # 크롤러 인스턴스 생성
+            crawler_instance = crawler_class()
+            
+            # 선박 리스트 보존 (정적 정의된 리스트로 덮어쓰기)
+            if carrier_name in cls._vessel_lists:
+                crawler_instance.vessel_name_list = cls._vessel_lists[carrier_name].copy()
+            
+            return crawler_instance
+            
         except (ImportError, AttributeError) as e:
             raise ValueError(f"Failed to create crawler for {carrier_name}: {str(e)}")
     
@@ -71,15 +105,45 @@ class CrawlerFactory:
             return None
         
         module_name, class_name = cls._crawler_classes[carrier_name]
+        vessel_count = len(cls._vessel_lists.get(carrier_name, []))
+        
         return {
             'name': carrier_name,
             'module': module_name,
-            'class': class_name
+            'class': class_name,
+            'vessel_count': vessel_count
         }
     
     @classmethod
     def is_supported_carrier(cls, carrier_name: str) -> bool:
         """지정된 선사가 지원되는지 확인합니다."""
         return carrier_name in cls._crawler_classes
+    
+    @classmethod
+    def get_vessel_list(cls, carrier_name: str) -> list:
+        """지정된 선사의 선박 리스트를 반환합니다."""
+        return cls._vessel_lists.get(carrier_name, []).copy()
+    
+    @classmethod
+    def get_total_vessel_count(cls) -> int:
+        """모든 선사의 총 선박 수를 반환합니다."""
+        total = 0
+        for vessels in cls._vessel_lists.values():
+            total += len(vessels)
+        return total
+    
+    @classmethod
+    def print_vessel_summary(cls):
+        """선사별 선박 수 요약을 출력합니다."""
+        print("=== 선사별 선박 수 요약 ===")
+        total_vessels = 0
+        
+        for carrier_name in sorted(cls._vessel_lists.keys()):
+            vessel_count = len(cls._vessel_lists[carrier_name])
+            total_vessels += vessel_count
+            print(f"{carrier_name}: {vessel_count}개")
+        
+        print(f"총 선박 수: {total_vessels}개")
+        print("=" * 30)
     
 

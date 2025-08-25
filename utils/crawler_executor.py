@@ -34,8 +34,15 @@ def run_crawler_with_error_handling(crawler_name, crawler_instance):
         
         # 크롤러에 성공/실패 카운트가 있는 경우 선박별 결과 확인
         if hasattr(crawler_instance, 'success_count') and hasattr(crawler_instance, 'fail_count'):
-            # 실제 선박 대수는 vessel_name_list의 길이로 계산
-            total_vessels = len(getattr(crawler_instance, 'vessel_name_list', []))
+            # 크롤러 팩토리에서 정확한 총 선박 수 가져오기
+            from crawler_factory import CrawlerFactory
+            carrier_name_upper = crawler_name.upper()
+            if CrawlerFactory.is_supported_carrier(carrier_name_upper):
+                total_vessels = len(CrawlerFactory.get_vessel_list(carrier_name_upper))
+            else:
+                # 지원되지 않는 선사인 경우 인스턴스의 리스트 사용
+                total_vessels = len(getattr(crawler_instance, 'vessel_name_list', []))
+            
             success_count = getattr(crawler_instance, 'success_count', 0)
             fail_count = getattr(crawler_instance, 'fail_count', 0)
             failed_vessels = getattr(crawler_instance, 'failed_vessels', [])

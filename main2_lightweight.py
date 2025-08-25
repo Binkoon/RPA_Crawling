@@ -167,6 +167,10 @@ def print_results_summary(crawling_results, total_duration):
         total_vessels_success = 0
         total_vessels_fail = 0
         
+        # 크롤러 팩토리에서 정확한 총 선박 수 가져오기
+        from crawler_factory import CrawlerFactory
+        expected_total_vessels = CrawlerFactory.get_total_vessel_count()
+        
         for carrier_name, result in crawling_results:
             status = "성공" if result['success'] else "실패"
             duration_str = f"({result['duration']:.2f}초)" if 'duration' in result else ""
@@ -197,9 +201,14 @@ def print_results_summary(crawling_results, total_duration):
         
         if total_vessels_success > 0 or total_vessels_fail > 0:
             print(f"\n선박별 상세 결과:")
-            print(f"총 선박: {total_vessels_success + total_vessels_fail}개")
+            print(f"예상 총 선박: {expected_total_vessels}개 (고정값)")
+            print(f"실제 처리된 선박: {total_vessels_success + total_vessels_fail}개")
             print(f"성공: {total_vessels_success}개")
             print(f"실패: {total_vessels_fail}개")
+            
+            # 예상값과 실제값 비교
+            if total_vessels_success + total_vessels_fail != expected_total_vessels:
+                print(f"⚠️  경고: 예상 선박 수({expected_total_vessels}개)와 실제 처리된 선박 수({total_vessels_success + total_vessels_fail}개)가 다릅니다.")
         
         print("="*80)
 

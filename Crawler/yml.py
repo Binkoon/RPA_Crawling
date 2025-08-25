@@ -67,12 +67,13 @@ class YML_Crawling(ParentsClass):
                     vessel_code = {
                         "YM CREDENTIAL": "YCDL",
                         "YM COOPERATION": "YCPR",
-                        "YM INITIATIVE": "YINT"
+                        "IBN AL ABBAR": "IAAB"
                     }[vessel_name]
                     url = f'https://e-solution.yangming.com/e-service/Vessel_Tracking/vessel_tracking_detail.aspx?vessel={vessel_name_param}|{vessel_code}&&func=current&&LocalSite='
                     self.Visit_Link(url)
                     time.sleep(2)
-
+# https://e-solution.yangming.com/e-service/Vessel_Tracking/vessel_tracking_detail.aspx?vessel=YM%20CREDENTIAL|YCDL&&func=current&&LocalSite=
+# https://e-solution.yangming.com/e-service/Vessel_Tracking/vessel_tracking_detail.aspx?vessel=IBN%20AL%20ABBAR|IAAB&&func=current&&LocalSite=
                     # 쿠키 팝업 있으면 클릭
                     try:
                         cookie_button = wait.until(EC.element_to_be_clickable((By.XPATH, '/html/body/div/div/a')))
@@ -121,7 +122,7 @@ class YML_Crawling(ParentsClass):
                     vessel_code = {
                         "YM CREDENTIAL": "YCDL",
                         "YM COOPERATION": "YCPR",
-                        "YM INITIATIVE": "YINT"
+                        "IBN AL ABBAR": "IAAB"
                     }[vessel_name]
                     url = f'https://e-solution.yangming.com/e-service/Vessel_Tracking/vessel_tracking_detail.aspx?vessel={vessel_name_param}|{vessel_code}&&func=current&&LocalSite='
                     self.Visit_Link(url)

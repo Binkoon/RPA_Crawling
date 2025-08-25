@@ -43,14 +43,6 @@
       "notes": ""
     },
     {
-      "name": "SNL",
-      "module": "snl",
-      "class": "SNL_Crawling",
-      "file_type": "Excel",
-      "notes": ""
-    },
-
-    {
       "name": "HMM",
       "module": "hmm",
       "class": "HMM_Crawling",
