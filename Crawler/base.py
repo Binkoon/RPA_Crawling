@@ -313,7 +313,6 @@ class ParentsClass:
         if vessel_name not in self.failed_vessels:
             self.failed_vessels.append(vessel_name)
             self.failed_reasons[vessel_name] = reason
-            self.fail_count += 1
         
         # 에러 타입에 따른 로그 레벨 결정
         if error_type == ErrorType.BLOCKED_ERROR:
@@ -337,11 +336,12 @@ class ParentsClass:
             # 선박별 개별 소요시간 저장
             self.vessel_timings[vessel_name] = duration
             
-            # 성공/실패 카운트 업데이트
+            # 성공/실패 카운트 업데이트 (여기서만 카운트)
             if success:
                 self.success_count += 1
                 self.logger.info(f"선박 {vessel_name} 크롤링 완료 (소요시간: {duration:.2f}초)")
             else:
+                self.fail_count += 1
                 self.logger.warning(f"선박 {vessel_name} 크롤링 실패 (소요시간: {duration:.2f}초)")
             
             # 시작 시간 제거 (메모리 정리)
@@ -428,18 +428,16 @@ class ParentsClass:
         return error_stats
 
     def record_vessel_success(self, vessel_name):
-        """선박 크롤링 성공 기록"""
-        if vessel_name not in self.failed_vessels:
-            self.success_count += 1
-            self.logger.info(f"선박 {vessel_name} 크롤링 성공 기록")
-        else:
+        """선박 크롤링 성공 기록 (카운트는 end_vessel_tracking에서만)"""
+        if vessel_name in self.failed_vessels:
             # 실패 목록에서 제거
             if vessel_name in self.failed_vessels:
                 self.failed_vessels.remove(vessel_name)
             if vessel_name in self.failed_reasons:
                 del self.failed_reasons[vessel_name]
-            self.success_count += 1
             self.logger.info(f"선박 {vessel_name} 재시도 성공 기록")
+        else:
+            self.logger.info(f"선박 {vessel_name} 크롤링 성공 기록")
 
     def log_error_summary(self):
         """에러 요약 로깅"""

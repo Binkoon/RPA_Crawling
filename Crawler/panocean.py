@@ -234,10 +234,8 @@ class PANOCEAN_Crawling(ParentsClass):
                             
                             continue
                     
-                    # 선박별 타이머 종료 (전체 선박 처리 완료)
-                    self.end_vessel_tracking(vessel_name, success=True)
-                    vessel_duration = self.get_vessel_duration(vessel_name)
-                    self.logger.info(f"선박 {vessel_name} 크롤링 완료 (소요시간: {vessel_duration:.2f}초)")
+                    # 기본 선박명에 대한 처리 완료 (넘버링된 실제 선박들은 이미 개별 처리됨)
+                    self.logger.info(f"기본 선박 {vessel_name} 처리 완료 - 실제 생성된 선박: {len(matched_vessels)}개")
                     
                 except Exception as e:
                     self.logger.error(f"선박 {vessel_name} 크롤링 실패: {str(e)}")
