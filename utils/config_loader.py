@@ -78,7 +78,7 @@ class CleanupConfig:
 @dataclass
 class ExecutionConfig:
     """실행 설정"""
-            mode: str = "sequential"  # sequential only
+    mode: str = "sequential"  # sequential only
     
     timeout: int = 300  # 초
     retry_on_failure: bool = True

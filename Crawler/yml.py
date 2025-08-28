@@ -53,22 +53,15 @@ class YML_Crawling(ParentsClass):
         self.logger = super().setup_logging(self.carrier_name, has_error=True)
 
     def step1_visit_website(self):
-        """1단계: 선사 홈페이지 접속"""
+        """1단계: 불필요 - step2에서 바로 선박별 접속"""
         try:
-            self.logger.info("=== 1단계: 선사 홈페이지 접속 시작 ===")
-            
-            # TARGET 페이지로 바로 접속
-            self.Visit_Link("https://e-solution.yangming.com/e-service/Vessel_Tracking/vessel_tracking_detail.aspx?vessel=IBN%20AL%20ABBAR|IAAB&&func=current&&LocalSite=")
-            driver = self.driver
-            wait = self.wait
-            
-            self.logger.info("=== 1단계: 선사 홈페이지 접속 완료 ===")
+            self.logger.info("=== 1단계: 건너뜀 (선박별로 직접 접속) ===")
             return True
             
         except Exception as e:
             # 에러 발생 시 로깅 설정 변경
             self.setup_logging_with_error()
-            self.logger.error(f"=== 1단계: 선사 홈페이지 접속 실패 ===")
+            self.logger.error(f"=== 1단계: 오류 ===")
             self.logger.error(f"에러 메시지: {str(e)}")
             self.logger.error(f"상세 에러: {traceback.format_exc()}")
             return False
@@ -88,7 +81,7 @@ class YML_Crawling(ParentsClass):
                     # 선박별 타이머 시작
                     self.start_vessel_tracking(vessel_name)
                     
-                    # 1. 선박별 URL 접속
+                    # 1. 선박별 URL 접속 (첫 번째 선박부터 바로 접속)
                     vessel_code = self.vessel_code.get(vessel_name, "")
                     if not vessel_code:
                         self.logger.error(f"선박 {vessel_name}에 대한 코드를 찾을 수 없음")
@@ -112,7 +105,7 @@ class YML_Crawling(ParentsClass):
                                 data.append(row_data)
                         
                         if data:
-                            # 3. DataFrame 생성 및 저장
+                            # 3. DataFrame 생성 및 저장 (올바른 파일명으로 바로 저장)
                             columns = ["Port", "ETA", "ETD", "Status", "Voy"]
                             df = pd.DataFrame(data, columns=columns)
                             
@@ -123,12 +116,16 @@ class YML_Crawling(ParentsClass):
                             if 'Voy' in df.columns:
                                 df["Voy"] = df["Voy"].str.extract(r'(\d+)')[0]
                             
-                            save_path = self.get_save_path(self.carrier_name, vessel_name)
+                            # 올바른 파일명으로 바로 저장
+                            filename = f"{self.carrier_name}_{vessel_name}.xlsx"
+                            save_path = os.path.join(self.today_download_dir, filename)
                             df.to_excel(save_path, index=False, header=True)
-                            self.logger.info(f"[{vessel_name}] 테이블 원본 저장 완료: {save_path}")
+                            self.logger.info(f"[{vessel_name}] 테이블 데이터 저장 완료: {filename}")
+                            
+                            # 성공 카운트 증가
+                            self.success_count += 1
                             
                             time.sleep(1)
-                            # 성공 카운트는 end_vessel_tracking에서 자동 처리됨
                             
                             # 선박별 타이머 종료
                             self.end_vessel_tracking(vessel_name, success=True)
@@ -136,6 +133,7 @@ class YML_Crawling(ParentsClass):
                             self.logger.info(f"선박 {vessel_name} 크롤링 완료 (소요시간: {vessel_duration:.2f}초)")
                         else:
                             self.logger.warning(f"선박 {vessel_name}에 대한 데이터가 없습니다.")
+                            self.fail_count += 1
                             self.end_vessel_tracking(vessel_name, success=False)
                             
                     except Exception as e:
@@ -167,27 +165,23 @@ class YML_Crawling(ParentsClass):
             return False
 
     def step3_process_downloaded_files(self):
-        """3단계: 다운로드된 파일 처리 및 엑셀 생성 (순서 기반 파일명 매핑)"""
+        """3단계: 생성된 파일 확인 및 전처리"""
         try:
-            self.logger.info("=== 3단계: 다운로드된 파일 처리 및 엑셀 생성 시작 ===")
+            self.logger.info("=== 3단계: 생성된 파일 확인 및 전처리 시작 ===")
             
-            # 다운로드된 Excel 파일들을 순서대로 정렬
-            files = [f for f in os.listdir(self.today_download_dir)
-                     if f.lower().endswith('.xlsx') or f.lower().endswith('.xls')]
-            files.sort()  # 파일명 순서대로 정렬
+            # 이미 올바른 파일명으로 저장된 파일들 확인
+            expected_files = [f"{self.carrier_name}_{vessel_name}.xlsx" for vessel_name in self.vessel_name_list]
+            existing_files = []
             
-            # vessel_name_list와 1:1로 파일명 변경 (순서 기반 매핑)
-            for i, vessel_name in enumerate(self.vessel_name_list):
-                if i < len(files):
-                    old_path = os.path.join(self.today_download_dir, files[i])
-                    new_filename = f"{self.carrier_name}_{vessel_name}.xlsx"
-                    new_path = os.path.join(self.today_download_dir, new_filename)
-                    os.rename(old_path, new_path)
-                    self.logger.info(f"파일명 변경: {files[i]} → {new_filename}")
+            for expected_file in expected_files:
+                fpath = os.path.join(self.today_download_dir, expected_file)
+                if os.path.exists(fpath):
+                    existing_files.append(expected_file)
+                    self.logger.info(f"파일 확인 완료: {expected_file}")
                 else:
-                    self.logger.warning(f"선박 {vessel_name}에 해당하는 파일을 찾을 수 없음")
+                    self.logger.warning(f"예상 파일을 찾을 수 없음: {expected_file}")
             
-            # 3. 파일명 변경 후 전처리
+            # 파일명 변경 후 전처리
             for vessel_name in self.vessel_name_list:
                 fpath = os.path.join(self.today_download_dir, f"{self.carrier_name}_{vessel_name}.xlsx")
                 if os.path.exists(fpath):
@@ -222,15 +216,19 @@ class YML_Crawling(ParentsClass):
                     except Exception as e:
                         self.logger.error(f"전처리 중 오류({vessel_name}): {e}")
                 else:
-                    self.logger.warning(f"선박 {vessel_name} 파일을 찾을 수 없음: {fpath}")
+                    self.logger.warning(f"선박 {vessel_name}의 파일을 찾을 수 없음")
             
-            self.logger.info("=== 3단계: 다운로드된 파일 처리 및 엑셀 생성 완료 ===")
+            # 파일 생성 성공률 계산
+            success_rate = (len(existing_files) / len(expected_files)) * 100
+            self.logger.info(f"파일 생성 성공률: {success_rate:.1f}% ({len(existing_files)}/{len(expected_files)})")
+            
+            self.logger.info("=== 3단계: 생성된 파일 확인 및 전처리 완료 ===")
             return True
             
         except Exception as e:
             # 에러 발생 시 로깅 설정 변경
             self.setup_logging_with_error()
-            self.logger.error(f"=== 3단계: 다운로드된 파일 처리 및 엑셀 생성 실패 ===")
+            self.logger.error(f"=== 3단계: 생성된 파일 확인 및 전처리 실패 ===")
             self.logger.error(f"에러 메시지: {str(e)}")
             self.logger.error(f"상세 에러: {traceback.format_exc()}")
             return False

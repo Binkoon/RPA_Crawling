@@ -213,13 +213,18 @@ class PANOCEAN_Crawling(ParentsClass):
                             download_btn.click()
                             self.logger.info(f"{vessel_full_name} 다운로드 시작")
                             
-                            # 다운로드 완료 대기
-                            time.sleep(2)  # 다운로드 대기
-                            self.logger.info(f"선박 {vessel_full_name} Excel 다운로드 완료")
+                            # 다운로드 완료 대기 및 즉시 파일명 변경
+                            if self.wait_for_download_and_rename(vessel_full_name):
+                                self.logger.info(f"선박 {vessel_full_name} Excel 다운로드 및 파일명 변경 완료")
+                                self.success_count += 1
+                            else:
+                                self.logger.error(f"선박 {vessel_full_name} 파일명 변경 실패")
+                                self.fail_count += 1
+                                if vessel_full_name not in self.failed_vessels:
+                                    self.failed_vessels.append(vessel_full_name)
+                                    self.failed_reasons[vessel_full_name] = "파일명 변경 실패"
                             
                             time.sleep(1.5)  # 다운로드 대기
-                            
-                            # 성공 카운트는 end_vessel_tracking에서 자동 처리됨
                             
                             # 선박별 타이머 종료
                             self.end_vessel_tracking(vessel_name, success=True)
@@ -256,19 +261,6 @@ class PANOCEAN_Crawling(ParentsClass):
                         self.failed_reasons[vessel_name] = str(e)
                     
                     continue
-            
-            # === 다운로드 완료 후 파일명 일괄 변경 ===
-            # 다운로드 폴더에서 ScheduleByVessel_2025_07_14*.xlsx 파일만 추출
-            files = [f for f in os.listdir(self.today_download_dir) if f.startswith("ScheduleByVessel_") and f.endswith(".xlsx")]
-            files.sort()  # 이름순 정렬: (1), (2), ... 순서대로
-
-            for i, vessel_full_name in enumerate(all_vessel_names):
-                if i < len(files):
-                    old_path = os.path.join(self.today_download_dir, files[i])
-                    new_filename = f"{self.carrier_name}_{vessel_full_name}.xlsx"
-                    new_path = os.path.join(self.today_download_dir, new_filename)
-                    os.rename(old_path, new_path)
-                    self.logger.info(f"파일명 변경 완료: {new_path}")
             
             self.logger.info("=== 2단계: 선박별 데이터 크롤링 완료 ===")
             self.logger.info(f"성공: {self.success_count}개, 실패: {self.fail_count}개")
@@ -409,33 +401,57 @@ class PANOCEAN_Crawling(ParentsClass):
         }
 
     def step3_save_with_naming_rules(self):
-        """3단계: 파일명 규칙 및 저장경로 규칙 적용 (순서 기반 파일명 매핑)"""
+        """3단계: 파일명 변경 확인 및 누락 파일 체크"""
         try:
-            self.logger.info("=== 3단계: 파일명 규칙 및 저장경로 규칙 적용 시작 ===")
+            self.logger.info("=== 3단계: 파일명 변경 확인 및 누락 파일 체크 시작 ===")
             
-            # 다운로드된 Excel 파일들을 순서대로 정렬
-            files = [f for f in os.listdir(self.today_download_dir)
-                    if f.lower().endswith('.xlsx') or f.lower().endswith('.xls')]
-            files.sort()  # 파일명 순서대로 정렬
+            # 이미 파일명이 변경된 파일들 확인
+            renamed_files = [f for f in os.listdir(self.today_download_dir) 
+                           if f.startswith(f"{self.carrier_name}_") and f.lower().endswith('.xlsx')]
             
-            # vessel_name_list와 1:1로 파일명 변경 (순서 기반 매핑)
-            for i, vessel_name in enumerate(self.vessel_name_list):
-                if i < len(files):
-                    old_path = os.path.join(self.today_download_dir, files[i])
-                    new_filename = f"{self.carrier_name}_{vessel_name}.xlsx"
-                    new_path = os.path.join(self.today_download_dir, new_filename)
-                    os.rename(old_path, new_path)
-                    self.logger.info(f"파일명 변경: {files[i]} → {new_filename}")
-                else:
-                    self.logger.warning(f"선박 {vessel_name}에 해당하는 파일을 찾을 수 없음")
+            # 원본 파일들 확인 (아직 변경되지 않은 파일)
+            original_files = [f for f in os.listdir(self.today_download_dir) 
+                            if f.startswith("ScheduleByVessel_") and f.lower().endswith('.xlsx')]
             
-            self.logger.info("=== 3단계: 파일명 규칙 및 저장경로 규칙 적용 완료 ===")
+            self.logger.info(f"파일명 변경 완료: {len(renamed_files)}개")
+            self.logger.info(f"아직 변경되지 않은 파일: {len(original_files)}개")
+            
+            # 변경된 파일명들 로깅
+            for renamed_file in renamed_files:
+                self.logger.info(f"파일명 변경 완료: {renamed_file}")
+            
+            # 아직 변경되지 않은 파일이 있다면 경고
+            if original_files:
+                self.logger.warning(f"아직 파일명이 변경되지 않은 파일들: {original_files}")
+                
+                # 필요시 수동으로 파일명 변경 시도
+                for original_file in original_files:
+                    try:
+                        # 파일명에서 날짜 정보 추출하여 임시 파일명 생성
+                        old_path = os.path.join(self.today_download_dir, original_file)
+                        temp_filename = f"{self.carrier_name}_UNKNOWN_{original_file}"
+                        temp_path = os.path.join(self.today_download_dir, temp_filename)
+                        
+                        os.rename(old_path, temp_path)
+                        self.logger.info(f"임시 파일명 변경: {original_file} → {temp_filename}")
+                        
+                    except Exception as e:
+                        self.logger.error(f"임시 파일명 변경 실패 ({original_file}): {e}")
+            
+            # 파일명 변경 성공률 계산
+            total_expected = len([f for f in os.listdir(self.today_download_dir) if f.lower().endswith('.xlsx')])
+            renamed_count = len(renamed_files)
+            success_rate = (renamed_count / total_expected) * 100 if total_expected > 0 else 0
+            
+            self.logger.info(f"파일명 변경 성공률: {success_rate:.1f}% ({renamed_count}/{total_expected})")
+            
+            self.logger.info("=== 3단계: 파일명 변경 확인 및 누락 파일 체크 완료 ===")
             return True
             
         except Exception as e:
             # 에러 발생 시 로깅 설정 변경
             self.setup_logging_with_error()
-            self.logger.error(f"=== 3단계: 파일명 규칙 및 저장경로 규칙 적용 실패 ===")
+            self.logger.error(f"=== 3단계: 파일명 변경 확인 및 누락 파일 체크 실패 ===")
             self.logger.error(f"에러 메시지: {str(e)}")
             self.logger.error(f"상세 에러: {traceback.format_exc()}")
             return False
@@ -474,4 +490,69 @@ class PANOCEAN_Crawling(ParentsClass):
             self.logger.error(f"=== PANOCEAN 크롤링 전체 실패 ===")
             self.logger.error(f"에러 메시지: {str(e)}")
             self.logger.error(f"상세 에러: {traceback.format_exc()}")
+            return False
+
+    def wait_for_download_and_rename(self, vessel_full_name, timeout=30):
+        """다운로드 완료 대기 및 즉시 파일명 변경"""
+        try:
+            start_time = time.time()
+            renamed = False
+            
+            while time.time() - start_time < timeout:
+                # 다운로드 디렉토리에서 가장 최근 Excel 파일 찾기
+                excel_files = [f for f in os.listdir(self.today_download_dir) 
+                             if f.startswith("ScheduleByVessel_") and f.lower().endswith('.xlsx')]
+                
+                if excel_files:
+                    # 가장 최근 파일 선택 (수정 시간 기준)
+                    latest_file = max(excel_files, key=lambda x: os.path.getmtime(os.path.join(self.today_download_dir, x)))
+                    latest_path = os.path.join(self.today_download_dir, latest_file)
+                    
+                    # 파일명이 이미 변경되었는지 확인
+                    if os.path.basename(latest_file).startswith(f"{self.carrier_name}_{vessel_full_name}"):
+                        self.logger.info(f"선박 {vessel_full_name}: 파일명이 이미 올바르게 설정됨")
+                        return True
+                    
+                    # 파일이 아직 다운로드 중인지 확인 (.crdownload, .tmp 파일)
+                    if latest_file.endswith('.crdownload') or latest_file.endswith('.tmp'):
+                        time.sleep(1)
+                        continue
+                    
+                    # 새 파일명 생성 (특수문자 처리)
+                    safe_vessel_name = vessel_full_name.replace('/', '_').replace('\\', '_').replace(':', '_').replace('*', '_').replace('?', '_').replace('"', '_').replace('<', '_').replace('>', '_').replace('|', '_')
+                    new_filename = f"{self.carrier_name}_{safe_vessel_name}.xlsx"
+                    new_filepath = os.path.join(self.today_download_dir, new_filename)
+                    
+                    # 기존 파일이 있으면 삭제
+                    if os.path.exists(new_filepath):
+                        os.remove(new_filepath)
+                        self.logger.info(f"선박 {vessel_full_name}: 기존 파일 삭제됨")
+                    
+                    # 파일명 변경
+                    try:
+                        os.rename(latest_path, new_filepath)
+                        self.logger.info(f"선박 {vessel_full_name}: 파일명 즉시 변경 완료 - {latest_file} → {new_filename}")
+                        
+                        renamed = True
+                        break
+                    except PermissionError:
+                        # 파일이 사용 중인 경우 잠시 대기
+                        self.logger.info(f"선박 {vessel_full_name}: 파일이 사용 중입니다. 잠시 대기...")
+                        time.sleep(2)
+                        continue
+                    except Exception as e:
+                        self.logger.error(f"선박 {vessel_full_name}: 파일명 변경 중 오류 - {str(e)}")
+                        time.sleep(1)
+                        continue
+                
+                time.sleep(1)
+            
+            if not renamed:
+                self.logger.warning(f"선박 {vessel_full_name}: 파일명 변경 실패 - Excel 파일을 찾을 수 없음")
+                return False
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"선박 {vessel_full_name}: 파일명 변경 중 오류 발생 - {str(e)}")
             return False

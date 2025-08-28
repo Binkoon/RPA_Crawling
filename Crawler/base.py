@@ -315,29 +315,21 @@ class ParentsClass:
         filename = f"{carrier_name}_{vessel_name}.xlsx"
         return os.path.join(self.today_download_dir, filename)
 
-    def smart_retry(self, func, max_retries=3, base_delay=1):
-        """
-        스마트 재시도 로직
-        
-        Args:
-            func: 실행할 함수
-            max_retries: 최대 재시도 횟수
-            base_delay: 기본 대기 시간 (초)
-            
-        Returns:
-            함수 실행 결과
-        """
-        for attempt in range(max_retries + 1):
+    def smart_retry(self, func, max_retries=2, base_delay=1):  # 3 → 2로 단축
+        """스마트 재시도 로직"""
+        for attempt in range(max_retries):
             try:
                 return func()
             except Exception as e:
-                if attempt == max_retries:
+                if attempt == max_retries - 1:  # 마지막 시도
                     raise e
                 
-                # 지수 백오프로 대기 시간 증가
+                # 지수 백오프 대기
                 delay = base_delay * (2 ** attempt)
+                self.logger.warning(f"작업 실패 (시도 {attempt + 1}/{max_retries}), {delay}초 후 재시도...")
                 time.sleep(delay)
-                continue
+        
+        raise Exception(f"최대 재시도 횟수 초과: {max_retries}")
 
     def analyze_error(self, error):
         """

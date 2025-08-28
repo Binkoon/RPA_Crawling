@@ -176,7 +176,16 @@ class CKLINE_Crawling(ParentsClass):
                             break
                         time.sleep(1)
                     
-                    # 성공 카운트는 end_vessel_tracking에서 자동 처리됨
+                    # 다운로드 완료 후 즉시 파일명 변경
+                    if self.rename_downloaded_file_immediately(vessel_name):
+                        self.logger.info(f"선박 {vessel_name} 파일명 즉시 변경 완료")
+                        self.success_count += 1
+                    else:
+                        self.logger.error(f"선박 {vessel_name} 파일명 변경 실패")
+                        self.fail_count += 1
+                        if vessel_name not in self.failed_vessels:
+                            self.failed_vessels.append(vessel_name)
+                            self.failed_reasons[vessel_name] = "파일명 변경 실패"
                     
                     # 선박별 타이머 종료
                     self.end_vessel_tracking(vessel_name, success=True)
@@ -209,6 +218,50 @@ class CKLINE_Crawling(ParentsClass):
             self.logger.error(f"상세 에러: {traceback.format_exc()}")
             return False
 
+    def rename_downloaded_file_immediately(self, vessel_name, timeout=30):
+        """다운로드된 파일을 즉시 선박명으로 변경"""
+        try:
+            start_time = time.time()
+            renamed = False
+            
+            while time.time() - start_time < timeout:
+                # 다운로드 디렉토리에서 가장 최근 Excel 파일 찾기
+                excel_files = [f for f in os.listdir(self.today_download_dir) 
+                             if f.startswith("Vessel") and f.lower().endswith('.xlsx')]
+                
+                if excel_files:
+                    # 가장 최근 파일 선택 (수정 시간 기준)
+                    latest_file = max(excel_files, key=lambda x: os.path.getmtime(os.path.join(self.today_download_dir, x)))
+                    latest_path = os.path.join(self.today_download_dir, latest_file)
+                    
+                    # 새 파일명 생성
+                    new_filename = f"{self.carrier_name}_{vessel_name}.xlsx"
+                    new_filepath = os.path.join(self.today_download_dir, new_filename)
+                    
+                    # 기존 파일이 있으면 삭제
+                    if os.path.exists(new_filepath):
+                        os.remove(new_filepath)
+                        self.logger.info(f"선박 {vessel_name}: 기존 파일 삭제됨")
+                    
+                    # 파일명 변경
+                    os.rename(latest_path, new_filepath)
+                    self.logger.info(f"선박 {vessel_name}: 파일명 즉시 변경 완료 - {latest_file} → {new_filename}")
+                    
+                    renamed = True
+                    break
+                
+                time.sleep(1)
+            
+            if not renamed:
+                self.logger.warning(f"선박 {vessel_name}: 파일명 변경 실패 - Excel 파일을 찾을 수 없음")
+                return False
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"선박 {vessel_name}: 파일명 변경 중 오류 발생 - {str(e)}")
+            return False
+
     def step3_process_downloaded_files(self):
         """3단계: 다운로드된 파일 처리 및 엑셀 생성"""
         try:
@@ -219,21 +272,7 @@ class CKLINE_Crawling(ParentsClass):
 
             # === [다운로드 완료 후 후처리] ===
 
-            # 1. 다운로드된 Vessel*.xlsx 파일 리스트 정렬
-            files = [f for f in os.listdir(self.today_download_dir)
-                     if f.startswith("Vessel") and f.lower().endswith('.xlsx')]
-            files.sort()  # Vessel.xlsx, Vessel (1).xlsx, Vessel (2).xlsx ... 순서대로
-
-            # 2. vessel_name_list와 1:1로 파일명 변경
-            for i, vessel_name in enumerate(self.vessel_name_list):
-                if i < len(files):
-                    old_path = os.path.join(self.today_download_dir, files[i])
-                    new_filename = f"{self.carrier_name}_{vessel_name}.xlsx"
-                    new_path = os.path.join(self.today_download_dir, new_filename)
-                    os.rename(old_path, new_path)
-                    self.logger.info(f"파일명 변경: {files[i]} → {new_filename}")
-
-            # 3. 파일명 변경 후 전처리
+            # 1. 이미 파일명이 변경된 파일들에 대해 전처리 수행
             for vessel_name in self.vessel_name_list:
                 fpath = os.path.join(self.today_download_dir, f"{self.carrier_name}_{vessel_name}.xlsx")
                 if os.path.exists(fpath):
@@ -267,6 +306,8 @@ class CKLINE_Crawling(ParentsClass):
                         self.logger.info(f"전처리 및 컬럼명 변경 완료: {os.path.basename(fpath)}")
                     except Exception as e:
                         self.logger.error(f"전처리 중 오류({vessel_name}): {e}")
+                else:
+                    self.logger.warning(f"선박 {vessel_name}의 파일을 찾을 수 없음: {fpath}")
             
             self.logger.info("=== 3단계: 다운로드된 파일 처리 및 엑셀 생성 완료 ===")
             return True
