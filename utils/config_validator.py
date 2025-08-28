@@ -56,7 +56,7 @@ class ConfigValidator:
             
             # 설정 업데이트 테스트
             test_updates = {
-                'execution.max_workers': 5,
+    
                 'logging.level': 'DEBUG'
             }
             
@@ -98,7 +98,7 @@ class ConfigValidator:
             'DB_PASSWORD': os.getenv('DB_PASSWORD', '설정되지 않음'),
             'LOG_LEVEL': os.getenv('LOG_LEVEL', '설정되지 않음'),
             'EXECUTION_MODE': os.getenv('EXECUTION_MODE', '설정되지 않음'),
-            'MAX_WORKERS': os.getenv('MAX_WORKERS', '설정되지 않음'),
+    
             'GOOGLE_DRIVE_SHARED_FOLDER_ID': os.getenv('GOOGLE_DRIVE_SHARED_FOLDER_ID', '설정되지 않음')
         }
         
@@ -114,17 +114,14 @@ class ConfigValidator:
             if env == Environment.DEVELOPMENT:
                 config.logging.level = "DEBUG"
                 config.execution.mode = "sequential"
-                config.execution.max_workers = 1
                 config.google_drive.upload_enabled = False
             elif env == Environment.TESTING:
                 config.logging.level = "INFO"
-                config.execution.mode = "parallel"
-                config.execution.max_workers = 2
+                config.execution.mode = "sequential"
                 config.google_drive.upload_enabled = False
             elif env == Environment.PRODUCTION:
                 config.logging.level = "WARNING"
-                config.execution.mode = "parallel"
-                config.execution.max_workers = 4
+                config.execution.mode = "sequential"
                 config.google_drive.upload_enabled = True
             
             # 템플릿 생성

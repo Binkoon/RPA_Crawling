@@ -78,8 +78,8 @@ class CleanupConfig:
 @dataclass
 class ExecutionConfig:
     """실행 설정"""
-    mode: str = "parallel"  # sequential, parallel
-    max_workers: int = 2
+            mode: str = "sequential"  # sequential only
+    
     timeout: int = 300  # 초
     retry_on_failure: bool = True
     max_retries: int = 1
@@ -88,11 +88,10 @@ class ExecutionConfig:
     def validate(self) -> List[str]:
         """설정 검증"""
         errors = []
-        valid_modes = ["sequential", "parallel"]
+        valid_modes = ["sequential"]
         if self.mode not in valid_modes:
             errors.append(f"잘못된 실행 모드: {self.mode}. 유효한 값: {valid_modes}")
-        if self.max_workers <= 0:
-            errors.append("최대 워커 수는 0보다 커야 합니다")
+
         if self.timeout <= 0:
             errors.append("타임아웃은 0보다 커야 합니다")
         if self.max_retries < 0:
@@ -243,8 +242,7 @@ class ConfigManager:
         # 실행 설정
         if os.getenv('EXECUTION_MODE'):
             config.execution.mode = os.getenv('EXECUTION_MODE')
-        if os.getenv('MAX_WORKERS'):
-            config.execution.max_workers = int(os.getenv('MAX_WORKERS'))
+
         
         # 구글 드라이브 설정
         if os.getenv('GOOGLE_DRIVE_SHARED_FOLDER_ID'):
@@ -342,8 +340,8 @@ def load_execution_config():
         print(f"실행 모드 설정 파일 로드 실패: {str(e)}")
         return {
             "execution": {
-                "mode": "parallel",
-                "max_workers": 2
+                "mode": "sequential",
+    
             },
             "logging": {
                 "level": "INFO",

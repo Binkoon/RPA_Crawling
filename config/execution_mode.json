@@ -1,8 +1,8 @@
 {
   "execution": {
-    "mode": "parallel",
-    "max_workers": 2,
-    "description": "parallel: 병렬 실행, sequential: 순차 실행"
+    "mode": "sequential",
+    "max_workers": 1,
+    "description": "sequential: 순차 실행만 지원"
   },
   "logging": {
     "level": "INFO",

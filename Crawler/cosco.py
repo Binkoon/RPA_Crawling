@@ -21,6 +21,7 @@ import pandas as pd
 from datetime import datetime
 import logging
 import traceback
+import glob
 
 class Cosco_Crawling(ParentsClass):
     def __init__(self):
@@ -39,6 +40,9 @@ class Cosco_Crawling(ParentsClass):
         self.fail_count = 0
         self.failed_vessels = []
         self.failed_reasons = {}
+        
+        # 파일명 변경 추적
+        self.renamed_files = {}
 
     def setup_logging(self):
         """로깅 설정"""
@@ -49,6 +53,55 @@ class Cosco_Crawling(ParentsClass):
         """에러 발생 시 로깅 설정"""
         # 에러가 발생했으므로 파일 로그 생성
         self.logger = super().setup_logging(self.carrier_name, has_error=True)
+
+    def rename_downloaded_file(self, vessel_name, timeout=30):
+        """다운로드된 파일을 선박명으로 변경"""
+        try:
+            start_time = time.time()
+            renamed = False
+            
+            while time.time() - start_time < timeout:
+                # 다운로드 디렉토리에서 가장 최근 PDF 파일 찾기
+                pdf_files = glob.glob(os.path.join(self.today_download_dir, "*.pdf"))
+                
+                if pdf_files:
+                    # 가장 최근 파일 선택 (수정 시간 기준)
+                    latest_pdf = max(pdf_files, key=os.path.getmtime)
+                    
+                    # 파일명이 이미 변경되었는지 확인
+                    if os.path.basename(latest_pdf).startswith(f"{self.carrier_name}_{vessel_name}"):
+                        self.logger.info(f"선박 {vessel_name}: 파일명이 이미 올바르게 설정됨")
+                        self.renamed_files[vessel_name] = latest_pdf
+                        return True
+                    
+                    # 새 파일명 생성
+                    new_filename = f"{self.carrier_name}_{vessel_name}.pdf"
+                    new_filepath = os.path.join(self.today_download_dir, new_filename)
+                    
+                    # 기존 파일이 있으면 삭제
+                    if os.path.exists(new_filepath):
+                        os.remove(new_filepath)
+                        self.logger.info(f"선박 {vessel_name}: 기존 파일 삭제됨")
+                    
+                    # 파일명 변경
+                    os.rename(latest_pdf, new_filepath)
+                    self.logger.info(f"선박 {vessel_name}: 파일명 변경 완료 - {os.path.basename(latest_pdf)} → {new_filename}")
+                    
+                    self.renamed_files[vessel_name] = new_filepath
+                    renamed = True
+                    break
+                
+                time.sleep(1)
+            
+            if not renamed:
+                self.logger.warning(f"선박 {vessel_name}: 파일명 변경 실패 - PDF 파일을 찾을 수 없음")
+                return False
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"선박 {vessel_name}: 파일명 변경 중 오류 발생 - {str(e)}")
+            return False
 
     def step1_visit_website(self):
         """1단계: 선사 홈페이지 접속"""
@@ -131,8 +184,17 @@ class Cosco_Crawling(ParentsClass):
                     # 다운로드 완료 대기
                     if self.wait_for_download():
                         self.logger.info(f"선박 {vessel_name} PDF 다운로드 완료")
+                        
+                        # 파일명 즉시 변경
+                        if self.rename_downloaded_file(vessel_name):
+                            self.logger.info(f"선박 {vessel_name} 파일명 변경 성공")
+                            self.record_vessel_success(vessel_name)
+                        else:
+                            self.logger.error(f"선박 {vessel_name} 파일명 변경 실패")
+                            self.record_vessel_failure(vessel_name, "파일명 변경 실패")
                     else:
                         self.logger.warning(f"선박 {vessel_name} 다운로드 대기 시간 초과")
+                        self.record_vessel_failure(vessel_name, "다운로드 대기 시간 초과")
 
                     self.Visit_Link("https://elines.coscoshipping.com/ebusiness/sailingSchedule/searchByVesselName")
                     driver = self.driver
@@ -142,8 +204,6 @@ class Cosco_Crawling(ParentsClass):
                     vessel_input = wait.until(EC.presence_of_element_located((By.XPATH, input_xpath)))
 
                     time.sleep(1)
-                    
-                    self.record_vessel_success(vessel_name)
                     
                     # 선박별 타이머 종료
                     self.end_vessel_tracking(vessel_name, success=True)
@@ -159,9 +219,7 @@ class Cosco_Crawling(ParentsClass):
                     self.logger.error(f"선박 {vessel_name} 크롤링 실패 (소요시간: {vessel_duration:.2f}초)")
                     
                     # 실패한 선박 기록
-                    if vessel_name not in self.failed_vessels:
-                        self.failed_vessels.append(vessel_name)
-                        self.failed_reasons[vessel_name] = str(e)
+                    self.record_vessel_failure(vessel_name, str(e))
                     
                     continue
             
@@ -177,6 +235,22 @@ class Cosco_Crawling(ParentsClass):
             self.logger.error(f"상세 에러: {traceback.format_exc()}")
             return False
 
+    def record_vessel_success(self, vessel_name):
+        """선박 성공 기록"""
+        self.success_count += 1
+        # 실패 목록에서 제거
+        if vessel_name in self.failed_vessels:
+            self.failed_vessels.remove(vessel_name)
+        if vessel_name in self.failed_reasons:
+            del self.failed_reasons[vessel_name]
+
+    def record_vessel_failure(self, vessel_name, reason):
+        """선박 실패 기록"""
+        self.fail_count += 1
+        if vessel_name not in self.failed_vessels:
+            self.failed_vessels.append(vessel_name)
+        self.failed_reasons[vessel_name] = reason
+
     def wait_for_download(self, timeout=30):
         """다운로드 완료 대기"""
         start_time = time.time()
@@ -188,35 +262,37 @@ class Cosco_Crawling(ParentsClass):
             time.sleep(1)
         return False
 
-
-
     def step3_process_downloaded_files(self):
-        """3단계: 파일 다운로드 후 지정한 경로로 저장 및 파일명 변경 (파일명 변경은 이미 완료됨)"""
+        """3단계: 파일 다운로드 후 지정한 경로로 저장 및 파일명 변경 확인"""
         try:
-            self.logger.info("=== 3단계: 파일 처리 및 파일명 변경 시작 ===")
+            self.logger.info("=== 3단계: 파일 처리 및 파일명 변경 확인 시작 ===")
             
-            # 파일명 변경은 이미 step2에서 완료되었으므로, 확인만 진행
+            # 파일명 변경이 성공적으로 완료되었는지 확인
             pdf_files = [f for f in os.listdir(self.today_download_dir) if f.lower().endswith('.pdf')]
             expected_files = [f"{self.carrier_name}_{vessel_name}.pdf" for vessel_name in self.vessel_name_list]
             
+            success_count = 0
             for expected_file in expected_files:
                 if expected_file in pdf_files:
                     self.logger.info(f"파일 확인 완료: {expected_file}")
+                    success_count += 1
                 else:
                     self.logger.warning(f"예상 파일을 찾을 수 없음: {expected_file}")
             
-            self.logger.info("=== 3단계: 파일 처리 및 파일명 변경 완료 ===")
+            # 파일명 변경 성공률 계산
+            success_rate = (success_count / len(expected_files)) * 100
+            self.logger.info(f"파일명 변경 성공률: {success_rate:.1f}% ({success_count}/{len(expected_files)})")
+            
+            self.logger.info("=== 3단계: 파일 처리 및 파일명 변경 확인 완료 ===")
             return True
             
         except Exception as e:
             # 에러 발생 시 로깅 설정 변경
             self.setup_logging_with_error()
-            self.logger.error(f"=== 3단계: 파일 처리 및 파일명 변경 실패 ===")
+            self.logger.error(f"=== 3단계: 파일 처리 및 파일명 변경 확인 실패 ===")
             self.logger.error(f"에러 메시지: {str(e)}")
             self.logger.error(f"상세 에러: {traceback.format_exc()}")
             return False
-
-
 
     def run(self):
         """메인 실행 함수"""
@@ -231,7 +307,7 @@ class Cosco_Crawling(ParentsClass):
             if not self.step2_crawl_vessel_data():
                 return False
             
-            # 3단계: 파일 다운로드 후 지정한 경로로 저장 및 파일명 변경
+            # 3단계: 파일 다운로드 후 지정한 경로로 저장 및 파일명 변경 확인
             if not self.step3_process_downloaded_files():
                 return False
             

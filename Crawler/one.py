@@ -1,7 +1,7 @@
 # Developer : 디지털전략팀/강현빈 사원
 # Date : 2025/07/01 (완성)
 # 선사 링크 : https://ecomm.one-line.com/one-ecom/public/vesselSchedule/search
-# 선박 리스트 : ["ONE HAMBURG", "ONE HAMBURG", "ONE HAMBURG", "ONE HAMBURG", "ONE HAMBURG", "ONE HAMBURG", "ONE HAMBURG", "ONE HAMBURG", "ONE HAMBURG", "ONE HAMBURG", "ONE HAMBURG", "ONE HAMBURG"]
+# 선박 리스트 : ["MARIA C", "ONE REASSURANCE", "ST SUCCESS", "ONE MAJESTY"]
 # 추가 정보 : ONE은 PDF 파일을 다운로드 받음. 순차처리 + 순서 기반 파일명 매핑 사용.
 
 from selenium import webdriver
@@ -28,7 +28,7 @@ class ONE_Crawling(ParentsClass):
         self.setup_logging()
         
         # 선박 리스트
-        self.vessel_name_list = ["ONE HAMBURG", "ONE HAMBURG", "ONE HAMBURG", "ONE HAMBURG", "ONE HAMBURG", "ONE HAMBURG", "ONE HAMBURG", "ONE HAMBURG", "ONE HAMBURG", "ONE HAMBURG", "ONE HAMBURG", "ONE HAMBURG"]
+        self.vessel_name_list = ["MARIA C", "ONE REASSURANCE", "ST SUCCESS", "ONE MAJESTY"]
         
         # 크롤링 결과 추적
         self.success_count = 0

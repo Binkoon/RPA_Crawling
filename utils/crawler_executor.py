@@ -284,37 +284,4 @@ def run_carrier_sequential(carrier_name):
             'traceback': traceback.format_exc()
         }
 
-def run_carrier_parallel(carrier_name, crawling_manager):
-    """병렬 실행을 위한 선사 크롤링 함수"""
-    logger = logging.getLogger(__name__)
-    try:
-        logger.info(f"=== {carrier_name} 병렬 크롤링 시작 ===")
-        start_time = datetime.now()
-        
-        # 크롤러 팩토리를 사용하여 인스턴스 생성
-        instance = CrawlerFactory.create_crawler(carrier_name)
-        
-        # 크롤러 실행
-        result = run_crawler_with_error_handling(carrier_name, instance)
-        
-        end_time = datetime.now()
-        duration = (end_time - start_time).total_seconds()
-        
-        logger.info(f"=== {carrier_name} 병렬 크롤링 완료 (소요시간: {duration:.2f}초) ===")
-        
-        return carrier_name, result
-        
-    except Exception as e:
-        end_time = datetime.now()
-        logger.error(f"=== {carrier_name} 병렬 크롤링 실패 ===")
-        logger.error(f"에러 메시지: {str(e)}")
-        logger.error(f"상세 에러: {traceback.format_exc()}")
-        
-        return carrier_name, {
-            'success': False,
-            'duration': 0,
-            'start_time': None,
-            'end_time': end_time,
-            'error': str(e),
-            'traceback': traceback.format_exc()
-        }
+
