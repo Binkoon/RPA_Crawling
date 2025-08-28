@@ -263,6 +263,8 @@ class PANOCEAN_Crawling(ParentsClass):
                     continue
             
             self.logger.info("=== 2단계: 선박별 데이터 크롤링 완료 ===")
+            self.logger.info(f"기본 선박: {len(self.vessel_name_list)}개")
+            self.logger.info(f"실제 처리된 항차: {self.success_count + self.fail_count}개")
             self.logger.info(f"성공: {self.success_count}개, 실패: {self.fail_count}개")
             return True
             
@@ -380,7 +382,7 @@ class PANOCEAN_Crawling(ParentsClass):
                 self.logger.error(f"선박 {vessel_name} 재시도 실패 (소요시간: {vessel_duration:.2f}초)")
                 continue
         
-        # 재시도 결과 요약
+        # 재시도 결과 요약 (PANOCEAN 특화)
         self.logger.info("="*60)
         self.logger.info("PANOCEAN 재시도 결과 요약")
         self.logger.info("="*60)
@@ -388,6 +390,7 @@ class PANOCEAN_Crawling(ParentsClass):
         self.logger.info(f"재시도 실패: {retry_fail_count}개")
         self.logger.info(f"재시도 후 최종 성공: {self.success_count}개")
         self.logger.info(f"재시도 후 최종 실패: {self.fail_count}개")
+        self.logger.info(f"재시도 후 총 처리된 항차: {self.success_count + self.fail_count}개")
         self.logger.info("="*60)
         
         return {
@@ -473,11 +476,17 @@ class PANOCEAN_Crawling(ParentsClass):
             if not self.step3_save_with_naming_rules():
                 return False
             
-            # 최종 결과 로깅
+            # 최종 결과 로깅 (PANOCEAN 특화)
             self.logger.info("=== PANOCEAN 크롤링 완료 ===")
-            self.logger.info(f"총 {len(self.vessel_name_list)}개 선박 중")
+            self.logger.info(f"기본 선박 리스트: {len(self.vessel_name_list)}개")
+            self.logger.info(f"실제 처리된 항차: {self.success_count + self.fail_count}개")
             self.logger.info(f"성공: {self.success_count}개")
             self.logger.info(f"실패: {self.fail_count}개")
+            
+            # PANOCEAN 특별 구조 설명
+            self.logger.info("※ PANOCEAN은 각 선박마다 여러 항차번호(1012, 1013, 1014...)를 처리합니다")
+            self.logger.info(f"※ 예: HONOR BRIGHT → 1012, 1013, 1014... (총 {self.success_count + self.fail_count}개 항차)")
+            
             if self.failed_vessels:
                 self.logger.info(f"실패한 선박: {', '.join(self.failed_vessels)}")
             

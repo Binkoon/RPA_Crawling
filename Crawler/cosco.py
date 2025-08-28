@@ -216,11 +216,11 @@ class Cosco_Crawling(ParentsClass):
                     # 파일명 즉시 변경 (cosco.py 방식 유지)
                     if self.rename_downloaded_file(vessel_name):
                         self.logger.info(f"선박 {vessel_name} 파일명 변경 성공")
-                        self.record_vessel_success(vessel_name)
+                        # 성공 카운트는 end_vessel_tracking에서 자동 처리됨
                     else:
                         self.logger.warning(f"선박 {vessel_name} 파일명 변경 실패")
                     
-                    # 선박별 타이머 종료
+                    # 선박별 타이머 종료 (성공/실패 카운트 자동 처리)
                     self.end_vessel_tracking(vessel_name, success=True)
                     vessel_duration = self.get_vessel_duration(vessel_name)
                     self.logger.info(f"선박 {vessel_name} 크롤링 완료 (소요시간: {vessel_duration:.2f}초)")
@@ -251,8 +251,8 @@ class Cosco_Crawling(ParentsClass):
             return False
 
     def record_vessel_success(self, vessel_name):
-        """선박 성공 기록"""
-        self.success_count += 1
+        """선박 성공 기록 (성공 카운트는 end_vessel_tracking에서 자동 처리됨)"""
+        # 성공 카운트는 end_vessel_tracking에서 자동 처리됨
         # 실패 목록에서 제거
         if vessel_name in self.failed_vessels:
             self.failed_vessels.remove(vessel_name)
@@ -377,14 +377,14 @@ class Cosco_Crawling(ParentsClass):
                 vessel_input.send_keys(vessel_name)
                 time.sleep(1)
                 
-                # 성공 처리 (테스트 코드 방식으로 단순화)
-                self.success_count += 1
+                # 성공 처리 (성공 카운트는 end_vessel_tracking에서 자동 처리됨)
                 retry_success_count += 1
                 
                 # 실패 목록에서 제거
                 if vessel_name in self.failed_vessels:
                     self.failed_vessels.remove(vessel_name)
                 
+                # 선박별 타이머 종료 (성공/실패 카운트 자동 처리)
                 vessel_duration = self.end_vessel_tracking(vessel_name, success=True)
                 self.logger.info(f"선박 {vessel_name} 재시도 성공 (소요시간: {vessel_duration:.2f}초)")
                 
