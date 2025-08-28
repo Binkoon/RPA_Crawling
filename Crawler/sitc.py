@@ -207,7 +207,7 @@ class SITC_Crawling(ParentsClass):
             return False
 
 
-    
+
     def run(self):
         """메인 실행 함수"""
         try:

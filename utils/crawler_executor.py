@@ -224,7 +224,67 @@ def try_run_carrier(crawler_name, constructor, results_list):
     result = run_crawler_with_error_handling(crawler_name, instance)
     results_list.append((crawler_name, result))
 
-def run_carrier_parallel(carrier_name, results_list):
+def run_carrier_sequential(carrier_name):
+    """순차처리 방식으로 단일 선사 크롤링 실행"""
+    logger = logging.getLogger(__name__)
+    start_time = datetime.now()
+    
+    try:
+        logger.info(f"=== {carrier_name} 순차처리 크롤링 시작 ===")
+        
+        # 크롤러 인스턴스 생성
+        crawler_instance = CrawlerFactory.create_crawler(carrier_name)
+        if not crawler_instance:
+            error_msg = f"크롤러 인스턴스 생성 실패: {carrier_name}"
+            logger.error(error_msg)
+            return {
+                'success': False,
+                'duration': 0,
+                'start_time': start_time,
+                'end_time': datetime.now(),
+                'error': error_msg,
+                'traceback': traceback.format_exc()
+            }
+        
+        # 크롤러 실행 및 에러 처리
+        result = run_crawler_with_error_handling(carrier_name, crawler_instance)
+        
+        # 크롤러 정리
+        if hasattr(crawler_instance, 'Close'):
+            try:
+                crawler_instance.Close()
+            except Exception as e:
+                logger.warning(f"{carrier_name} 크롤러 정리 중 오류: {e}")
+        
+        end_time = datetime.now()
+        duration = (end_time - start_time).total_seconds()
+        
+        # 결과에 시간 정보 추가
+        if isinstance(result, dict):
+            result['start_time'] = start_time
+            result['end_time'] = end_time
+            result['duration'] = duration
+        
+        logger.info(f"=== {carrier_name} 순차처리 크롤링 완료 (소요시간: {duration:.2f}초) ===")
+        return result
+        
+    except Exception as e:
+        end_time = datetime.now()
+        duration = (end_time - start_time).total_seconds()
+        error_msg = f"{carrier_name} 순차처리 크롤링 중 오류: {str(e)}"
+        logger.error(error_msg)
+        logger.error(f"상세 에러: {traceback.format_exc()}")
+        
+        return {
+            'success': False,
+            'duration': duration,
+            'start_time': start_time,
+            'end_time': end_time,
+            'error': error_msg,
+            'traceback': traceback.format_exc()
+        }
+
+def run_carrier_parallel(carrier_name, crawling_manager):
     """병렬 실행을 위한 선사 크롤링 함수"""
     logger = logging.getLogger(__name__)
     try:

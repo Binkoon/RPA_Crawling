@@ -246,6 +246,8 @@ class HMM_Crawling(ParentsClass):
             self.logger.error(f"상세 에러: {traceback.format_exc()}")
             return False
 
+
+
     def run(self):
         """메인 실행 함수"""
         try:

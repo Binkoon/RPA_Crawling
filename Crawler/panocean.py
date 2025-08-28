@@ -23,6 +23,7 @@ import traceback
 from .base import ParentsClass
 
 import os
+import pandas as pd
 
 # 다운로드 버튼이 제공되서 파일명이 정해져서 나오는 선사는 이거 쓰셈
 def get_latest_file(folder, ext=".xlsx"):
@@ -210,7 +211,12 @@ class PANOCEAN_Crawling(ParentsClass):
                             # 5. 다운로드 버튼 클릭
                             download_btn = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="mf_tac_layout_contents_11002_body_btn_excel"]')))
                             download_btn.click()
-                            self.logger.info(f"{vessel_full_name} 다운로드 완료")
+                            self.logger.info(f"{vessel_full_name} 다운로드 시작")
+                            
+                            # 다운로드 완료 대기
+                            time.sleep(2)  # 다운로드 대기
+                            self.logger.info(f"선박 {vessel_full_name} Excel 다운로드 완료")
+                            
                             time.sleep(1.5)  # 다운로드 대기
                             
                             # 성공 카운트는 end_vessel_tracking에서 자동 처리됨
@@ -272,38 +278,6 @@ class PANOCEAN_Crawling(ParentsClass):
             # 에러 발생 시 로깅 설정 변경
             self.setup_logging_with_error()
             self.logger.error(f"=== 2단계: 선박별 데이터 크롤링 실패 ===")
-            self.logger.error(f"에러 메시지: {str(e)}")
-            self.logger.error(f"상세 에러: {traceback.format_exc()}")
-            return False
-
-    def run(self):
-        """메인 실행 함수"""
-        try:
-            self.logger.info("=== PANOCEAN 크롤링 시작 ===")
-            
-            # 1단계: 선사 홈페이지 접속 + 스케줄 탭 클릭 + 선박 탭 클릭
-            if not self.step1_visit_website_and_click_tabs():
-                return False
-            
-            # 2단계: 지정된 선박별로 루핑 작업 시작
-            if not self.step2_crawl_vessel_data():
-                return False
-            
-            # 최종 결과 로깅
-            self.logger.info("=== PANOCEAN 크롤링 완료 ===")
-            self.logger.info(f"총 {len(self.vessel_name_list)}개 선박 중")
-            self.logger.info(f"성공: {self.success_count}개")
-            self.logger.info(f"실패: {self.fail_count}개")
-            if self.failed_vessels:
-                self.logger.info(f"실패한 선박: {', '.join(self.failed_vessels)}")
-            
-            self.Close()
-            return True
-            
-        except Exception as e:
-            # 에러 발생 시 로깅 설정 변경
-            self.setup_logging_with_error()
-            self.logger.error(f"=== PANOCEAN 크롤링 전체 실패 ===")
             self.logger.error(f"에러 메시지: {str(e)}")
             self.logger.error(f"상세 에러: {traceback.format_exc()}")
             return False
@@ -433,3 +407,71 @@ class PANOCEAN_Crawling(ParentsClass):
             'final_failed_vessels': self.failed_vessels.copy(),
             'note': f'PANOCEAN 재시도 완료 - 성공: {retry_success_count}개, 실패: {retry_fail_count}개'
         }
+
+    def step3_save_with_naming_rules(self):
+        """3단계: 파일명 규칙 및 저장경로 규칙 적용 (순서 기반 파일명 매핑)"""
+        try:
+            self.logger.info("=== 3단계: 파일명 규칙 및 저장경로 규칙 적용 시작 ===")
+            
+            # 다운로드된 Excel 파일들을 순서대로 정렬
+            files = [f for f in os.listdir(self.today_download_dir)
+                    if f.lower().endswith('.xlsx') or f.lower().endswith('.xls')]
+            files.sort()  # 파일명 순서대로 정렬
+            
+            # vessel_name_list와 1:1로 파일명 변경 (순서 기반 매핑)
+            for i, vessel_name in enumerate(self.vessel_name_list):
+                if i < len(files):
+                    old_path = os.path.join(self.today_download_dir, files[i])
+                    new_filename = f"{self.carrier_name}_{vessel_name}.xlsx"
+                    new_path = os.path.join(self.today_download_dir, new_filename)
+                    os.rename(old_path, new_path)
+                    self.logger.info(f"파일명 변경: {files[i]} → {new_filename}")
+                else:
+                    self.logger.warning(f"선박 {vessel_name}에 해당하는 파일을 찾을 수 없음")
+            
+            self.logger.info("=== 3단계: 파일명 규칙 및 저장경로 규칙 적용 완료 ===")
+            return True
+            
+        except Exception as e:
+            # 에러 발생 시 로깅 설정 변경
+            self.setup_logging_with_error()
+            self.logger.error(f"=== 3단계: 파일명 규칙 및 저장경로 규칙 적용 실패 ===")
+            self.logger.error(f"에러 메시지: {str(e)}")
+            self.logger.error(f"상세 에러: {traceback.format_exc()}")
+            return False
+
+    def run(self):
+        """메인 실행 함수"""
+        try:
+            self.logger.info("=== PANOCEAN 크롤링 시작 ===")
+            
+            # 1단계: 선사 홈페이지 접속 + 스케줄 탭 클릭 + 선박 탭 클릭
+            if not self.step1_visit_website_and_click_tabs():
+                return False
+            
+            # 2단계: 지정된 선박별로 루핑 작업 시작
+            if not self.step2_crawl_vessel_data():
+                return False
+            
+            # 3단계: 파일명 규칙 및 저장경로 규칙 적용
+            if not self.step3_save_with_naming_rules():
+                return False
+            
+            # 최종 결과 로깅
+            self.logger.info("=== PANOCEAN 크롤링 완료 ===")
+            self.logger.info(f"총 {len(self.vessel_name_list)}개 선박 중")
+            self.logger.info(f"성공: {self.success_count}개")
+            self.logger.info(f"실패: {self.fail_count}개")
+            if self.failed_vessels:
+                self.logger.info(f"실패한 선박: {', '.join(self.failed_vessels)}")
+            
+            self.Close()
+            return True
+            
+        except Exception as e:
+            # 에러 발생 시 로깅 설정 변경
+            self.setup_logging_with_error()
+            self.logger.error(f"=== PANOCEAN 크롤링 전체 실패 ===")
+            self.logger.error(f"에러 메시지: {str(e)}")
+            self.logger.error(f"상세 에러: {traceback.format_exc()}")
+            return False

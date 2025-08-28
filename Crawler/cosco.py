@@ -128,8 +128,11 @@ class Cosco_Crawling(ParentsClass):
                     pdf_button.click()
                     self.logger.info("PDF 다운로드 버튼 클릭")
 
-                    # 파일 다운로드 대기 (충분히 여유를 줘야 함, 예: 5초)
-                    time.sleep(5)
+                    # 다운로드 완료 대기
+                    if self.wait_for_download():
+                        self.logger.info(f"선박 {vessel_name} PDF 다운로드 완료")
+                    else:
+                        self.logger.warning(f"선박 {vessel_name} 다운로드 대기 시간 초과")
 
                     self.Visit_Link("https://elines.coscoshipping.com/ebusiness/sailingSchedule/searchByVesselName")
                     driver = self.driver
@@ -174,22 +177,33 @@ class Cosco_Crawling(ParentsClass):
             self.logger.error(f"상세 에러: {traceback.format_exc()}")
             return False
 
+    def wait_for_download(self, timeout=30):
+        """다운로드 완료 대기"""
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            files = os.listdir(self.today_download_dir)
+            downloading = [f for f in files if f.endswith('.crdownload') or f.endswith('.tmp')]
+            if not downloading:
+                return True
+            time.sleep(1)
+        return False
+
+
+
     def step3_process_downloaded_files(self):
-        """3단계: 파일 다운로드 후 지정한 경로로 저장 및 파일명 변경"""
+        """3단계: 파일 다운로드 후 지정한 경로로 저장 및 파일명 변경 (파일명 변경은 이미 완료됨)"""
         try:
             self.logger.info("=== 3단계: 파일 처리 및 파일명 변경 시작 ===")
             
-            # 파일명 일괄 변경
+            # 파일명 변경은 이미 step2에서 완료되었으므로, 확인만 진행
             pdf_files = [f for f in os.listdir(self.today_download_dir) if f.lower().endswith('.pdf')]
-            pdf_files.sort()
+            expected_files = [f"{self.carrier_name}_{vessel_name}.pdf" for vessel_name in self.vessel_name_list]
             
-            for i, vessel_name in enumerate(self.vessel_name_list):
-                if i < len(pdf_files):
-                    old_path = os.path.join(self.today_download_dir, pdf_files[i])
-                    new_filename = f"COSCO_{vessel_name}.pdf"
-                    new_path = os.path.join(self.today_download_dir, new_filename)
-                    os.rename(old_path, new_path)
-                    self.logger.info(f"파일명 변경: {pdf_files[i]} → {new_filename}")
+            for expected_file in expected_files:
+                if expected_file in pdf_files:
+                    self.logger.info(f"파일 확인 완료: {expected_file}")
+                else:
+                    self.logger.warning(f"예상 파일을 찾을 수 없음: {expected_file}")
             
             self.logger.info("=== 3단계: 파일 처리 및 파일명 변경 완료 ===")
             return True

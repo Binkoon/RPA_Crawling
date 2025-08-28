@@ -164,6 +164,10 @@ class FDT_Crawling(ParentsClass):
                         save_path = self.get_save_path(self.carrier_name, vessel_name)
                         df.to_excel(save_path, index=False)
                         self.logger.info(f"[{vessel_name}] 엑셀 저장 완료: {save_path}")
+                        
+                        # 파일명은 이미 올바르게 저장됨
+                        self.logger.info(f"선박 {vessel_name} 파일 저장 완료")
+                        
                         # 성공 카운트는 end_vessel_tracking에서 자동 처리됨
                         
                         # 선박별 타이머 종료
@@ -260,6 +264,8 @@ class FDT_Crawling(ParentsClass):
             self.logger.error(f"에러 메시지: {str(e)}")
             self.logger.error(f"상세 에러: {traceback.format_exc()}")
             return False
+
+
 
     def retry_failed_vessels(self, failed_vessels):
         """

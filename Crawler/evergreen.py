@@ -257,20 +257,22 @@ class EVERGREEN_Crawling(ParentsClass):
             self.logger.error(f"상세 에러: {traceback.format_exc()}")
             return False
 
+
+
     def step3_save_with_naming_rules(self):
-        """3단계: 파일명 규칙 및 저장경로 규칙 적용"""
+        """3단계: 파일명 규칙 및 저장경로 규칙 적용 (파일명 변경은 이미 완료됨)"""
         try:
             self.logger.info("=== 3단계: 파일명 규칙 및 저장경로 규칙 적용 시작 ===")
             
-            # TODO: 파일명 규칙과 저장 경로 규칙 적용 로직 구현 필요
-            # 현재는 기존 change_filename 로직을 활용하되, 향후 개선 예정
+            # 파일명 변경은 이미 step2에서 완료되었으므로, 확인만 진행
             for vessel_name in self.vessel_name_list:
-                try:
-                    self.change_filename(vessel_name)
-                    self.logger.info(f"선박 {vessel_name} 파일명 변경 완료")
-                except Exception as e:
-                    self.logger.error(f"선박 {vessel_name} 파일명 변경 실패: {str(e)}")
-                    continue
+                expected_filename = f"{self.carrier_name}_{vessel_name}.xlsx"
+                expected_path = os.path.join(self.today_download_dir, expected_filename)
+                
+                if os.path.exists(expected_path):
+                    self.logger.info(f"선박 {vessel_name} 파일명 변경 확인 완료: {expected_filename}")
+                else:
+                    self.logger.warning(f"선박 {vessel_name} 예상 파일을 찾을 수 없음: {expected_filename}")
             
             self.logger.info("=== 3단계: 파일명 규칙 및 저장경로 규칙 적용 완료 ===")
             return True
