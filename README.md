@@ -89,7 +89,7 @@ RPA_Crawling/
 ## 🏛️ 시스템 아키텍처
 
 ### 전체 시스템 구조 (현재 좀 더 업데이트 되었음. 다이어그램 추가 예정)
-<img width="813" height="798" alt="System Architecture" src="https://github.com/user-attachments/assets/341e1ea5-ca68-4cad-a20a-d752981fcae0" />
+<img width="1360" height="722" alt="Image" src="https://github.com/user-attachments/assets/9ffbcccf-0051-44be-9b48-b316f43bef3c" />
 
 **시스템 흐름:**
 main2_lightweight.py (경량화된 메인 컨트롤러) → Config Management (환경별 설정 시스템) → Utils Modules (공통 모듈) → CrawlerFactory (크롤러 생성기) → Individual Crawler (개별 크롤러) → ParentsClass (공통 기능 + 에러 처리 강화) → Data Storage (로컬 파일) → Google Drive Upload (OAuth 2.0 + 환경변수) → Data Cleanup → **에러로그 자동 업로드 및 정리**
@@ -186,7 +186,7 @@ for carrier_name in carriers_to_run:
 ```
 
 ### 2. **데이터 플로우 구조**
-<img width="1354" height="527" alt="Data Flow" src="https://github.com/user-attachments/assets/0693a22d-92a1-40dd-aeaf-7ddd2ae907fd" />
+<img width="1450" height="636" alt="Image" src="https://github.com/user-attachments/assets/846bbc79-2d0b-4b77-be78-67bfd8c35eb6" />
 
 ### 3. **🆕 에러 처리 강화 시스템**
 ```python
@@ -496,7 +496,7 @@ from utils.data_cleanup import cleanup_old_data, cleanup_old_errorlogs
 
 ## 🔧 스레드 안전성 계산기 (현재는 단일 스레드로 운영 중, 향후 멀티스레드 재적용 예정)
 
-### 스레드 처리 구조 (향후 멀티스레드 재적용 예정)
+### 스레드 처리 구조 (향후 멀티스레드 재적용 예정이며 아래 다이어그램은 스레드 적용 당시의 플로우를 보여줌)
 <img width="943" height="702" alt="Image" src="https://github.com/user-attachments/assets/e64497e0-bf3d-4a9d-a39d-332ecf7b3d03" />
 
 **현재 상태**: 단일 스레드 순차 처리로 안정성 우선 운영
