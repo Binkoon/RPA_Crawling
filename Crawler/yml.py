@@ -122,12 +122,11 @@ class YML_Crawling(ParentsClass):
                             df.to_excel(save_path, index=False, header=True)
                             self.logger.info(f"[{vessel_name}] 테이블 데이터 저장 완료: {filename}")
                             
-                            # 성공 카운트 증가
-                            self.success_count += 1
+                            # 성공 카운트는 end_vessel_tracking에서 자동 처리됨
                             
                             time.sleep(1)
                             
-                            # 선박별 타이머 종료
+                            # 선박별 타이머 종료 (성공/실패 카운트 자동 처리)
                             self.end_vessel_tracking(vessel_name, success=True)
                             vessel_duration = self.get_vessel_duration(vessel_name)
                             self.logger.info(f"선박 {vessel_name} 크롤링 완료 (소요시간: {vessel_duration:.2f}초)")
@@ -319,7 +318,7 @@ class YML_Crawling(ParentsClass):
                 self.Visit_Link(url)
                 time.sleep(2)
                 
-                # 성공 처리 (end_vessel_tracking에서 자동 처리됨)
+                # 성공 처리 (성공 카운트는 end_vessel_tracking에서 자동 처리됨)
                 retry_success_count += 1
                 
                 # 실패 목록에서 제거
@@ -328,6 +327,7 @@ class YML_Crawling(ParentsClass):
                 if vessel_name in self.failed_reasons:
                     del self.failed_reasons[vessel_name]
                 
+                # 선박별 타이머 종료 (성공/실패 카운트 자동 처리)
                 self.end_vessel_tracking(vessel_name, success=True)
                 vessel_duration = self.get_vessel_duration(vessel_name)
                 self.logger.info(f"선박 {vessel_name} 재시도 성공 (소요시간: {vessel_duration:.2f}초)")

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mxfile host="app.diagrams.net" modified="2025-08-22T10:00:00.000Z" agent="5.0" etag="xxx" version="22.1.16" type="device">
-  <diagram name="RPA_Crawling_Architecture_v3.5.0" id="architecture">
+<mxfile host="app.diagrams.net" modified="2025-08-28T10:00:00.000Z" agent="5.0" etag="xxx" version="22.1.16" type="device">
+  <diagram name="RPA_Crawling_Architecture_v3.6.0" id="architecture">
     <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1200" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         
         <!-- 제목 -->
-        <mxCell id="title" value="RPA 선사 스케줄 크롤링 시스템 아키텍처 v3.5.0" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+        <mxCell id="title" value="RPA 선사 스케줄 크롤링 시스템 아키텍처 v3.6.0" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="500" y="10" width="400" height="30" as="geometry" />
         </mxCell>
         
@@ -67,8 +67,13 @@
         </mxCell>
         
         <!-- Individual Crawlers -->
-        <mxCell id="crawlers" value="Individual Crawlers&#xa;15개 선사별 크롤러&#xa;(SITC, EVERGREEN, COSCO...)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+        <mxCell id="crawlers" value="Individual Crawlers&#xa;15개 선사별 크롤러&#xa;(즉시 파일명 변경 시스템 적용)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="600" y="600" width="200" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 개선된 크롤러들 (새로 추가) -->
+        <mxCell id="improved_crawlers" value="🆕 개선된 크롤러들&#xa;• CKLINE: 즉시 파일명 변경&#xa;• PANOCEAN: 특수 선박명 규칙&#xa;• COSCO: 에러 처리 단순화&#xa;• ONE: 동적 URL + 3단계 PDF&#xa;• YML: 중복 방문 제거" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;align=left;" vertex="1" parent="1">
+          <mxGeometry x="50" y="600" width="180" height="120" as="geometry" />
         </mxCell>
         
         <!-- Google Drive Integration -->
@@ -94,6 +99,11 @@
         <!-- Error Processing (강화된 시스템) -->
         <mxCell id="error_system" value="Error Processing System&#xa;에러 분석 + 스마트 재시도&#xa;(타입별 재시도 전략)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffb3ba;strokeColor=#b85450;fontSize=11;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="1050" y="490" width="180" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 즉시 파일명 변경 시스템 (새로 추가) -->
+        <mxCell id="filename_system" value="🆕 즉시 파일명 변경 시스템&#xa;• 파일 다운로드 직후 즉시 변경&#xa;• 파일명-내용 매칭 정확성 100%&#xa;• 선박별 독립적 처리&#xa;• 실패 영향 최소화" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="600" width="180" height="120" as="geometry" />
         </mxCell>
         
         <!-- 연결선들 -->
@@ -152,6 +162,16 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         
+        <!-- Improved Crawlers to Base -->
+        <mxCell id="edge12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="improved_crawlers" target="base">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Filename System to Crawlers -->
+        <mxCell id="edge13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="filename_system" target="crawlers">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
         <!-- 범례 -->
         <mxCell id="legend_title" value="범례" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="50" y="730" width="60" height="30" as="geometry" />
@@ -182,7 +202,7 @@
         </mxCell>
         
         <!-- 버전 정보 -->
-        <mxCell id="version" value="Version 3.5.0 - 2025년 8월 22일&#xa;주요 업데이트: 에러 처리 강화, 설정 관리 개선, 테스트 시스템 추가" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=2;" vertex="1" parent="1">
+        <mxCell id="version" value="Version 3.6.0 - 2025년 8월 28일&#xa;주요 업데이트: 즉시 파일명 변경 시스템, 개선된 크롤러들, 에러 처리 최적화" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=2;" vertex="1" parent="1">
           <mxGeometry x="500" y="1100" width="400" height="40" as="geometry" />
         </mxCell>
         

@@ -166,7 +166,7 @@ class HMM_Crawling(ParentsClass):
                     columns = ["Vessel Code", "Voyage" ,"Port","Terminal", "Rating Date", "ETA","ETB","ETD","Current Location"]
                     df = pd.DataFrame(all_rows, columns=columns)
 
-                    file_path = self.get_save_path(self.carrier_name, vessel_name, ext="xlsx")
+                    file_path = self.get_save_path(self.carrier_name, vessel_name)
                     df.to_excel(file_path, index=False, engine="openpyxl")
                     self.logger.info(f"엑셀 저장 완료: {file_path}")
                     
@@ -375,7 +375,7 @@ class HMM_Crawling(ParentsClass):
                 else:
                     self.logger.warning(f"{vessel_name} 재시도 시에도 데이터가 없음")
                     retry_fail_count += 1
-                    self.end_vessel_tracking(vessel_name, success=True)
+                    self.end_vessel_tracking(vessel_name, success=False)
                     vessel_duration = self.get_vessel_duration(vessel_name)
                     self.logger.warning(f"선박 {vessel_name} 재시도 실패 (소요시간: {vessel_duration:.2f}초)")
                 
@@ -384,7 +384,7 @@ class HMM_Crawling(ParentsClass):
                 retry_fail_count += 1
                 
                 # 실패한 경우에도 타이머 종료
-                self.end_vessel_tracking(vessel_name, success=True)
+                self.end_vessel_tracking(vessel_name, success=False)
                 vessel_duration = self.get_vessel_duration(vessel_name)
                 self.logger.error(f"선박 {vessel_name} 재시도 실패 (소요시간: {vessel_duration:.2f}초)")
                 continue

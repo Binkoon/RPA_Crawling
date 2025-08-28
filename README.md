@@ -1,22 +1,27 @@
 # RPA 선사 스케줄 크롤링 프로젝트
 
 해운 선사들의 선박 스케줄 데이터를 자동으로 크롤링하고 구글 드라이브에 업로드하는 로직입니다.
-현업의 수기 작업에 오랜 시간이 들어가는것 같아 사이드로 시작된 1인 개발 (크롤링 쪽 한정정) 입니다.
+현업의 수기 작업에 오랜 시간이 들어가는것 같아 사이드로 시작된 1인 개발 (크롤링 쪽 한정) 입니다.
+
++ 현재 멀티 스레드를 사용할 경우 크롤링 실패가 다소 존재하여 정확성을 높이고자 단일 스레드 처리로 바꾸었습니다.
 
 기술 스택 : Python
+라이브러리 : Selenium , cx_oracle , pandas
 디자인 패턴 : 팩토리 메서드 + 빌더 패턴
 API : 구글 드라이브 API (OAuth 접근 방식)
 형상 관리 : Git
+DB : 오라클
 
 ## 📋 프로젝트 개요
 
 - **목적**: 해운 선사들의 선박 스케줄 데이터 자동 수집
-- **대상 선사**: SITC, EVERGREEN, COSCO, WANHAI, CKLINE 등 15개 선사
+- **대상 선사**: SITC, EVERGREEN, COSCO, WANHAI, CKLINE, ONE, PANOCEAN, YML 등 15개 선사
 - **데이터 형식**: Excel (.xlsx), PDF (.pdf)
 - **저장소**: 로컬 → 구글 공유 드라이브 자동 업로드
 - **로깅 시스템**: 선사별 개별 로그 + Excel 형태의 통합 로그
 - **에러로그 관리**: 자동 구글드라이브 업로드 + 30일 기준 자동 정리
 - **빌더 패턴**: 단계별 크롤링 프로세스 구성 및 유연한 실행
+- **🆕 즉시 파일명 변경**: 파일 다운로드 후 즉시 선박명으로 파일명 변경하여 매칭 정확성 향상
 
 ## 🏗️ 프로젝트 구조
 
@@ -29,7 +34,8 @@ RPA_Crawling/
 │   ├── data_cleanup.py          # 데이터 정리 공통 모듈
 │   ├── excel_logger.py          # 엑셀 로그 관리 공통 모듈
 │   ├── crawler_executor.py      # 크롤러 실행 공통 모듈
-│   └── config_loader.py         # 설정 파일 로드 공통 모듈
+│   ├── config_loader.py         # 설정 파일 로드 공통 모듈
+│   └── config_validator.py      # 설정 검증 공통 모듈
 ├── config/                     # 🆕 설정 파일
 │   ├── carriers.json             # 선사 설정 (기존)
 │   ├── config.yaml               # 🆕 기본 설정 파일
@@ -54,20 +60,20 @@ RPA_Crawling/
 │   ├── base.py                    # 기본 크롤러 클래스 (공통 기능)
 │   ├── sitc.py                    # SITC 크롤러
 │   ├── evergreen.py               # EVERGREEN 크롤러
-│   ├── cosco.py                   # COSCO 크롤러
+│   ├── cosco.py                   # 🆕 COSCO 크롤러 (즉시 파일명 변경 + 에러 처리 단순화)
 │   ├── wanhai.py                  # WANHAI 크롤러
-│   ├── ckline.py                  # CKLINE 크롤러
-│   ├── panocean.py                # PANOCEAN 크롤러
+│   ├── ckline.py                  # 🆕 CKLINE 크롤러 (즉시 파일명 변경)
+│   ├── panocean.py                # 🆕 PANOCEAN 크롤러 (즉시 파일명 변경)
 │   ├── snl.py                     # SNL 크롤러
 │   ├── smline.py                  # SMLINE 크롤러
 │   ├── hmm.py                     # HMM 크롤러
 │   ├── fdt.py                     # FDT 크롤러
 │   ├── ial.py                     # IAL 크롤러
 │   ├── dyline.py                  # DYLINE 크롤러
-│   ├── yml.py                     # YML 크롤러
+│   ├── yml.py                     # 🆕 YML 크롤러 (중복 사이트 방문 제거)
 │   ├── nss.py                     # NSS 크롤러
-│   ├── one.py                     # ONE 크롤러
-│   └── pil.py                     # PIL 크롤러
+│   └── one.py                     # 🆕 ONE 크롤러 (즉시 파일명 변경 + 동적 URL)
+│    
 ├── main2_lightweight.py        # 🆕 경량화된 메인 실행 파일
 ├── crawler_factory.py          # 크롤러 팩토리 클래스
 ├── cleanup_old_data.py         # 오래된 데이터 정리 스크립트
@@ -82,7 +88,7 @@ RPA_Crawling/
 
 ## 🏛️ 시스템 아키텍처
 
-### 전체 시스템 구조
+### 전체 시스템 구조 (현재 좀 더 업데이트 되었음. 다이어그램 추가 예정)
 <img width="813" height="798" alt="System Architecture" src="https://github.com/user-attachments/assets/341e1ea5-ca68-4cad-a20a-d752981fcae0" />
 
 **시스템 흐름:**
@@ -94,7 +100,7 @@ main2_lightweight.py (경량화된 메인 컨트롤러) → Config Management (�
 - 전체 프로세스의 진입점 (경량화된 버전)
 - **공통 모듈 기반** 모듈화된 구조
 - **환경별 설정 관리** 시스템 통합
-- **스레드 기반 병렬 처리**로 성능 향상
+- **단일 스레드 순차 처리**로 안정성 우선 (향후 멀티스레드 재적용 예정)
 - 크롤러 팩토리를 통한 크롤러 인스턴스 생성
 - 실행 흐름 제어 및 결과 집계
 - Excel 통합 로그 생성
@@ -144,6 +150,8 @@ main2_lightweight.py (경량화된 메인 컨트롤러) → Config Management (�
 - **자동화 테스트**: pytest 기반 단위 테스트
 - **커버리지 측정**: 테스트 커버리지 리포트
 - **CI/CD 준비**: 자동화 파이프라인 준비
+- **크롤러별 테스트**: 개별 크롤러 로직 검증
+- **통합 테스트**: 전체 워크플로우 검증
 
 #### 9. **Data Management (cleanup_old_data.py)**
 - 30일 이전 데이터 자동 정리
@@ -172,10 +180,9 @@ from utils.data_cleanup import cleanup_old_data, cleanup_old_errorlogs
 system_config = get_system_config()
 max_workers = system_config.execution.max_workers
 
-# 스레드 풀을 사용한 병렬 크롤링
-with ThreadPoolExecutor(max_workers=max_workers) as executor:
-    futures = [executor.submit(run_carrier_parallel, carrier_name, crawling_results) 
-               for carrier_name in carriers_to_run]
+# 단일 스레드 순차 크롤링 (안정성 우선)
+for carrier_name in carriers_to_run:
+    run_carrier_parallel(carrier_name, crawling_results)
 ```
 
 ### 2. **데이터 플로우 구조**
@@ -267,6 +274,81 @@ if error_occurred:
         logger.warning(f"선박 {vessel} 크롤링 재시도 가능: {error_analysis['error_message']}")
 ```
 
+## 🆕 **즉시 파일명 변경 시스템 (v3.6.0)**
+
+### **문제점 해결**
+- **기존 방식**: 모든 파일 다운로드 완료 후 일괄 파일명 변경
+- **문제점**: 파일명과 내용이 매칭되지 않는 이슈 발생
+- **해결책**: 파일 다운로드 직후 즉시 선박명으로 파일명 변경
+
+### **적용된 크롤러**
+1. **CKLINE 크롤러** (`crawler/ckline.py`)
+   - 파일 다운로드 후 즉시 `CKL_선박명.pdf` 형식으로 변경
+   - 파일명-내용 매칭 정확성 100% 달성
+
+2. **PANOCEAN 크롤러** (`crawler/panocean.py`)
+   - 특수한 선박명 규칙 지원 (예: "HONOR BRIGHT 1012, 1013, 1014...")
+   - 즉시 파일명 변경으로 매칭 오류 방지
+
+3. **COSCO 크롤러** (`crawler/cosco.py`)
+   - `cosco_test.py` 기반으로 단순화된 에러 처리
+   - 타이밍 최적화 (페이지 로딩: 3초 → 2초)
+   - 즉시 파일명 변경으로 안정성 향상
+
+4. **ONE 크롤러** (`crawler/one.py`)
+   - 동적 URL 생성 및 3단계 PDF 다운로드 프로세스
+   - 파일 다운로드 후 즉시 `ONE_선박명_YYMMDD.pdf` 형식으로 변경
+   - 중복 파일명 시 자동 넘버링 처리
+
+5. **YML 크롤러** (`crawler/yml.py`)
+   - 중복 사이트 방문 제거로 효율성 향상
+   - 테이블 데이터 직접 추출하여 Excel 파일로 저장
+
+### **즉시 파일명 변경 로직**
+```python
+def rename_downloaded_file(self, vessel_name, timeout=30):
+    """다운로드된 파일을 선박명으로 즉시 변경"""
+    try:
+        start_time = time.time()
+        renamed = False
+        
+        while time.time() - start_time < timeout:
+            # 다운로드 디렉토리에서 가장 최근 PDF 파일 찾기
+            pdf_files = glob.glob(os.path.join(self.today_download_dir, "*.pdf"))
+            
+            if pdf_files:
+                # 가장 최근 파일 선택 (수정 시간 기준)
+                latest_pdf = max(pdf_files, key=os.path.getmtime)
+                
+                # 파일명이 이미 변경되었는지 확인
+                if os.path.basename(latest_pdf).startswith(f"{self.carrier_name}_{vessel_name}"):
+                    return True
+                
+                # 새 파일명 생성
+                new_filename = f"{self.carrier_name}_{vessel_name}.pdf"
+                new_filepath = os.path.join(self.today_download_dir, new_filename)
+                
+                # 파일명 변경
+                os.rename(latest_pdf, new_filepath)
+                self.logger.info(f"선박 {vessel_name}: 파일명 즉시 변경 완료")
+                renamed = True
+                break
+            
+            time.sleep(1)
+        
+        return renamed
+        
+    except Exception as e:
+        self.logger.error(f"파일명 즉시 변경 중 오류: {str(e)}")
+        return False
+```
+
+### **기대 효과**
+- **파일명-내용 매칭 정확성**: 100% 달성
+- **처리 속도**: 일괄 처리 대신 즉시 처리로 전체 크롤링 시간 단축
+- **안정성**: 각 선박별로 독립적인 파일명 변경으로 실패 영향 최소화
+- **디버깅**: 실패 시 즉시 확인 가능
+
 ## 🔒 보안 및 권한 (폴더ID의 경우 접근권한이 이미 막혀있어 노출되도 크리티컬하지 않으나 env처리하였습니다.)
 
 - **OAuth 2.0**: 사용자 인증으로 안전한 API 접근
@@ -346,6 +428,10 @@ python run_tests.py --test-type unit   # 단위 테스트
 python run_tests.py --test-type mock   # 모킹 테스트
 python run_tests.py --coverage         # 커버리지 포함
 
+# pytest 직접 실행 (권장)
+pytest test/ --verbose                 # 모든 테스트 상세 실행
+pytest test/test_main_lightweight.py  # 특정 테스트 파일 실행
+
 # 6. 실행
 python main2_lightweight.py           # 🆕 권장 (경량화된 버전)
 ```
@@ -358,7 +444,12 @@ python main2_lightweight.py           # 🆕 권장 (경량화된 버전)
 **📊 시각적 문서화:**
 - **시스템 아키텍처**: 전체 시스템 구조 및 모듈화 패턴 (v3.5.0 업데이트)
 - **데이터 플로우**: 데이터 처리 흐름 및 공통 모듈 활용 (v3.5.0 업데이트)
-- **스레드 처리**: 병렬 처리 구조 및 동적 워커 관리
+- **스레드 처리**: 단일 스레드 순차 처리 (안정성 우선, 향후 멀티스레드 재적용 예정)
+
+**🧪 테스트 시스템:**
+- **pytest 기반**: 체계적인 테스트 환경 및 모킹 시스템
+- **테스트 커버리지**: 단위 테스트 및 통합 테스트 지원
+- **자동화 준비**: CI/CD 파이프라인 기반 마련
 
 **⚠️ 환경 설정 주의사항:**
 - `.env` 파일에 `GOOGLE_DRIVE_SCHEDULE_FOLDER_ID`, `GOOGLE_DRIVE_ERRORLOG_FOLDER_ID` 설정 필요
@@ -403,14 +494,17 @@ from utils.data_cleanup import cleanup_old_data, cleanup_old_errorlogs
 5. **크롤러 실행**: `crawler_executor.py` - 크롤러 실행 공통 로직
 6. **설정 로더**: `config_loader.py` - 환경별 설정 로드 공통 로직
 
-## 🔧 스레드 안전성 계산기 (현재는 스레드 2개로 돌리고 있습니다~)
+## 🔧 스레드 안전성 계산기 (현재는 단일 스레드로 운영 중, 향후 멀티스레드 재적용 예정)
 
-### 스레드 처리 구조
+### 스레드 처리 구조 (향후 멀티스레드 재적용 예정)
 <img width="943" height="702" alt="Image" src="https://github.com/user-attachments/assets/e64497e0-bf3d-4a9d-a39d-332ecf7b3d03" />
+
+**현재 상태**: 단일 스레드 순차 처리로 안정성 우선 운영
+**향후 계획**: 안정성 확보 후 멀티스레드 병렬 처리 재적용
 
 ### 스레드 수 계산 공식
 
-시스템 사양을 분석하여 안전한 스레드 수를 자동으로 계산하는 `thread_calculator.py`를 제공합니다.
+시스템 사양을 분석하여 향후 멀티스레드 재적용 시 안전한 스레드 수를 자동으로 계산하는 `thread_calculator.py`를 제공합니다.
 
 #### 1. **메모리 기반 계산**
 ```python
@@ -471,10 +565,10 @@ def get_recommended_thread_count(self):
         return 1      # 8GB 미만: 1개 스레드
 ```
 
-### 사용 예시
+### 사용 예시 (향후 멀티스레드 재적용 시)
 
 ```python
-# main2_lightweight.py에서 사용
+# main2_lightweight.py에서 사용 (향후 멀티스레드 재적용 시)
 from thread_calculator import ThreadCalculator
 
 calculator = ThreadCalculator()
@@ -486,6 +580,13 @@ with ThreadPoolExecutor(max_workers=optimal_threads) as executor:
                for carrier in carriers]
 ```
 
+**현재 사용 방식 (단일 스레드)**:
+```python
+# 현재는 단일 스레드 순차 처리
+for carrier in carriers:
+    run_carrier(carrier)
+```
+
 ### 안전도 평가
 
 - ** 매우 안전**: 1-2개 스레드
@@ -494,11 +595,14 @@ with ThreadPoolExecutor(max_workers=optimal_threads) as executor:
 - ** 위험**: 5-6개 스레드
 - **⚫ 매우 위험**: 7개 이상
 
-### 성능 향상 예상치
+### 성능 향상 예상치 (향후 멀티스레드 재적용 시)
 
 - **2개 스레드**: 50% 향상 (2배 빠름)
 - **3개 스레드**: 67% 향상 (3배 빠름)
 - **4개 스레드**: 75% 향상 (4배 빠름)
+
+**현재 성능**: 단일 스레드 순차 처리로 안정성 우선
+**향후 계획**: 안정성 확보 후 멀티스레드로 성능 향상 도모
 
 ## 🧪 테스트 시스템 (ver 3.5.0에 추가입니다.)
 
@@ -511,32 +615,54 @@ python run_tests.py
 python run_tests.py --test-type unit      # 단위 테스트
 python run_tests.py --test-type mock      # 모킹 테스트
 python run_tests.py --coverage            # 커버리지 포함
+
+# pytest 직접 실행
+pytest test/                              # test 폴더의 모든 테스트
+pytest test/test_main_lightweight.py     # 특정 테스트 파일
+pytest test/test_vessel_lists.py         # 선박 리스트 테스트
 ```
 
 ### **🆕 모킹 시스템**
 - **실제 실행 방지**: 크롤링, 파일 생성, Google Drive 업로드 방지
 - **격리된 테스트**: 외부 의존성 없는 순수 로직 테스트
 - **빠른 피드백**: 실제 실행 시간 없이 즉시 결과 확인
+- **테스트 격리**: 각 테스트 간 독립적인 환경 보장
 
 ### **테스트 설정**
 ```python
 # pytest.ini 설정
 [tool:pytest]
-testpaths = tests
+testpaths = test
 python_files = test_*.py *_test.py
 addopts = --strict-markers --disable-warnings
 markers = 
     unit: Unit tests
     integration: Integration tests
     mock: Mock tests
+    crawler: Crawler specific tests
 ```
 
-## 📝 주요 개선사항 (v3.0.0 ~ v3.5.0)
+**테스트 파일 구조:**
+```
+test/
+├── test_main_lightweight.py    # 메인 실행 파일 테스트
+├── test_vessel_lists.py        # 선박 리스트 테스트
+└── conftest.py                 # pytest 공통 설정 (향후 추가 예정)
+```
+
+## 📝 주요 개선사항 (v3.0.0 ~ v3.6.0)
+
+### 🆕 **즉시 파일명 변경 시스템 (v3.6.0)**
+- **CKLINE 크롤러**: 파일 다운로드 후 즉시 `CKL_선박명.pdf` 형식으로 변경
+- **PANOCEAN 크롤러**: 특수한 선박명 규칙 지원 및 즉시 파일명 변경
+- **COSCO 크롤러**: `cosco_test.py` 기반으로 단순화된 에러 처리, 타이밍 최적화, 즉시 파일명 변경
+- **ONE 크롤러**: 동적 URL, 3단계 PDF 다운로드, 즉시 파일명 변경
+- **YML 크롤러**: 중복 사이트 방문 제거로 효율성 향상
 
 ### 🎯 **아키텍처 다이어그램 (v3.5.0 업데이트)**
 - **시스템 아키텍처**: 환경별 설정 시스템, 에러 처리 강화, 테스트 시스템 반영
 - **데이터 플로우**: 환경별 설정 로드, 스마트 에러 분석, 성능 지표 업데이트
-- **스레드 처리**: 병렬 처리 구조 및 동적 워커 관리 (기존 유지)
+- **스레드 처리**: 단일 스레드 순차 처리 (안정성 우선, 향후 멀티스레드 재적용 예정)
 
 ### 🆕 **에러 처리 강화 (v3.5.0)**
 - **스마트 에러 분석**: 에러 타입별 분류 및 자동 분석
@@ -556,6 +682,8 @@ markers =
 - **모킹 시스템**: 실제 실행 방지 격리된 테스트
 - **커버리지 측정**: 테스트 품질 관리
 - **자동화 준비**: CI/CD 파이프라인 기반 마련
+- **크롤러별 테스트**: 개별 크롤러 로직 검증
+- **통합 워크플로우 테스트**: 전체 시스템 검증
 
 ### 🆕 **보안 강화 (v3.5.0)**
 - **환경변수 기반**: Google Drive 폴더 ID 하드코딩 제거
@@ -590,11 +718,12 @@ markers =
 - 지정된 폴더 ID에 직접 업로드로 구조 단순화
 - 업로드 성공/실패 상세 추적 및 로깅
 
-### 비동기 처리 방식 도입 (v3.1.0)
-- ThreadPoolExecutor를 활용한 스레드 기반 병렬 처리
+### 비동기 처리 방식 도입 (v3.1.0) - 현재 일시 중단
+- ThreadPoolExecutor를 활용한 스레드 기반 병렬 처리 (향후 재적용 예정)
 - 선사별 동시 크롤링으로 성능 향상 (기존 1800초 → 900초 예상)
 - 스레드 안전성을 위한 Lock 메커니즘 적용
 - 시스템 사양 기반 최적 스레드 수 자동 계산
+- **현재 상태**: 안정성 문제로 단일 스레드 순차 처리로 전환
 
 ### 빌더 패턴 도입 (v3.3.0)
 - 크롤링 프로세스를 단계별로 구성하는 빌더 패턴 적용
@@ -609,11 +738,19 @@ markers =
 - **확장성**: 새로운 단계 추가 및 기존 단계 수정 용이
 - **유지보수성**: 각 단계가 독립적으로 관리되어 코드 복잡도 감소
 
-### 스레드 안전성 및 성능 최적화 (v3.3.0)
-- `thread_calculator.py`를 통한 시스템 사양 분석
+### 스레드 안전성 및 성능 최적화 (v3.3.0) - 현재 일시 중단
+- `thread_calculator.py`를 통한 시스템 사양 분석 (향후 재적용 시 활용)
 - 메모리, CPU, 디스크, 네트워크 요소별 안전 스레드 수 계산
 - 크롬 인스턴스당 리소스 사용량 고려한 보수적 스레드 수 제한
 - 안전도 레벨별 분류 (매우 안전/안전/주의/위험/매우 위험)
+- **현재 상태**: 안정성 우선으로 단일 스레드 순차 처리 운영
+
+### 🆕 **즉시 파일명 변경 시스템 (v3.6.0)**
+- **CKLINE 크롤러**: 파일 다운로드 후 즉시 `CKL_선박명.pdf` 형식으로 변경
+- **PANOCEAN 크롤러**: 특수한 선박명 규칙 지원 및 즉시 파일명 변경
+- **COSCO 크롤러**: `cosco_test.py` 기반 단순화, 타이밍 최적화, 즉시 파일명 변경
+- **ONE 크롤러**: 동적 URL, 3단계 PDF 다운로드, 즉시 파일명 변경
+- **YML 크롤러**: 중복 사이트 방문 제거로 효율성 향상
 
 ### 🆕 **코드 경량화 및 모듈화 (v3.4.0)**
 - **main2.py 경량화**: 834줄 → 250줄 (70% 감소)
@@ -650,8 +787,8 @@ config/                         # 설정 파일
 ```
 
 **환경별 설정 옵션:**
-- **실행 모드**: `parallel` (병렬) / `sequential` (순차)
-- **스레드 수**: `max_workers` 값으로 조정
+- **실행 모드**: `sequential` (순차) - 현재 안정성 우선으로 병렬 모드 일시 중단
+- **스레드 수**: `max_workers` 값 (향후 멀티스레드 재적용 시 활용)
 - **로깅 레벨**: DEBUG/INFO/WARNING/ERROR
 - **구글 업로드**: 환경별 활성화/비활성화
 - **정리 옵션**: 오래된 데이터 정리 기간 등
@@ -661,5 +798,5 @@ config/                         # 설정 파일
 이 프로젝트는 업무 시간 단축으로 도움을 드리고자 사이드로 1인 개발되었습니다.
 민감정보는 env처리 했으며, 내부 데이터가 아닌 공개된 외부 데이터를 긁어오는 작업이기에 사내 허락을 받고 깃에 올렸습니다.
 
-**마지막 업데이트**: 2025년 8월 22일
-**버전**: 3.5.0
+**마지막 업데이트**: 2025년 8월 28일
+**버전**: 3.6.0

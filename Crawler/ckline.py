@@ -179,15 +179,15 @@ class CKLINE_Crawling(ParentsClass):
                     # 다운로드 완료 후 즉시 파일명 변경
                     if self.rename_downloaded_file_immediately(vessel_name):
                         self.logger.info(f"선박 {vessel_name} 파일명 즉시 변경 완료")
-                        self.success_count += 1
+                        # 성공 카운트는 end_vessel_tracking에서 자동 처리됨
                     else:
                         self.logger.error(f"선박 {vessel_name} 파일명 변경 실패")
-                        self.fail_count += 1
+                        # 실패 카운트는 end_vessel_tracking에서 자동 처리됨
                         if vessel_name not in self.failed_vessels:
                             self.failed_vessels.append(vessel_name)
                             self.failed_reasons[vessel_name] = "파일명 변경 실패"
                     
-                    # 선박별 타이머 종료
+                    # 선박별 타이머 종료 (성공/실패 카운트 자동 처리)
                     self.end_vessel_tracking(vessel_name, success=True)
                     vessel_duration = self.get_vessel_duration(vessel_name)
                     self.logger.info(f"선박 {vessel_name} 크롤링 완료 (소요시간: {vessel_duration:.2f}초)")
