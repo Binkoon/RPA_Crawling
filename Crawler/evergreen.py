@@ -442,8 +442,7 @@ class EVERGREEN_Crawling(ParentsClass):
                     df.to_excel(save_path, index=False, header=True)
                     self.logger.info(f"{vessel_name} 재시도 엑셀 저장 완료: {save_path}")
                     
-                    # 성공 처리
-                    self.record_vessel_success(vessel_name)
+                    # 성공 처리 (성공 카운트는 end_vessel_tracking에서 자동 처리됨)
                     retry_success_count += 1
                     
                     # 실패 목록에서 제거
@@ -452,6 +451,7 @@ class EVERGREEN_Crawling(ParentsClass):
                     if vessel_name in self.failed_reasons:
                         del self.failed_reasons[vessel_name]
                     
+                    # 선박별 타이머 종료 (성공/실패 카운트 자동 처리)
                     self.end_vessel_tracking(vessel_name, success=True)
                     vessel_duration = self.get_vessel_duration(vessel_name)
                     self.logger.info(f"선박 {vessel_name} 재시도 성공 (소요시간: {vessel_duration:.2f}초)")

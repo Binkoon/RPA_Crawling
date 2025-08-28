@@ -250,21 +250,7 @@ class Cosco_Crawling(ParentsClass):
             self.logger.error(f"상세 에러: {traceback.format_exc()}")
             return False
 
-    def record_vessel_success(self, vessel_name):
-        """선박 성공 기록 (성공 카운트는 end_vessel_tracking에서 자동 처리됨)"""
-        # 성공 카운트는 end_vessel_tracking에서 자동 처리됨
-        # 실패 목록에서 제거
-        if vessel_name in self.failed_vessels:
-            self.failed_vessels.remove(vessel_name)
-        if vessel_name in self.failed_reasons:
-            del self.failed_reasons[vessel_name]
 
-    def record_vessel_failure(self, vessel_name, reason):
-        """선박 실패 기록"""
-        self.fail_count += 1
-        if vessel_name not in self.failed_vessels:
-            self.failed_vessels.append(vessel_name)
-        self.failed_reasons[vessel_name] = reason
 
     def step3_process_downloaded_files(self):
         """3단계: 파일 다운로드 후 지정한 경로로 저장 및 파일명 변경 확인"""

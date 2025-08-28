@@ -141,8 +141,7 @@ class YML_Crawling(ParentsClass):
                         
                 except Exception as e:
                     self.logger.error(f"선박 {vessel_name} 크롤링 실패: {str(e)}")
-                    # 실패한 선박 기록
-                    self.record_vessel_failure(vessel_name, str(e))
+                    # 실패한 선박 기록 (실패 카운트는 end_vessel_tracking에서 자동 처리됨)
                     
                     # 실패한 경우에도 타이머 종료
                     self.end_vessel_tracking(vessel_name, success=False)

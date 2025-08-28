@@ -203,22 +203,7 @@ class HMM_Crawling(ParentsClass):
             self.logger.error(f"상세 에러: {traceback.format_exc()}")
             return False
 
-    def step3_process_data_and_save(self):
-        """3단계: 데이터 취합 후 다음 페이지 선택 클릭 이후 또 데이터 취합 1회 추가"""
-        try:
-            self.logger.info("=== 3단계: 데이터 처리 및 추가 수집 시작 ===")
-            
-            # 이 단계에서는 이미 step2에서 파일이 생성되었으므로 추가 처리가 필요하다면 여기서 수행
-            # 예: 파일명 변경, 데이터 검증 등
-            
-            self.logger.info("=== 3단계: 데이터 처리 및 추가 수집 완료 ===")
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"=== 3단계: 데이터 처리 및 추가 수집 실패 ===")
-            self.logger.error(f"에러 메시지: {str(e)}")
-            self.logger.error(f"상세 에러: {traceback.format_exc()}")
-            return False
+
 
     def step3_save_with_naming_rules(self):
         """3단계: 파일명 규칙 및 저장경로 규칙 적용"""
