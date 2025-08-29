@@ -1,95 +1,13 @@
 {
-  "carriers": [
-    {
-      "name": "SITC",
-      "module": "sitc",
-      "class": "SITC_Crawling",
-      "file_type": "Excel",
-      "notes": ""
-    },
-    {
-      "name": "EVERGREEN",
-      "module": "evergreen",
-      "class": "EVERGREEN_Crawling",
-      "file_type": "Excel",
-      "notes": "쿠키 팝업 처리"
-    },
-    {
-      "name": "COSCO",
-      "module": "cosco",
-      "class": "Cosco_Crawling",
-      "file_type": "PDF",
-      "notes": ""
-    },
-    {
-      "name": "WANHAI",
-      "module": "wanhai",
-      "class": "WANHAI_Crawling",
-      "file_type": "Excel",
-      "notes": ""
-    },
-    {
-      "name": "CKLINE",
-      "module": "ckline",
-      "class": "CKLINE_Crawling",
-      "file_type": "Excel",
-      "notes": ""
-    },
-    {
-      "name": "PANOCEAN",
-      "module": "panocean",
-      "class": "PANOCEAN_Crawling",
-      "file_type": "Excel",
-      "notes": ""
-    },
-    {
-      "name": "HMM",
-      "module": "hmm",
-      "class": "HMM_Crawling",
-      "file_type": "Excel",
-      "notes": ""
-    },
-    {
-      "name": "FDT",
-      "module": "fdt",
-      "class": "FDT_Crawling",
-      "file_type": "Excel",
-      "notes": ""
-    },
-    {
-      "name": "IAL",
-      "module": "ial",
-      "class": "IAL_Crawling",
-      "file_type": "Excel",
-      "notes": ""
-    },
-    {
-      "name": "DYLINE",
-      "module": "dyline",
-      "class": "DYLINE_Crawling",
-      "file_type": "Excel",
-      "notes": ""
-    },
-    {
-      "name": "YML",
-      "module": "yml",
-      "class": "YML_Crawling",
-      "file_type": "Excel",
-      "notes": ""
-    },
-    {
-      "name": "NSS",
-      "module": "nss",
-      "class": "NSS_Crawling",
-      "file_type": "Excel",
-      "notes": ""
-    },
-    {
-      "name": "ONE",
-      "module": "one",
-      "class": "ONE_Crawling",
-      "file_type": "PDF",
-      "notes": "파일명 자동 변경"
-    }
-  ]
-}
+    "carriers": [
+      {
+        "name": "YML",
+        "module": "yml",
+        "class": "YML_Crawling",
+        "file_type": "Excel",
+        "notes": ""
+      }
+
+    ]
+  }
+  

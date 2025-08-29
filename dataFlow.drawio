@@ -1,18 +1,15 @@
-<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36" version="28.1.0">
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36" version="28.1.1">
   <diagram name="RPA_Data_Flow_v3.6.0" id="dataflow">
     <mxGraphModel dx="1426" dy="777" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="title" value="RPA 크롤링 데이터 플로우 v3.6.0" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+        <mxCell id="title" value="크롤링 데이터 플로우 v3.6.0 (순차처리)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;" parent="1" vertex="1">
           <mxGeometry x="650" y="10" width="300" height="30" as="geometry" />
         </mxCell>
-        
-        <!-- 즉시 파일명 변경 시스템 (새로 추가) -->
-        <mxCell id="filename_system" value="🆕 즉시 파일명 변경 시스템&#xa;• 파일 다운로드 직후 즉시 변경&#xa;• 파일명-내용 매칭 정확성 100%&#xa;• 선박별 독립적 처리" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;" parent="1" vertex="1">
+        <mxCell id="sequential_system" value="🔄 순차처리 시스템&#xa;• main2_lightweight.py 기반&#xa;• 선사별 순차 실행&#xa;• 안정성 및 정확성 우선" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;" parent="1" vertex="1">
           <mxGeometry x="50" y="200" width="200" height="80" as="geometry" />
         </mxCell>
-        
         <mxCell id="cleanup" value="데이터 정리&#xa;data_cleanup.py&#xa;→ 30일 이전 데이터 삭제" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontStyle=1;" parent="1" vertex="1">
           <mxGeometry x="50" y="330" width="200" height="80" as="geometry" />
         </mxCell>
@@ -25,12 +22,6 @@
         <mxCell id="monitor" value="모니터링&#xa;Real-time Tracking&#xa;→ 프로세스 상태 추적" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1;" parent="1" vertex="1">
           <mxGeometry x="800" y="330" width="200" height="80" as="geometry" />
         </mxCell>
-        
-        <!-- 개선된 크롤러들 (새로 추가) -->
-        <mxCell id="improved_crawlers" value="🆕 개선된 크롤러들&#xa;• CKLINE: 즉시 파일명 변경&#xa;• PANOCEAN: 특수 선박명 규칙&#xa;• COSCO: 에러 처리 단순화&#xa;• ONE: 동적 URL + 3단계 PDF&#xa;• YML: 중복 방문 제거" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;align=left;" parent="1" vertex="1">
-          <mxGeometry x="1100" y="200" width="200" height="120" as="geometry" />
-        </mxCell>
-        
         <mxCell id="flow1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#d6b656;" parent="1" source="step1" target="step2" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
@@ -76,17 +67,9 @@
         <mxCell id="flow15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#d6b656;" parent="1" source="error_mgmt" target="monitor" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        
-        <!-- 즉시 파일명 변경 시스템 연결선 -->
-        <mxCell id="flow_filename" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#82b366;" parent="1" source="filename_system" target="collect" edge="1">
+        <mxCell id="flow_sequential" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#82b366;" parent="1" source="sequential_system" target="collect" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        
-        <!-- 개선된 크롤러들 연결선 -->
-        <mxCell id="flow_improved" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#9673a6;" parent="1" source="improved_crawlers" target="collect" edge="1">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        
         <mxCell id="feedback1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#b85450;dashed=1;" parent="1" source="step6" target="validate" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
@@ -105,19 +88,19 @@
         <mxCell id="storage_data" value="저장 형식:&#xa;• 로컬: scheduleData/YYMMDD/&#xa;• 클라우드: Google Drive&#xa;• 로그: ErrorLog/YYYY-MM-DD/" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;align=left;" parent="1" vertex="1">
           <mxGeometry x="800" y="480" width="200" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="performance" value="성능 지표 (v3.6.0)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;" parent="1" vertex="1">
-          <mxGeometry x="1100" y="450" width="200" height="30" as="geometry" />
+        <mxCell id="performance" value="성능 지표 (v3.6.0 - 순차처리)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="1100" y="450" width="250" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="perf_metrics" value="• 병렬 처리: 최대 4개 워커&#xa;• 에러 처리: 타입별 스마트 재시도&#xa;• 설정 관리: 환경별 자동 최적화&#xa;• 테스트 커버리지: 80%+&#xa;• 모듈화: 70% 코드 감소&#xa;• 🆕 즉시 파일명 변경: 100% 매칭 정확성" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0f0f0;strokeColor=#666666;fontSize=10;align=left;" parent="1" vertex="1">
-          <mxGeometry x="1100" y="480" width="250" height="120" as="geometry" />
+        <mxCell id="perf_metrics" value="• 처리 방식: 순차처리 (단일 스레드)&lt;br&gt;• 에러 처리: 타입별 스마트 재시도&lt;br&gt;• 설정 관리: 환경별 자동 최적화&lt;br&gt;• 테스트 커버리지: 80%+&lt;br&gt;• 모듈화: 70% 코드 감소&lt;br&gt;• 안정성: 동시성 문제 해결&lt;br&gt;• 정확성: 데이터 일관성 보장&lt;br&gt;• 예측 가능성: 실행 순서 보장" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0f0f0;strokeColor=#666666;fontSize=10;align=left;" parent="1" vertex="1">
+          <mxGeometry x="1100" y="480" width="250" height="140" as="geometry" />
         </mxCell>
-        <mxCell id="version" value="Data Flow Version 3.6.0 - 2025년 8월 28일&#xa;주요 개선: 즉시 파일명 변경 시스템, 개선된 크롤러들, 에러 처리 최적화" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=2;" parent="1" vertex="1">
-          <mxGeometry x="600" y="600" width="400" height="40" as="geometry" />
+        <mxCell id="version" value="Data Flow Version 3.6.0 - 2025년 8월 29일&lt;br&gt;주요 개선: 순차처리 시스템 도입, 멀티스레드 제거, 안정성 및 정확성 향상" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=2;" parent="1" vertex="1">
+          <mxGeometry x="600" y="640" width="400" height="40" as="geometry" />
         </mxCell>
         <mxCell id="step1" value="1. 환경별 설정 로드&#xa;Environment Detection&#xa;→ YAML Config Loading" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;fontStyle=1;" parent="1" vertex="1">
           <mxGeometry x="50" y="70" width="200" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="step2" value="2. 메인 컨트롤러&#xa;main2_lightweight.py&#xa;→ Utils 모듈 초기화" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;" parent="1" vertex="1">
+        <mxCell id="step2" value="2. 메인 컨트롤러&#xa;main2_lightweight.py&#xa;→ 순차처리 기반 실행" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;" parent="1" vertex="1">
           <mxGeometry x="300" y="70" width="200" height="80" as="geometry" />
         </mxCell>
         <mxCell id="step3" value="3. 로깅 시스템 설정&#xa;logging_setup.py&#xa;→ 환경별 로그 레벨" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontStyle=1;" parent="1" vertex="1">
@@ -126,7 +109,7 @@
         <mxCell id="step4" value="4. 크롤러 팩토리&#xa;CrawlerFactory&#xa;→ 동적 인스턴스 생성" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;" parent="1" vertex="1">
           <mxGeometry x="800" y="70" width="200" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="step5" value="5. 병렬 크롤링 실행&#xa;ThreadPoolExecutor&#xa;→ 선사별 동시 처리" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1;" parent="1" vertex="1">
+        <mxCell id="step5" value="5. 순차 크롤링 실행&#xa;Sequential Processing&#xa;→ 선사별 순차 처리" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1;" parent="1" vertex="1">
           <mxGeometry x="1050" y="70" width="200" height="80" as="geometry" />
         </mxCell>
         <mxCell id="step6" value="6. 에러 처리 강화&#xa;Smart Error Analysis&#xa;→ 타입별 재시도 전략" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffb3ba;strokeColor=#b85450;fontSize=11;fontStyle=1;" parent="1" vertex="1">

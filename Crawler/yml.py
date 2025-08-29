@@ -1,6 +1,6 @@
 # Developer : 디지털전략팀/강현빈 사원
 # Date : 2025/06/30 (완성)
-# 선사 링크 : https://e-solution.yangming.com/e-service/Vessel_Tracking/vessel_tracking_detail.aspx?vessel=IBN%20AL%20ABBAR|IAAB&&func=current&&LocalSite=
+# 선사 링크 : https://e-solution.yangming.com/e-service/Vessel_Tracking/vessel_tracking_detail.aspx?vessel=ㅇㅇIBN%20AL%20ABBAR|IAAB&&func=current&&LocalSite=
 # 선박 리스트 : ["YM CREDENTIAL", "YM COOPERATION", "IBN AL ABBAR"]
 # 추가 정보 : 순차처리 + 순서 기반 파일명 매핑 사용
 
@@ -31,8 +31,8 @@ class YML_Crawling(ParentsClass):
         
         # 선박 코드 매핑
         self.vessel_code = {
-            "YM CREDENTIAL": "YMCR",
-            "YM COOPERATION": "YMCO",
+            "YM CREDENTIAL": "YCDL",
+            "YM COOPERATION": "YCPR",
             "IBN AL ABBAR": "IAAB"
         }
         
@@ -67,12 +67,14 @@ class YML_Crawling(ParentsClass):
             return False
 
     def step2_crawl_vessel_data(self):
-        """2단계: 지정된 선박 리스트 반복해서 조회"""
+        """2단계: 지정된 선박별로 루핑 작업 시작"""
         try:
             self.logger.info("=== 2단계: 선박별 데이터 크롤링 시작 ===")
             
             driver = self.driver
             wait = self.wait
+
+            columns = ["Port", "Terminal", "ETA", "ETA-Status", "ETB", "ETB-Status", "ETD", "ETD-Status", "Voy"]
 
             for vessel_name in self.vessel_name_list:
                 try:
@@ -81,7 +83,7 @@ class YML_Crawling(ParentsClass):
                     # 선박별 타이머 시작
                     self.start_vessel_tracking(vessel_name)
                     
-                    # 1. 선박별 URL 접속 (첫 번째 선박부터 바로 접속)
+                    # 1. 선박별 URL 접속
                     vessel_code = self.vessel_code.get(vessel_name, "")
                     if not vessel_code:
                         self.logger.error(f"선박 {vessel_name}에 대한 코드를 찾을 수 없음")
@@ -92,61 +94,149 @@ class YML_Crawling(ParentsClass):
                     self.Visit_Link(url)
                     time.sleep(2)
                     
-                    # 2. 테이블 데이터 추출
+                    # 2. 쿠키 팝업 있으면 클릭
                     try:
-                        table = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="ctl00_ContentPlaceHolder1_GridView1"]')))
-                        rows = table.find_elements(By.TAG_NAME, "tr")
+                        cookie_button = wait.until(EC.element_to_be_clickable((By.XPATH, '/html/body/div/div/a')))
+                        cookie_button.click()
+                        self.logger.info("쿠키 팝업 클릭 완료")
+                    except Exception:
+                        pass
+                    
+                    # 3. 항차번호 추출
+                    try:
+                        voyage_no_elem = wait.until(
+                            EC.presence_of_element_located((By.XPATH, '//*[@id="ContentPlaceHolder1_lblComn"]'))
+                        )
+                        voyage_no = voyage_no_elem.text.strip()
+                        self.logger.info(f"항차번호 추출: {voyage_no}")
+                    except Exception:
+                        voyage_no = ""
+                        self.logger.warning("항차번호 추출 실패")
+                    
+                    # 4. 스크롤 Y 100px 내리기
+                    driver.execute_script("window.scrollBy(0, 100);")
+                    time.sleep(0.5)
+                    
+                    # 5. 첫 번째 페이지 데이터 추출
+                    all_rows = []
+                    row_idx = 1
+                    while True:
+                        xpath = f'//*[@id="ContentPlaceHolder1_gvLast"]/tbody/tr[{row_idx}]'
+                        try:
+                            tr = driver.find_element(By.XPATH, xpath)
+                            tds = tr.find_elements(By.TAG_NAME, "td")
+                            row = [td.text.strip() for td in tds]
+                            if any(row):  # 빈 행 제거
+                                all_rows.append(row)
+                            row_idx += 1
+                        except Exception:
+                            break
+                    
+                    # 6. 스크롤 Y 100px 올리기
+                    driver.execute_script("window.scrollBy(0, -100);")
+                    time.sleep(0.5)
+                    
+                    # 7. 다음 버튼 클릭하여 두 번째 페이지 데이터 수집
+                    try:
+                        next_btn = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="ContentPlaceHolder1_btnNext"]')))
+                        next_btn.click()
+                        time.sleep(1.5)
+                        self.logger.info("다음 페이지로 이동 완료")
                         
-                        data = []
-                        for row in rows[1:]:  # 헤더 제외
-                            cells = row.find_elements(By.TAG_NAME, "td")
-                            if len(cells) >= 5:
-                                row_data = [cell.text.strip() for cell in cells]
-                                data.append(row_data)
+                        # 두 번째 페이지 데이터도 추가로 수집
+                        row_idx = 1
+                        while True:
+                            xpath = f'//*[@id="ContentPlaceHolder1_gvLast"]/tbody/tr[{row_idx}]'
+                            try:
+                                tr = driver.find_element(By.XPATH, xpath)
+                                tds = tr.find_elements(By.TAG_NAME, "td")
+                                row = [td.text.strip() for td in tds]
+                                if any(row):  # 빈 행 제거
+                                    all_rows.append(row)
+                                row_idx += 1
+                            except Exception:
+                                break
                         
-                        if data:
-                            # 3. DataFrame 생성 및 저장 (올바른 파일명으로 바로 저장)
-                            columns = ["Port", "ETA", "ETD", "Status", "Voy"]
-                            df = pd.DataFrame(data, columns=columns)
-                            
-                            # 선박명 추가
-                            df.insert(0, "Vessel Name", vessel_name)
-                            
-                            # 항차번호 추출 (Voy 컬럼에서)
-                            if 'Voy' in df.columns:
-                                df["Voy"] = df["Voy"].str.extract(r'(\d+)')[0]
-                            
-                            # 올바른 파일명으로 바로 저장
-                            filename = f"{self.carrier_name}_{vessel_name}.xlsx"
-                            save_path = os.path.join(self.today_download_dir, filename)
-                            df.to_excel(save_path, index=False, header=True)
-                            self.logger.info(f"[{vessel_name}] 테이블 데이터 저장 완료: {filename}")
-                            
-                            # 성공 카운트는 end_vessel_tracking에서 자동 처리됨
-                            
-                            time.sleep(1)
-                            
-                            # 선박별 타이머 종료 (성공/실패 카운트 자동 처리)
-                            self.end_vessel_tracking(vessel_name, success=True)
-                            vessel_duration = self.get_vessel_duration(vessel_name)
-                            self.logger.info(f"선박 {vessel_name} 크롤링 완료 (소요시간: {vessel_duration:.2f}초)")
-                        else:
-                            self.logger.warning(f"선박 {vessel_name}에 대한 데이터가 없습니다.")
-                            self.fail_count += 1
-                            self.end_vessel_tracking(vessel_name, success=False)
-                            
+                        self.logger.info("두 번째 페이지 데이터 수집 완료")
                     except Exception as e:
-                        self.logger.error(f"테이블 데이터 추출 실패 ({vessel_name}): {e}")
-                        self.end_vessel_tracking(vessel_name, success=False)
+                        self.logger.warning(f"다음 페이지 버튼 없음 또는 클릭 실패: {e}")
+                    
+                    # 8. DataFrame으로 저장 및 엑셀로 내보내기
+                    if all_rows:
+                        # 데이터 검증 및 정리
+                        cleaned_rows = []
+                        for row in all_rows:
+                            if row and any(cell.strip() for cell in row if isinstance(cell, str)):
+                                cleaned_rows.append(row)
                         
+                        if cleaned_rows:
+                            df = pd.DataFrame(cleaned_rows)
+                            
+                            # Port/Terminal/ETA/ETA-Status/ETB/ETB-Status/ETD/ETD-Status 열만 남기고, Voy 칼럼 오른쪽에 추가
+                            try:
+                                df.drop(columns=[0, 2], inplace=True)
+                            except Exception:
+                                self.logger.warning("DataFrame drop 실패 - 인덱스를 확인하세요.")
+                            
+                            df.columns = columns[:-1]
+                            df["Voy"] = voyage_no  # 맨 오른쪽 Voy 칼럼
+                            
+                            # 데이터 타입 정리
+                            for col in df.columns:
+                                if df[col].dtype == 'object':
+                                    df[col] = df[col].astype(str).str.strip()
+                            
+                            save_path = self.get_save_path(self.carrier_name, vessel_name)
+                            
+                            try:
+                                # openpyxl 엔진으로 저장 (더 안정적)
+                                with pd.ExcelWriter(save_path, engine='openpyxl') as writer:
+                                    df.to_excel(writer, index=False, sheet_name='Schedule Data')
+                                
+                                self.logger.info(f"[{vessel_name}] 테이블 데이터 저장 완료: {save_path}")
+                                self.logger.info(f"저장된 데이터: {len(df)}행 x {len(df.columns)}열")
+                                
+                                # 파일 크기 확인
+                                if os.path.exists(save_path):
+                                    file_size = os.path.getsize(save_path)
+                                    self.logger.info(f"파일 크기: {file_size / 1024:.2f} KB")
+                                
+                                # 성공 카운트는 end_vessel_tracking에서 자동 처리됨
+                                self.end_vessel_tracking(vessel_name, success=True)
+                                vessel_duration = self.get_vessel_duration(vessel_name)
+                                self.logger.info(f"선박 {vessel_name} 크롤링 완료 (소요시간: {vessel_duration:.2f}초)")
+                                
+                            except Exception as excel_error:
+                                self.logger.error(f"엑셀 저장 실패: {str(excel_error)}")
+                                # 대안: CSV로 저장
+                                csv_path = save_path.replace('.xlsx', '.csv')
+                                df.to_csv(csv_path, index=False, encoding='utf-8-sig')
+                                self.logger.info(f"CSV로 대체 저장 완료: {csv_path}")
+                                
+                                # 성공 처리
+                                self.end_vessel_tracking(vessel_name, success=True)
+                                vessel_duration = self.get_vessel_duration(vessel_name)
+                                self.logger.info(f"선박 {vessel_name} 크롤링 완료 (소요시간: {vessel_duration:.2f}초)")
+                        else:
+                            self.logger.warning(f"선박 {vessel_name}: 정리된 데이터가 없음")
+                            self.end_vessel_tracking(vessel_name, success=False)
+                    else:
+                        self.logger.warning(f"선박 {vessel_name}: 수집된 데이터가 없음")
+                        self.end_vessel_tracking(vessel_name, success=False)
+                    
+                    time.sleep(1)
+                    
                 except Exception as e:
                     self.logger.error(f"선박 {vessel_name} 크롤링 실패: {str(e)}")
-                    # 실패한 선박 기록 (실패 카운트는 end_vessel_tracking에서 자동 처리됨)
-                    
                     # 실패한 경우에도 타이머 종료
                     self.end_vessel_tracking(vessel_name, success=False)
                     vessel_duration = self.get_vessel_duration(vessel_name)
                     self.logger.error(f"선박 {vessel_name} 크롤링 실패 (소요시간: {vessel_duration:.2f}초)")
+                    
+                    # 실패한 선박 기록
+                    if vessel_name not in self.failed_vessels:
+                        self.failed_vessels.append(vessel_name)
+                        self.failed_reasons[vessel_name] = str(e)
                     
                     continue
             
@@ -162,74 +252,26 @@ class YML_Crawling(ParentsClass):
             self.logger.error(f"상세 에러: {traceback.format_exc()}")
             return False
 
-    def step3_process_downloaded_files(self):
-        """3단계: 생성된 파일 확인 및 전처리"""
+    def step3_save_with_naming_rules(self):
+        """3단계: 파일명 규칙 및 저장경로 규칙 적용"""
         try:
-            self.logger.info("=== 3단계: 생성된 파일 확인 및 전처리 시작 ===")
+            self.logger.info("=== 3단계: 파일명 규칙 및 저장경로 규칙 적용 시작 ===")
             
-            # 이미 올바른 파일명으로 저장된 파일들 확인
-            expected_files = [f"{self.carrier_name}_{vessel_name}.xlsx" for vessel_name in self.vessel_name_list]
-            existing_files = []
+            # 기존 파일명 규칙 유지 (선사_선박명.xlsx)
+            # 날짜 폴더에 이미 저장되므로 파일명은 변경하지 않음
+            self.logger.info("기존 파일명 규칙 유지 (날짜 폴더에 저장됨)")
             
-            for expected_file in expected_files:
-                fpath = os.path.join(self.today_download_dir, expected_file)
-                if os.path.exists(fpath):
-                    existing_files.append(expected_file)
-                    self.logger.info(f"파일 확인 완료: {expected_file}")
-                else:
-                    self.logger.warning(f"예상 파일을 찾을 수 없음: {expected_file}")
-            
-            # 파일명 변경 후 전처리
-            for vessel_name in self.vessel_name_list:
-                fpath = os.path.join(self.today_download_dir, f"{self.carrier_name}_{vessel_name}.xlsx")
-                if os.path.exists(fpath):
-                    try:
-                        df = pd.read_excel(fpath)
-                        # 1. 'undefined' 컬럼명을 'Vessel Name'으로 변경
-                        if 'undefined' in df.columns:
-                            df.rename(columns={'undefined': 'Vessel Name'}, inplace=True)
-                        # 2. 선박명/항차번호 분리 (첫 컬럼)
-                        if 'Vessel Name' in df.columns:
-                            split_df = df['Vessel Name'].str.extract(r'(?P<Vessel_Name>[A-Z\s]+)\s+(?P<D_Voy>[A-Z0-9.\-]+)')
-                            df['Vessel Name'] = split_df['Vessel_Name']
-                            df.insert(1, 'D-Voy', split_df['D_Voy'])
-
-                        # 3. 컬럼명 한글 → 영문 변경
-                        col_map = {
-                            '지역': 'Port',
-                            '입항일': 'ETA',
-                            '출항일': 'ETD'
-                        }
-                        df.rename(columns=col_map, inplace=True)
-
-                        # 4. 컬럼 순서 재정렬
-                        desired_cols = ['Vessel Name', 'D-Voy', 'Port', 'ETA', 'ETD']
-                        rest_cols = [col for col in df.columns if col not in desired_cols]
-                        final_cols = desired_cols + rest_cols
-                        df = df[final_cols]
-
-                        # 5. 전처리된 파일로 덮어쓰기
-                        df.to_excel(fpath, index=False)
-                        self.logger.info(f"전처리 및 컬럼명 변경 완료: {os.path.basename(fpath)}")
-                    except Exception as e:
-                        self.logger.error(f"전처리 중 오류({vessel_name}): {e}")
-                else:
-                    self.logger.warning(f"선박 {vessel_name}의 파일을 찾을 수 없음")
-            
-            # 파일 생성 성공률 계산
-            success_rate = (len(existing_files) / len(expected_files)) * 100
-            self.logger.info(f"파일 생성 성공률: {success_rate:.1f}% ({len(existing_files)}/{len(expected_files)})")
-            
-            self.logger.info("=== 3단계: 생성된 파일 확인 및 전처리 완료 ===")
+            self.logger.info("=== 3단계: 파일명 규칙 및 저장경로 규칙 적용 완료 ===")
             return True
             
         except Exception as e:
             # 에러 발생 시 로깅 설정 변경
             self.setup_logging_with_error()
-            self.logger.error(f"=== 3단계: 생성된 파일 확인 및 전처리 실패 ===")
+            self.logger.error(f"=== 3단계: 파일명 규칙 및 저장경로 규칙 적용 실패 ===")
             self.logger.error(f"에러 메시지: {str(e)}")
             self.logger.error(f"상세 에러: {traceback.format_exc()}")
             return False
+
 
     def run(self):
         """메인 실행 함수"""
@@ -244,8 +286,8 @@ class YML_Crawling(ParentsClass):
             if not self.step2_crawl_vessel_data():
                 return False
             
-            # 3단계: 다운로드된 파일 처리 및 엑셀 생성
-            if not self.step3_process_downloaded_files():
+            # 3단계: 파일명 규칙 및 저장경로 규칙 적용
+            if not self.step3_save_with_naming_rules():
                 return False
             
             # 최종 결과 로깅
@@ -317,19 +359,107 @@ class YML_Crawling(ParentsClass):
                 self.Visit_Link(url)
                 time.sleep(2)
                 
-                # 성공 처리 (성공 카운트는 end_vessel_tracking에서 자동 처리됨)
-                retry_success_count += 1
+                # 2. 쿠키 팝업 있으면 클릭
+                try:
+                    cookie_button = self.wait.until(EC.element_to_be_clickable((By.XPATH, '/html/body/div/div/a')))
+                    cookie_button.click()
+                    self.logger.info("쿠키 팝업 클릭 완료")
+                except Exception:
+                    pass
                 
-                # 실패 목록에서 제거
-                if vessel_name in self.failed_vessels:
-                    self.failed_vessels.remove(vessel_name)
-                if vessel_name in self.failed_reasons:
-                    del self.failed_reasons[vessel_name]
+                # 3. 데이터 테이블 추출
+                all_rows = []
+                columns = ['Port', 'Terminal', 'ETA', 'ETA-Status', 'ETB', 'ETB-Status', 'ETD', 'ETD-Status', 'Voy']
                 
-                # 선박별 타이머 종료 (성공/실패 카운트 자동 처리)
-                self.end_vessel_tracking(vessel_name, success=True)
-                vessel_duration = self.get_vessel_duration(vessel_name)
-                self.logger.info(f"선박 {vessel_name} 재시도 성공 (소요시간: {vessel_duration:.2f}초)")
+                # 첫 번째 페이지 데이터 추출
+                row_idx = 1
+                while True:
+                    xpath = f'//*[@id="ContentPlaceHolder1_gvLast"]/tbody/tr[{row_idx}]'
+                    try:
+                        tr = self.driver.find_element(By.XPATH, xpath)
+                        tds = tr.find_elements(By.TAG_NAME, "td")
+                        row = [td.text.strip() for td in tds]
+                        if any(row):  # 빈 행 제거
+                            all_rows.append(row)
+                        row_idx += 1
+                    except Exception:
+                        break
+                
+                # 4. DataFrame으로 저장 및 엑셀로 내보내기
+                if all_rows:
+                    # 데이터 검증 및 정리
+                    cleaned_rows = []
+                    for row in all_rows:
+                        if row and any(cell.strip() for cell in row if isinstance(cell, str)):
+                            cleaned_rows.append(row)
+                    
+                    if cleaned_rows:
+                        df = pd.DataFrame(cleaned_rows)
+                        
+                        # Port/Terminal/ETA/ETA-Status/ETB/ETB-Status/ETD/ETD-Status 열만 남기고, Voy 칼럼 오른쪽에 추가
+                        try:
+                            df.drop(columns=[0, 2], inplace=True)
+                        except Exception:
+                            self.logger.warning("DataFrame drop 실패 - 인덱스를 확인하세요.")
+                        
+                        df.columns = columns[:-1]
+                        df["Voy"] = vessel_name  # 맨 오른쪽 Voy 칼럼
+                        
+                        save_path = self.get_save_path(self.carrier_name, vessel_name)
+                        
+                        try:
+                            # openpyxl 엔진으로 저장 (더 안정적)
+                            with pd.ExcelWriter(save_path, engine='openpyxl') as writer:
+                                df.to_excel(writer, index=False, sheet_name='Schedule Data')
+                            
+                            self.logger.info(f"{vessel_name} 재시도 테이블 데이터 저장 완료: {save_path}")
+                            
+                            # 성공 처리
+                            retry_success_count += 1
+                            
+                            # 실패 목록에서 제거
+                            if vessel_name in self.failed_vessels:
+                                self.failed_vessels.remove(vessel_name)
+                            if vessel_name in self.failed_reasons:
+                                del self.failed_reasons[vessel_name]
+                            
+                            self.end_vessel_tracking(vessel_name, success=True)
+                            vessel_duration = self.get_vessel_duration(vessel_name)
+                            self.logger.info(f"선박 {vessel_name} 재시도 성공 (소요시간: {vessel_duration:.2f}초)")
+                            
+                        except Exception as excel_error:
+                            self.logger.error(f"재시도 엑셀 저장 실패: {str(excel_error)}")
+                            # 대안: CSV로 저장
+                            csv_path = save_path.replace('.xlsx', '.csv')
+                            df.to_csv(csv_path, index=False, encoding='utf-8-sig')
+                            self.logger.info(f"재시도 CSV로 대체 저장 완료: {csv_path}")
+                            
+                            # 성공 처리
+                            retry_success_count += 1
+                            
+                            # 실패 목록에서 제거
+                            if vessel_name in self.failed_vessels:
+                                self.failed_vessels.remove(vessel_name)
+                            if vessel_name in self.failed_reasons:
+                                del self.failed_reasons[vessel_name]
+                            
+                            self.end_vessel_tracking(vessel_name, success=True)
+                            vessel_duration = self.get_vessel_duration(vessel_name)
+                            self.logger.info(f"선박 {vessel_name} 재시도 성공 (소요시간: {vessel_duration:.2f}초)")
+                    else:
+                        self.logger.warning(f"{vessel_name} 재시도 시에도 정리된 데이터가 없음")
+                        retry_fail_count += 1
+                        self.end_vessel_tracking(vessel_name, success=False)
+                        vessel_duration = self.get_vessel_duration(vessel_name)
+                        self.logger.warning(f"선박 {vessel_name} 재시도 실패 (소요시간: {vessel_duration:.2f}초)")
+                        continue
+                else:
+                    self.logger.warning(f"{vessel_name} 재시도 시에도 데이터가 없음")
+                    retry_fail_count += 1
+                    self.end_vessel_tracking(vessel_name, success=False)
+                    vessel_duration = self.get_vessel_duration(vessel_name)
+                    self.logger.warning(f"선박 {vessel_name} 재시도 실패 (소요시간: {vessel_duration:.2f}초)")
+                    continue
                 
             except Exception as e:
                 self.logger.error(f"선박 {vessel_name} 재시도 실패: {str(e)}")
